@@ -7,7 +7,6 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   console.log("ProtectedRoute render:", { user, loading });
 
-  // Om vi laddar, visa laddningsindikator
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
@@ -21,13 +20,11 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Om användaren inte är inloggad, omdirigera till /auth
   if (!user) {
     console.log("User not authenticated, redirecting to /auth");
     return <Navigate to="/auth" />;
   }
 
-  // Om användaren är inloggad, visa innehållet
   console.log("User authenticated, showing content");
   return <>{children}</>;
 };
