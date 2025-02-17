@@ -2,19 +2,22 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Calendar, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const DashboardCard = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
-  <Card className="p-6 hover:shadow-lg transition-all duration-200 animate-slideIn bg-white/80 backdrop-blur-sm">
-    <div className="flex items-start gap-4">
-      <div className="p-3 bg-primary bg-opacity-10 rounded-lg">
-        <Icon className="w-6 h-6 text-primary" />
+const DashboardCard = ({ icon: Icon, title, description, to }: { icon: any, title: string, description: string, to: string }) => (
+  <Link to={to}>
+    <Card className="p-6 hover:shadow-lg transition-all duration-200 animate-slideIn bg-white/80 backdrop-blur-sm">
+      <div className="flex items-start gap-4">
+        <div className="p-3 bg-primary bg-opacity-10 rounded-lg">
+          <Icon className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-secondary mb-1">{title}</h3>
+          <p className="text-sm text-gray-600">{description}</p>
+        </div>
       </div>
-      <div>
-        <h3 className="text-lg font-semibold text-secondary mb-1">{title}</h3>
-        <p className="text-sm text-gray-600">{description}</p>
-      </div>
-    </div>
-  </Card>
+    </Card>
+  </Link>
 );
 
 const Index = () => {
@@ -23,11 +26,13 @@ const Index = () => {
       icon: Calendar,
       title: "Schemahantering",
       description: "Skapa och hantera arbetspass med vår intuitiva kalender",
+      to: "/schedule"
     },
     {
       icon: Users,
       title: "Personalkatalog",
       description: "Hantera teammedlemmar och kontaktinformation",
+      to: "/directory"
     },
   ];
 
