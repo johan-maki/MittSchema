@@ -13,14 +13,12 @@ function App() {
       <Router>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<Index />} />
+          <Route path="/schedule" element={
+            <ProtectedRoute>
+              <Schedule />
+            </ProtectedRoute>
+          } />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />
         </Routes>
