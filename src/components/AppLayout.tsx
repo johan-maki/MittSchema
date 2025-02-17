@@ -1,7 +1,9 @@
 
 import React from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Calendar, Users, Bell, Settings, MessageSquare } from "lucide-react";
+import { Calendar, Users, Bell, Settings, MessageSquare, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const menuItems = [
   { icon: Calendar, label: "Schedule", path: "/schedule" },
@@ -12,6 +14,13 @@ const menuItems = [
 ];
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-[#F8F9FA]">
@@ -33,6 +42,14 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleSignOut}>
+                      <div className="flex items-center gap-3 px-4 py-2 text-secondary hover:bg-primary hover:bg-opacity-10 rounded-lg transition-all duration-200">
+                        <LogOut className="w-5 h-5" />
+                        <span>Sign Out</span>
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
