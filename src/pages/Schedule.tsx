@@ -11,22 +11,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
+type ShiftType = 'day' | 'evening' | 'night';
+
 type Shift = {
   id: string;
   start_time: string;
   end_time: string;
-  shift_type: 'day' | 'evening' | 'night';
+  shift_type: ShiftType;
   department: string;
   notes?: string;
+};
+
+type FormData = {
+  start_time: string;
+  end_time: string;
+  shift_type: ShiftType;
+  department: string;
+  notes: string;
 };
 
 const Schedule = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     start_time: "",
     end_time: "",
-    shift_type: "day" as const,
+    shift_type: "day",
     department: "",
     notes: ""
   });
@@ -178,7 +188,7 @@ const Schedule = () => {
                     id="shift_type"
                     className="w-full rounded-md border border-input bg-background px-3 py-2"
                     value={formData.shift_type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, shift_type: e.target.value as 'day' | 'evening' | 'night' }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, shift_type: e.target.value as ShiftType }))}
                     required
                   >
                     <option value="day">Day</option>
