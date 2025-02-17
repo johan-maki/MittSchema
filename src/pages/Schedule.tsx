@@ -21,6 +21,7 @@ type Shift = {
   shift_type: ShiftType;
   department: string;
   notes?: string;
+  created_by?: string;
 };
 
 type FormData = {
@@ -60,7 +61,10 @@ const Schedule = () => {
         .gte('start_time', startOfDay.toISOString())
         .lte('start_time', endOfDay.toISOString());
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shifts:', error);
+        throw error;
+      }
       return data as Shift[];
     },
     enabled: !!user // Only run query if user is authenticated
@@ -69,13 +73,23 @@ const Schedule = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create shifts",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('shifts')
         .insert([{
           ...formData,
-          created_by: user?.id // Add the user's ID as created_by
-        }]);
+          created_by: user.id
+        }])
+        .select();
 
       if (error) throw error;
 
@@ -96,10 +110,11 @@ const Schedule = () => {
 
       // Refresh shifts data
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating shift:', error);
       toast({
         title: "Error",
-        description: "Failed to create shift. Please try again.",
+        description: error.message || "Failed to create shift. Please try again.",
         variant: "destructive",
       });
     }
