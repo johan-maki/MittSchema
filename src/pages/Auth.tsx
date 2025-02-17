@@ -3,8 +3,21 @@ import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    // If user is authenticated, redirect to home page
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
       <Card className="w-full max-w-md p-6">
