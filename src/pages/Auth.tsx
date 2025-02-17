@@ -36,15 +36,10 @@ const Auth = () => {
           title: "Konto uppdaterat",
           description: "Ditt konto har uppdaterats",
         });
-      } else if (event === 'AUTH_ERROR') {
-        const errorMessage = session?.user?.email 
-          ? "Ett konto med denna e-postadress finns redan. Vänligen logga in istället."
-          : "Ett fel uppstod vid registrering. Vänligen försök igen.";
-        
+      } else if (event === 'PASSWORD_RECOVERY') {
         toast({
-          title: "Registrering misslyckades",
-          description: errorMessage,
-          variant: "destructive",
+          title: "Återställning av lösenord",
+          description: "Kontrollera din e-post för instruktioner",
         });
       }
     });
