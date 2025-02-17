@@ -36,18 +36,16 @@ const Auth = () => {
           title: "Konto uppdaterat",
           description: "Ditt konto har uppdaterats",
         });
-      }
-
-      // Hantera eventuella fel
-      if (event === 'SIGNED_UP') {
-        const error = session?.error;
-        if (error?.message.includes('user_already_exists')) {
-          toast({
-            title: "Registrering misslyckades",
-            description: "Ett konto med denna e-postadress finns redan. Vänligen logga in istället.",
-            variant: "destructive",
-          });
-        }
+      } else if (event === 'AUTH_ERROR') {
+        const errorMessage = session?.user?.email 
+          ? "Ett konto med denna e-postadress finns redan. Vänligen logga in istället."
+          : "Ett fel uppstod vid registrering. Vänligen försök igen.";
+        
+        toast({
+          title: "Registrering misslyckades",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     });
 
@@ -86,9 +84,6 @@ const Auth = () => {
                 loading_button_label: 'Skapar konto...',
                 social_provider_text: 'Logga in med {{provider}}',
                 link_text: 'Har du inget konto? Skapa ett här',
-                error: {
-                  email_taken: 'Ett konto med denna e-postadress finns redan',
-                }
               },
               sign_in: {
                 email_label: 'Email',
