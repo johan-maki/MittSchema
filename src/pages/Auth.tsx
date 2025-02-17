@@ -36,11 +36,18 @@ const Auth = () => {
           title: "Konto uppdaterat",
           description: "Ditt konto har uppdaterats",
         });
-      } else if (event === 'USER_DELETED') {
-        toast({
-          title: "Konto borttaget",
-          description: "Ditt konto har tagits bort",
-        });
+      }
+
+      // Hantera eventuella fel
+      if (event === 'SIGNED_UP') {
+        const error = session?.error;
+        if (error?.message.includes('user_already_exists')) {
+          toast({
+            title: "Registrering misslyckades",
+            description: "Ett konto med denna e-postadress finns redan. Vänligen logga in istället.",
+            variant: "destructive",
+          });
+        }
       }
     });
 
@@ -79,6 +86,9 @@ const Auth = () => {
                 loading_button_label: 'Skapar konto...',
                 social_provider_text: 'Logga in med {{provider}}',
                 link_text: 'Har du inget konto? Skapa ett här',
+                error: {
+                  email_taken: 'Ett konto med denna e-postadress finns redan',
+                }
               },
               sign_in: {
                 email_label: 'Email',
