@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +30,8 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
     
     if (!user) {
       toast({
-        title: "Error",
-        description: "You must be logged in to create shifts",
+        title: "Fel",
+        description: "Du måste vara inloggad för att skapa pass",
         variant: "destructive",
       });
       return;
@@ -50,8 +49,8 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Shift has been created successfully",
+        title: "Klart",
+        description: "Passet har skapats",
       });
 
       // Reset form and close dialog
@@ -69,8 +68,8 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
     } catch (error: any) {
       console.error('Error creating shift:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create shift. Please try again.",
+        title: "Fel",
+        description: error.message || "Kunde inte skapa pass. Försök igen.",
         variant: "destructive",
       });
     }
@@ -79,12 +78,12 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Add New Shift</DialogTitle>
+        <DialogTitle>Lägg till nytt pass</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
-            Department
+            Avdelning
           </label>
           <Input
             id="department"
@@ -95,7 +94,7 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         </div>
         <div>
           <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">
-            Start Time
+            Starttid
           </label>
           <Input
             id="start_time"
@@ -107,7 +106,7 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         </div>
         <div>
           <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">
-            End Time
+            Sluttid
           </label>
           <Input
             id="end_time"
@@ -119,7 +118,7 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         </div>
         <div>
           <label htmlFor="shift_type" className="block text-sm font-medium text-gray-700 mb-1">
-            Shift Type
+            Passtyp
           </label>
           <select
             id="shift_type"
@@ -128,14 +127,14 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
             onChange={(e) => setFormData(prev => ({ ...prev, shift_type: e.target.value as ShiftType }))}
             required
           >
-            <option value="day">Day</option>
-            <option value="evening">Evening</option>
-            <option value="night">Night</option>
+            <option value="day">Dag</option>
+            <option value="evening">Kväll</option>
+            <option value="night">Natt</option>
           </select>
         </div>
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notes (Optional)
+            Anteckningar (Valfritt)
           </label>
           <Input
             id="notes"
@@ -145,9 +144,9 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Avbryt
           </Button>
-          <Button type="submit">Create Shift</Button>
+          <Button type="submit">Skapa pass</Button>
         </DialogFooter>
       </form>
     </DialogContent>

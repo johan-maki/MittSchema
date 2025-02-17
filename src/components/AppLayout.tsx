@@ -1,16 +1,14 @@
 
 import React from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Calendar, Users, Bell, Settings, MessageSquare, LogOut } from "lucide-react";
+import { Calendar, Users, Settings, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const menuItems = [
-  { icon: Calendar, label: "Schedule", path: "/schedule" },
-  { icon: Users, label: "Directory", path: "/directory" },
-  { icon: Bell, label: "Updates", path: "/updates" },
-  { icon: MessageSquare, label: "Messages", path: "/messages" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Calendar, label: "Schema", path: "/schedule" },
+  { icon: Users, label: "Katalog", path: "/directory" },
+  { icon: Settings, label: "Inställningar", path: "/settings" },
 ];
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -23,10 +21,10 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-[#F8F9FA]">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-indigo-50 to-purple-50">
         <Sidebar>
           <div className="p-4 border-b">
-            <h1 className="text-xl font-semibold text-secondary">ShiftConnect</h1>
+            <h1 className="text-xl font-semibold text-primary">VårdSchema</h1>
           </div>
           <SidebarContent>
             <SidebarGroup>
@@ -46,7 +44,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                     <SidebarMenuButton onClick={handleSignOut}>
                       <div className="flex items-center gap-3 px-4 py-2 text-secondary hover:bg-primary hover:bg-opacity-10 rounded-lg transition-all duration-200">
                         <LogOut className="w-5 h-5" />
-                        <span>Sign Out</span>
+                        <span>Logga ut</span>
                       </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
