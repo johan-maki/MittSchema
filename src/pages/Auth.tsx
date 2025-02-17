@@ -14,18 +14,25 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("Auth component mounted, user:", user);
+    
     // If user is authenticated, redirect to home page
     if (user) {
+      console.log("User is authenticated, redirecting to /");
       navigate("/");
     }
 
     // Lyssna på auth-events för att visa feedback till användaren
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
+      
       if (event === 'SIGNED_IN') {
+        console.log("User signed in, redirecting");
         toast({
           title: "Inloggning lyckades",
           description: "Välkommen tillbaka!",
         });
+        navigate("/");
       } else if (event === 'SIGNED_OUT') {
         toast({
           title: "Utloggad",
