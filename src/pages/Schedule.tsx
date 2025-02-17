@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ShiftType = 'day' | 'evening' | 'night';
 
@@ -42,6 +43,7 @@ const Schedule = () => {
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const { data: shifts, isLoading } = useQuery({
     queryKey: ['shifts', date],
@@ -60,7 +62,8 @@ const Schedule = () => {
 
       if (error) throw error;
       return data as Shift[];
-    }
+    },
+    enabled: !!user // Only run query if user is authenticated
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +72,10 @@ const Schedule = () => {
     try {
       const { error } = await supabase
         .from('shifts')
-        .insert([formData]);
+        .insert([{
+          ...formData,
+          created_by: user?.id // Add the user's ID as created_by
+        }]);
 
       if (error) throw error;
 
