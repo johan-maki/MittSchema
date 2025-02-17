@@ -1,36 +1,43 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Schedule from "./pages/Schedule";
-import "./App.css";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import Index from "@/pages/Index";
+import Auth from "@/pages/Auth";
+import Schedule from "@/pages/Schedule";
+import Directory from "@/pages/Directory";
+import NotFound from "@/pages/NotFound";
 
-// Create a client
-const queryClient = new QueryClient();
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ProtectedRoute><Index /></ProtectedRoute>
+  },
+  {
+    path: "/auth",
+    element: <Auth />
+  },
+  {
+    path: "/schedule",
+    element: <ProtectedRoute><Schedule /></ProtectedRoute>
+  },
+  {
+    path: "/directory",
+    element: <ProtectedRoute><Directory /></ProtectedRoute>
+  },
+  {
+    path: "*",
+    element: <NotFound />
+  }
+]);
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Index />} />
-            <Route path="/schedule" element={
-              <ProtectedRoute>
-                <Schedule />
-              </ProtectedRoute>
-            } />
-            <Route path="/404" element={<NotFound />} />
-            <Route path="*" element={<Navigate to="/404" replace />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <RouterProvider router={router} />
+      <Toaster />
+    </ThemeProvider>
   );
 }
 
