@@ -46,17 +46,17 @@ const Schedule = () => {
     <AppLayout>
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-secondary">Schema</h1>
+          <h1 className="text-3xl font-bold text-secondary">Schedule</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">Lägg till pass</Button>
+              <Button>Add Shift</Button>
             </DialogTrigger>
             <ShiftForm isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
           </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
+          <Card className="p-6">
             <Calendar
               mode="single"
               selected={date}
@@ -65,16 +65,16 @@ const Schedule = () => {
             />
           </Card>
 
-          <Card className="p-6 bg-white/80 backdrop-blur-sm">
+          <Card className="p-6">
             <h2 className="text-xl font-semibold text-secondary">
-              Pass för {date ? format(date, 'MMMM d, yyyy') : 'Inget datum valt'}
+              Shifts for {date ? format(date, 'MMMM d, yyyy') : 'No date selected'}
             </h2>
             {isLoading ? (
-              <p className="text-gray-600 mt-4">Laddar pass...</p>
+              <p className="text-gray-600 mt-4">Loading shifts...</p>
             ) : shifts?.length ? (
               <ShiftList shifts={shifts} />
             ) : (
-              <p className="text-gray-600 mt-4">Inga pass schemalagda denna dag</p>
+              <p className="text-gray-600 mt-4">No shifts scheduled for this day</p>
             )}
           </Card>
         </div>

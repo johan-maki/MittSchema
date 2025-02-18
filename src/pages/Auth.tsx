@@ -6,62 +6,24 @@ import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
-    console.log("Auth component mounted, user:", user);
-    
     // If user is authenticated, redirect to home page
     if (user) {
-      console.log("User is authenticated, redirecting to /");
       navigate("/");
     }
-
-    // Lyssna på auth-events för att visa feedback till användaren
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      
-      if (event === 'SIGNED_IN') {
-        console.log("User signed in, redirecting");
-        toast({
-          title: "Inloggning lyckades",
-          description: "Välkommen tillbaka!",
-        });
-        navigate("/");
-      } else if (event === 'SIGNED_OUT') {
-        toast({
-          title: "Utloggad",
-          description: "Du har loggat ut från systemet",
-        });
-      } else if (event === 'USER_UPDATED') {
-        toast({
-          title: "Konto uppdaterat",
-          description: "Ditt konto har uppdaterats",
-        });
-      } else if (event === 'PASSWORD_RECOVERY') {
-        toast({
-          title: "Återställning av lösenord",
-          description: "Kontrollera din e-post för instruktioner",
-        });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user, navigate, toast]);
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
       <Card className="w-full max-w-md p-6">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-secondary">Välkommen till VårdSchema</h1>
-          <p className="text-gray-600 mt-2">Logga in för att hantera ditt vårdteam</p>
+          <h1 className="text-2xl font-bold text-secondary">Welcome to ShiftConnect</h1>
+          <p className="text-gray-600 mt-2">Sign in to manage your healthcare workforce</p>
         </div>
         <SupabaseAuth 
           supabaseClient={supabase}
@@ -77,26 +39,6 @@ const Auth = () => {
             }
           }}
           providers={[]}
-          localization={{
-            variables: {
-              sign_up: {
-                email_label: 'Email',
-                password_label: 'Lösenord',
-                button_label: 'Skapa konto',
-                loading_button_label: 'Skapar konto...',
-                social_provider_text: 'Logga in med {{provider}}',
-                link_text: 'Har du inget konto? Skapa ett här',
-              },
-              sign_in: {
-                email_label: 'Email',
-                password_label: 'Lösenord',
-                button_label: 'Logga in',
-                loading_button_label: 'Loggar in...',
-                social_provider_text: 'Logga in med {{provider}}',
-                link_text: 'Har du redan ett konto? Logga in här',
-              },
-            },
-          }}
         />
       </Card>
     </div>
