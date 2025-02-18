@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -44,9 +43,9 @@ const Directory = () => {
 
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: authUser.user.id,
-          ...newProfile
+        .insert({
+          ...newProfile,
+          id: authUser.user.id
         });
 
       if (error) throw error;
