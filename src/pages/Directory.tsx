@@ -24,6 +24,9 @@ const Directory = () => {
   const { data: profiles, isLoading, refetch } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser?.user?.id) throw new Error("Ingen användare inloggad");
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -43,16 +46,18 @@ const Directory = () => {
 
       const { error } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           ...newProfile,
           id: authUser.user.id
+        }, {
+          onConflict: 'id'
         });
 
       if (error) throw error;
 
       toast({
-        title: "Kollega tillagd",
-        description: "Den nya kollegan har lagts till i katalogen.",
+        title: "Profil sparad",
+        description: "Din profil har sparats i katalogen.",
       });
 
       setIsOpen(false);
@@ -65,6 +70,7 @@ const Directory = () => {
       });
       refetch();
     } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Ett fel uppstod",
         description: error.message,
