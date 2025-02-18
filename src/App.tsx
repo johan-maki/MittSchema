@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Schedule from "./pages/Schedule";
 import Directory from "./pages/Directory";
+import MonthView from "./pages/MonthView";
 import "./App.css";
 
 // Create a client
@@ -29,6 +30,11 @@ function App() {
             <Route path="/directory" element={
               <ProtectedRoute>
                 <Directory />
+              </ProtectedRoute>
+            } />
+            <Route path="/month-view" element={
+              <ProtectedRoute>
+                <MonthView />
               </ProtectedRoute>
             } />
             <Route path="/404" element={<NotFound />} />
