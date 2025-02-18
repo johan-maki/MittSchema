@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Profile } from "@/types/profile";
+import { Profile, NewProfile } from "@/types/profile";
 
 const Directory = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [newProfile, setNewProfile] = useState<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>({
+  const [newProfile, setNewProfile] = useState<NewProfile>({
     first_name: '',
     last_name: '',
     role: '',
@@ -68,14 +68,7 @@ const Directory = () => {
 
       const { error } = await supabase
         .from('profiles')
-        .insert([{
-          first_name: newProfile.first_name,
-          last_name: newProfile.last_name,
-          role: newProfile.role,
-          department: newProfile.department || null,
-          phone: newProfile.phone || null,
-          is_manager: false
-        }]);
+        .insert(newProfile);
 
       if (error) throw error;
 
@@ -104,7 +97,6 @@ const Directory = () => {
     }
   };
 
-  // Visa laddningsindikator om någon av querieserna laddar
   const isLoading = isLoadingCurrentUser || isLoadingProfiles;
 
   return (
