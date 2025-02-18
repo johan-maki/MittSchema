@@ -38,10 +38,20 @@ const Auth = () => {
           });
           break;
         default:
-          if (!session) {
+          // Kontrollera specifika felkoder från supabase
+          const error = (session as any)?.error;
+          if (error) {
+            let errorMessage = "Ett fel uppstod. Försök igen.";
+            
+            if (error.message.includes("User already registered")) {
+              errorMessage = "E-postadressen är redan registrerad. Försök logga in istället.";
+            } else if (error.message.includes("Invalid login credentials")) {
+              errorMessage = "Felaktig e-postadress eller lösenord.";
+            }
+            
             toast({
-              title: "Ett fel uppstod",
-              description: "Kunde inte logga in. Kontrollera dina uppgifter och försök igen.",
+              title: "Autentiseringsfel",
+              description: errorMessage,
               variant: "destructive"
             });
           }
