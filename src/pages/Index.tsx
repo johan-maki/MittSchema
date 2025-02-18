@@ -51,7 +51,7 @@ const Index = () => {
       title: "Employee Directory",
       description: "Access contact information and manage team members",
       onClick: () => navigate('/directory'),
-      disabled: true // Since directory page is not implemented yet
+      disabled: false // Nu är directory implementerad
     },
     {
       icon: Bell,

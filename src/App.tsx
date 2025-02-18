@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Schedule from "./pages/Schedule";
+import Directory from "./pages/Directory";
 import "./App.css";
 
 // Create a client
@@ -23,6 +24,11 @@ function App() {
             <Route path="/schedule" element={
               <ProtectedRoute>
                 <Schedule />
+              </ProtectedRoute>
+            } />
+            <Route path="/directory" element={
+              <ProtectedRoute>
+                <Directory />
               </ProtectedRoute>
             } />
             <Route path="/404" element={<NotFound />} />
