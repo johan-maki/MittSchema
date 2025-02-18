@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -14,12 +13,13 @@ import { Profile } from "@/types/profile";
 
 const Directory = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [newProfile, setNewProfile] = useState<Partial<Profile>>({
+  const [newProfile, setNewProfile] = useState<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>({
     first_name: '',
     last_name: '',
     role: '',
     department: '',
-    phone: ''
+    phone: '',
+    is_manager: false
   });
   const { toast } = useToast();
 
@@ -64,12 +64,20 @@ const Directory = () => {
         throw new Error("Endast chefer kan lägga till nya anställda");
       }
 
+      if (!newProfile.first_name || !newProfile.last_name || !newProfile.role) {
+        throw new Error("Förnamn, efternamn och yrkesroll är obligatoriska fält");
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .insert([{
-          ...newProfile,
-          is_manager: false // Säkerställ att nya användare inte är managers by default
-        }]);
+        .insert({
+          first_name: newProfile.first_name,
+          last_name: newProfile.last_name,
+          role: newProfile.role,
+          department: newProfile.department || null,
+          phone: newProfile.phone || null,
+          is_manager: false
+        });
 
       if (error) throw error;
 
@@ -84,7 +92,8 @@ const Directory = () => {
         last_name: '',
         role: '',
         department: '',
-        phone: ''
+        phone: '',
+        is_manager: false
       });
       refetch();
     } catch (error: any) {
