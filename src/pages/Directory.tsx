@@ -70,20 +70,20 @@ const Directory = () => {
 
       const { error } = await supabase
         .from('profiles')
-        .insert({
+        .insert([{
           first_name: newProfile.first_name,
           last_name: newProfile.last_name,
           role: newProfile.role,
           department: newProfile.department || null,
           phone: newProfile.phone || null,
           is_manager: false
-        });
+        }] as any);
 
       if (error) throw error;
 
       toast({
         title: "Profil skapad",
-        description: "Den nya profilen har lagts till i katalogen.",
+        description: "Den nya profilen har lagts till i katalogen."
       });
 
       setIsOpen(false);
@@ -101,7 +101,7 @@ const Directory = () => {
       toast({
         title: "Ett fel uppstod",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
