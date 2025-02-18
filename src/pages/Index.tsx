@@ -19,17 +19,17 @@ const DashboardCard = ({
 }) => (
   <Card 
     className={`p-6 transition-all duration-200 animate-slideIn ${
-      disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer hover:bg-primary/5'
+      disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer hover:bg-indigo-50'
     }`}
     onClick={!disabled ? onClick : undefined}
   >
     <div className="flex items-start gap-4">
-      <div className="p-3 bg-primary bg-opacity-10 rounded-lg">
-        <Icon className="w-6 h-6 text-primary" />
+      <div className="p-3 bg-indigo-100 rounded-lg">
+        <Icon className="w-6 h-6 text-indigo-600" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold text-secondary mb-1">{title}</h3>
-        <p className="text-sm text-gray-600">{description}</p>
+        <h3 className="text-lg font-semibold text-indigo-900 mb-1">{title}</h3>
+        <p className="text-sm text-indigo-600">{description}</p>
       </div>
     </div>
   </Card>
@@ -41,22 +41,22 @@ const Index = () => {
   const dashboardCards = [
     {
       icon: Calendar,
-      title: "Schedule Management",
-      description: "Create and manage shifts with our intuitive calendar interface",
+      title: "Schemaläggning",
+      description: "Skapa och hantera arbetspass med vårt intuitiva kalendergränssnitt",
       onClick: () => navigate('/schedule'),
       disabled: false
     },
     {
       icon: Users,
-      title: "Employee Directory",
-      description: "Access contact information and manage team members",
+      title: "Personalkatalog",
+      description: "Hitta kontaktuppgifter till dina kollegor",
       onClick: () => navigate('/directory'),
-      disabled: false // Nu är directory implementerad
+      disabled: false
     },
     {
       icon: Bell,
-      title: "Company Updates",
-      description: "Stay informed with real-time notifications and announcements",
+      title: "Företagsuppdateringar",
+      description: "Håll dig uppdaterad med viktiga meddelanden och nyheter",
       disabled: true
     },
   ];
@@ -64,9 +64,9 @@ const Index = () => {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-secondary mb-2">Welcome to ShiftConnect</h1>
-          <p className="text-gray-600">Manage your healthcare workforce efficiently</p>
+        <header className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 p-8 rounded-2xl">
+          <h1 className="text-3xl font-bold text-indigo-900 mb-2">Välkommen till ShiftConnect</h1>
+          <p className="text-indigo-600">Hantera vårdpersonal enkelt och effektivt</p>
         </header>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -76,9 +76,9 @@ const Index = () => {
         </section>
 
         <section className="mt-12">
-          <h2 className="text-2xl font-semibold text-secondary mb-6">Recent Updates</h2>
-          <Card className="p-6 animate-slideIn">
-            <p className="text-gray-600">Your recent updates and notifications will appear here.</p>
+          <h2 className="text-2xl font-semibold text-indigo-900 mb-6">Senaste uppdateringar</h2>
+          <Card className="p-6 animate-slideIn bg-white border-indigo-100">
+            <p className="text-indigo-600">Dina senaste uppdateringar och meddelanden visas här.</p>
           </Card>
         </section>
       </div>
