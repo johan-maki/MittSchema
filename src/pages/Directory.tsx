@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -9,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { Profile } from "@/types/profile";
 
 const Directory = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [newProfile, setNewProfile] = useState({
+  const [newProfile, setNewProfile] = useState<Partial<Profile>>({
     first_name: '',
     last_name: '',
     role: '',
@@ -21,19 +23,33 @@ const Directory = () => {
   });
   const { toast } = useToast();
 
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentProfile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Ingen användare inloggad");
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data as Profile;
+    }
+  });
+
   const { data: profiles, isLoading, refetch } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
-      const { data: authUser } = await supabase.auth.getUser();
-      if (!authUser?.user?.id) throw new Error("Ingen användare inloggad");
-
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('first_name');
       
       if (error) throw error;
-      return data;
+      return data as Profile[];
     }
   });
 
@@ -41,23 +57,25 @@ const Directory = () => {
     e.preventDefault();
     
     try {
-      const { data: authUser } = await supabase.auth.getUser();
-      if (!authUser?.user?.id) throw new Error("Ingen användare inloggad");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Ingen användare inloggad");
+
+      if (!currentUser?.is_manager) {
+        throw new Error("Endast chefer kan lägga till nya anställda");
+      }
 
       const { error } = await supabase
         .from('profiles')
-        .upsert({
+        .insert([{
           ...newProfile,
-          id: authUser.user.id
-        }, {
-          onConflict: 'id'
-        });
+          is_manager: false // Säkerställ att nya användare inte är managers by default
+        }]);
 
       if (error) throw error;
 
       toast({
-        title: "Profil sparad",
-        description: "Din profil har sparats i katalogen.",
+        title: "Profil skapad",
+        description: "Den nya profilen har lagts till i katalogen.",
       });
 
       setIsOpen(false);
@@ -82,81 +100,78 @@ const Directory = () => {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 bg-gradient-to-r from-[#F2FCE2] to-[#E5DEFF] p-8 rounded-2xl" 
-                style={{
-                  backgroundImage: "url('/photo-1605810230434-7631ac76ec81')",
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}>
+        <header className="mb-8 bg-gradient-to-r from-[#F2FCE2] to-[#E5DEFF] p-8 rounded-2xl">
           <div className="bg-white/90 p-6 rounded-xl backdrop-blur-sm">
             <h1 className="text-3xl font-bold text-[#1A1F2C] mb-2">Personalkatalog</h1>
             <p className="text-[#6E59A5]">Hitta kontaktuppgifter till dina kollegor</p>
           </div>
         </header>
 
-        <div className="mb-6">
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-                <Plus className="w-4 h-4 mr-2" />
-                Lägg till kollega
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Lägg till ny kollega</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-[#1A1F2C]">Förnamn</label>
-                  <Input
-                    required
-                    value={newProfile.first_name}
-                    onChange={e => setNewProfile(prev => ({ ...prev, first_name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#1A1F2C]">Efternamn</label>
-                  <Input
-                    required
-                    value={newProfile.last_name}
-                    onChange={e => setNewProfile(prev => ({ ...prev, last_name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#1A1F2C]">Yrkesroll</label>
-                  <Input
-                    required
-                    value={newProfile.role}
-                    onChange={e => setNewProfile(prev => ({ ...prev, role: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#1A1F2C]">Avdelning</label>
-                  <Input
-                    value={newProfile.department}
-                    onChange={e => setNewProfile(prev => ({ ...prev, department: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#1A1F2C]">Telefonnummer</label>
-                  <Input
-                    value={newProfile.phone}
-                    onChange={e => setNewProfile(prev => ({ ...prev, phone: e.target.value }))}
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                    Avbryt
-                  </Button>
-                  <Button type="submit" className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-                    Lägg till
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+        {currentUser?.is_manager && (
+          <div className="mb-6">
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Lägg till kollega
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Lägg till ny kollega</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-[#1A1F2C]">Förnamn</label>
+                    <Input
+                      required
+                      value={newProfile.first_name}
+                      onChange={e => setNewProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-[#1A1F2C]">Efternamn</label>
+                    <Input
+                      required
+                      value={newProfile.last_name}
+                      onChange={e => setNewProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-[#1A1F2C]">Yrkesroll</label>
+                    <Input
+                      required
+                      value={newProfile.role}
+                      onChange={e => setNewProfile(prev => ({ ...prev, role: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-[#1A1F2C]">Avdelning</label>
+                    <Input
+                      value={newProfile.department}
+                      onChange={e => setNewProfile(prev => ({ ...prev, department: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-[#1A1F2C]">Telefonnummer</label>
+                    <Input
+                      value={newProfile.phone}
+                      onChange={e => setNewProfile(prev => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+                      Avbryt
+                    </Button>
+                    <Button type="submit" className="bg-[#9b87f5] hover:bg-[#7E69AB]">
+                      Lägg till
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center p-12">
@@ -174,10 +189,19 @@ const Directory = () => {
                     </div>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-[#1A1F2C]">
-                      {profile.first_name} {profile.last_name}
-                    </h3>
-                    <p className="text-sm text-[#7E69AB] font-medium">{profile.role}</p>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#1A1F2C]">
+                          {profile.first_name} {profile.last_name}
+                        </h3>
+                        <p className="text-sm text-[#7E69AB] font-medium">{profile.role}</p>
+                      </div>
+                      {profile.is_manager && (
+                        <span className="px-2 py-1 bg-[#F2FCE2] text-[#4B5563] text-xs rounded-full">
+                          Chef
+                        </span>
+                      )}
+                    </div>
                     
                     {profile.department && (
                       <div className="flex items-center gap-2 mt-2 text-sm text-[#6E59A5]">
