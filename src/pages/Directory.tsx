@@ -18,8 +18,8 @@ const Directory = () => {
     first_name: '',
     last_name: '',
     role: '',
-    department: '',
-    phone: '',
+    department: null,
+    phone: null,
     is_manager: false
   });
   const { toast } = useToast();
@@ -70,19 +70,11 @@ const Directory = () => {
         throw new Error("Förnamn, efternamn och yrkesroll är obligatoriska fält");
       }
 
-      // Vi skapar ett objekt som matchar det Supabase förväntar sig
-      const profileData = {
-        first_name: newProfile.first_name,
-        last_name: newProfile.last_name,
-        role: newProfile.role,
-        department: newProfile.department || null,
-        phone: newProfile.phone || null,
-        is_manager: newProfile.is_manager
-      };
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .insert([profileData]);
+        .insert(newProfile)
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -96,8 +88,8 @@ const Directory = () => {
         first_name: '',
         last_name: '',
         role: '',
-        department: '',
-        phone: '',
+        department: null,
+        phone: null,
         is_manager: false
       });
       refetch();
@@ -164,15 +156,15 @@ const Directory = () => {
                   <div>
                     <label className="text-sm font-medium text-[#1A1F2C]">Avdelning</label>
                     <Input
-                      value={newProfile.department}
-                      onChange={e => setNewProfile(prev => ({ ...prev, department: e.target.value }))}
+                      value={newProfile.department || ''}
+                      onChange={e => setNewProfile(prev => ({ ...prev, department: e.target.value || null }))}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-[#1A1F2C]">Telefonnummer</label>
                     <Input
-                      value={newProfile.phone}
-                      onChange={e => setNewProfile(prev => ({ ...prev, phone: e.target.value }))}
+                      value={newProfile.phone || ''}
+                      onChange={e => setNewProfile(prev => ({ ...prev, phone: e.target.value || null }))}
                     />
                   </div>
                   <DialogFooter>

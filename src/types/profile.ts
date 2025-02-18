@@ -4,8 +4,8 @@ export interface Profile {
   first_name: string;
   last_name: string;
   role: string;
-  department?: string;
-  phone?: string;
+  department?: string | null;
+  phone?: string | null;
   is_manager: boolean;
   created_at: string;
   updated_at: string;
