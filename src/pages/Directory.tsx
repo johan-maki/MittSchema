@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +24,7 @@ const Directory = () => {
   });
   const { toast } = useToast();
 
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, isLoading: isLoadingCurrentUser } = useQuery({
     queryKey: ['currentProfile'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -33,14 +34,14 @@ const Directory = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
-      return data as Profile;
+      return data as Profile | null;
     }
   });
 
-  const { data: profiles, isLoading, refetch } = useQuery({
+  const { data: profiles, isLoading: isLoadingProfiles, refetch } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -57,9 +58,6 @@ const Directory = () => {
     e.preventDefault();
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Ingen användare inloggad");
-
       if (!currentUser?.is_manager) {
         throw new Error("Endast chefer kan lägga till nya anställda");
       }
@@ -77,7 +75,7 @@ const Directory = () => {
           department: newProfile.department || null,
           phone: newProfile.phone || null,
           is_manager: false
-        }] as any);
+        }]);
 
       if (error) throw error;
 
@@ -105,6 +103,9 @@ const Directory = () => {
       });
     }
   };
+
+  // Visa laddningsindikator om någon av querieserna laddar
+  const isLoading = isLoadingCurrentUser || isLoadingProfiles;
 
   return (
     <AppLayout>
