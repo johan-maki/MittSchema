@@ -39,9 +39,15 @@ const Directory = () => {
     e.preventDefault();
     
     try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser?.user?.id) throw new Error("Ingen användare inloggad");
+
       const { error } = await supabase
         .from('profiles')
-        .insert([newProfile]);
+        .upsert({
+          id: authUser.user.id,
+          ...newProfile
+        });
 
       if (error) throw error;
 
