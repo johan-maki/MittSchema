@@ -15,6 +15,7 @@ export type Database = {
           department: string | null
           first_name: string
           id: string
+          is_manager: boolean | null
           last_name: string
           phone: string | null
           role: string
@@ -25,6 +26,7 @@ export type Database = {
           department?: string | null
           first_name: string
           id: string
+          is_manager?: boolean | null
           last_name: string
           phone?: string | null
           role: string
@@ -35,6 +37,7 @@ export type Database = {
           department?: string | null
           first_name?: string
           id?: string
+          is_manager?: boolean | null
           last_name?: string
           phone?: string | null
           role?: string
