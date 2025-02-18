@@ -6,24 +6,52 @@ import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // If user is authenticated, redirect to home page
+    // Om användaren är inloggad, omdirigera till startsidan
     if (user) {
       navigate("/");
     }
-  }, [user, navigate]);
+
+    // Lyssna på auth-händelser
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        navigate("/");
+      } else if (event === 'SIGNED_OUT') {
+        navigate("/auth");
+      } else if (event === 'USER_UPDATED') {
+        console.log('User updated:', session?.user);
+      } else if (event === 'PASSWORD_RECOVERY') {
+        toast({
+          title: "Återställning av lösenord",
+          description: "Följ instruktionerna i e-postmeddelandet för att återställa ditt lösenord.",
+        });
+      } else if (event === 'ERROR') {
+        toast({
+          title: "Ett fel uppstod",
+          description: "Kunde inte logga in. Kontrollera dina uppgifter och försök igen.",
+          variant: "destructive",
+        });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user, navigate, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
       <Card className="w-full max-w-md p-6">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-secondary">Welcome to ShiftConnect</h1>
-          <p className="text-gray-600 mt-2">Sign in to manage your healthcare workforce</p>
+          <h1 className="text-2xl font-bold text-[#1A1F2C]">Välkommen till ShiftConnect</h1>
+          <p className="text-gray-600 mt-2">Logga in för att hantera ditt schema</p>
         </div>
         <SupabaseAuth 
           supabaseClient={supabase}
@@ -32,11 +60,49 @@ const Auth = () => {
             variables: {
               default: {
                 colors: {
-                  brand: '#6366F1',
-                  brandAccent: '#4F46E5',
+                  brand: '#9b87f5',
+                  brandAccent: '#7E69AB',
+                  defaultButtonBackground: '#9b87f5',
+                  defaultButtonBackgroundHover: '#7E69AB',
                 }
               }
-            }
+            },
+            style: {
+              button: {
+                borderRadius: '6px',
+                height: '40px',
+              },
+              input: {
+                borderRadius: '6px',
+                height: '40px',
+              },
+            },
+          }}
+          localization={{
+            variables: {
+              sign_in: {
+                email_label: 'E-postadress',
+                password_label: 'Lösenord',
+                button_label: 'Logga in',
+                loading_button_label: 'Loggar in...',
+                email_input_placeholder: 'Din e-postadress',
+                password_input_placeholder: 'Ditt lösenord',
+              },
+              sign_up: {
+                email_label: 'E-postadress',
+                password_label: 'Lösenord',
+                button_label: 'Registrera',
+                loading_button_label: 'Registrerar...',
+                email_input_placeholder: 'Din e-postadress',
+                password_input_placeholder: 'Skapa ett lösenord',
+              },
+              forgotten_password: {
+                email_label: 'E-postadress',
+                button_label: 'Skicka återställningslänk',
+                loading_button_label: 'Skickar...',
+                link_text: 'Glömt lösenord?',
+              },
+            },
           }}
           providers={[]}
         />
