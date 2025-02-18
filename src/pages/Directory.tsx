@@ -72,7 +72,7 @@ const Directory = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .insert(newProfile)
+        .insert([newProfile])  // Wrapping newProfile in an array
         .select()
         .single();
 
