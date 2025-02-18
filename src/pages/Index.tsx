@@ -2,9 +2,27 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Calendar, Users, Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const DashboardCard = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
-  <Card className="p-6 hover:shadow-lg transition-all duration-200 animate-slideIn">
+const DashboardCard = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  onClick,
+  disabled 
+}: { 
+  icon: any, 
+  title: string, 
+  description: string,
+  onClick?: () => void,
+  disabled?: boolean 
+}) => (
+  <Card 
+    className={`p-6 transition-all duration-200 animate-slideIn ${
+      disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer hover:bg-primary/5'
+    }`}
+    onClick={!disabled ? onClick : undefined}
+  >
     <div className="flex items-start gap-4">
       <div className="p-3 bg-primary bg-opacity-10 rounded-lg">
         <Icon className="w-6 h-6 text-primary" />
@@ -18,21 +36,28 @@ const DashboardCard = ({ icon: Icon, title, description }: { icon: any, title: s
 );
 
 const Index = () => {
+  const navigate = useNavigate();
+
   const dashboardCards = [
     {
       icon: Calendar,
       title: "Schedule Management",
       description: "Create and manage shifts with our intuitive calendar interface",
+      onClick: () => navigate('/schedule'),
+      disabled: false
     },
     {
       icon: Users,
       title: "Employee Directory",
       description: "Access contact information and manage team members",
+      onClick: () => navigate('/directory'),
+      disabled: true // Since directory page is not implemented yet
     },
     {
       icon: Bell,
       title: "Company Updates",
       description: "Stay informed with real-time notifications and announcements",
+      disabled: true
     },
   ];
 
