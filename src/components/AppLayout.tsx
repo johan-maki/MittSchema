@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Sparkles } from "lucide-react";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex h-14 items-center px-4 gap-8">
           <Link to="/" className="flex items-center gap-2 font-semibold text-2xl">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Vårdschema</span>
-            <span className="text-red-500">*</span>
+            <Sparkles className="w-5 h-5 text-indigo-600" />
           </Link>
           <nav className="flex items-center space-x-1 flex-1">
             <Link 
