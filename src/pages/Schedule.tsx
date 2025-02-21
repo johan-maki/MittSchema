@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,8 +19,8 @@ const Schedule = () => {
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
-  
-  const { data: shifts = [], isLoading: isShiftsLoading } = useQuery({
+
+  const { data: shifts = [], isLoading } = useQuery({
     queryKey: ['shifts', currentDate],
     queryFn: async () => {
       if (!user) return [];
@@ -44,33 +44,31 @@ const Schedule = () => {
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 bg-white/30 backdrop-blur-sm border-b">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+          <div className="flex items-center justify-between w-full gap-4">
             <CalendarHeader
               currentDate={currentDate}
               onDateChange={setCurrentDate}
               currentView={currentView}
               onViewChange={setCurrentView}
             />
-            <div className="sm:ml-auto">
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Lägg till pass
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <ShiftForm 
-                    isOpen={isCreateDialogOpen} 
-                    onOpenChange={setIsCreateDialogOpen}
-                    defaultValues={{
-                      start_time: new Date().toISOString().slice(0, 16),
-                      end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Lägg till pass
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <ShiftForm 
+                  isOpen={isCreateDialogOpen}
+                  onOpenChange={setIsCreateDialogOpen}
+                  defaultValues={{
+                    start_time: new Date().toISOString().slice(0, 16),
+                    end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -90,7 +88,7 @@ const Schedule = () => {
   );
 
   function renderView() {
-    if (isShiftsLoading) {
+    if (isLoading) {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
