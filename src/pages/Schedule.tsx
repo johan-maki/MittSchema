@@ -86,14 +86,14 @@ const Schedule = () => {
             />
             {isManager && (
               <div className="sm:ml-auto">
-                <Dialog>
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Lägg till pass
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent>
                     <ShiftForm 
                       isOpen={isCreateDialogOpen} 
                       onOpenChange={setIsCreateDialogOpen}
