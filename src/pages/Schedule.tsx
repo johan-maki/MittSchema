@@ -52,7 +52,7 @@ const Schedule = () => {
               onViewChange={setCurrentView}
             />
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Lägg till pass
