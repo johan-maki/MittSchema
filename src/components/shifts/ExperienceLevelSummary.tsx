@@ -37,7 +37,7 @@ export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLev
     <div className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200">
       <div className="p-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-xs font-medium text-gray-600">Total Points:</div>
+          <div className="text-xs font-medium text-gray-600">Exp. level:</div>
           <div
             className={`px-2 py-0.5 rounded-md text-sm font-semibold ${
               isSufficient
