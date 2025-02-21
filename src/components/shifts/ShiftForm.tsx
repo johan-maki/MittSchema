@@ -1,5 +1,4 @@
-
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -74,7 +73,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
         description: "Arbetspasset har lagts till i schemat",
       });
 
-      // Reset form and close dialog
       setFormData({
         start_time: "",
         end_time: "",
@@ -85,7 +83,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
       });
       onOpenChange(false);
 
-      // Update cache
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error: any) {
       console.error('Error creating shift:', error);

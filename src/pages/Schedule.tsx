@@ -86,7 +86,7 @@ const Schedule = () => {
             />
             {isManager && (
               <div className="sm:ml-auto">
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <Dialog>
                   <DialogTrigger asChild>
                     <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
                       <PlusCircle className="mr-2 h-4 w-4" />
@@ -98,8 +98,8 @@ const Schedule = () => {
                       isOpen={isCreateDialogOpen} 
                       onOpenChange={setIsCreateDialogOpen}
                       defaultValues={{
-                        start_time: new Date().toISOString(),
-                        end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString()
+                        start_time: new Date().toISOString().slice(0, 16),
+                        end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
                       }}
                     />
                   </DialogContent>
@@ -108,6 +108,7 @@ const Schedule = () => {
             )}
           </div>
         </div>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}
