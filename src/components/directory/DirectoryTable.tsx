@@ -134,39 +134,41 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
           <div className="flex flex-col h-[90vh]">
             <div className="flex-none p-6 space-y-4 border-b">
               <div className="flex items-center justify-between mb-4">
-                <div className="space-y-1">
-                  <h2 className="text-lg font-semibold">
-                    Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {getDateDisplay()}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-semibold">
+                      Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {getDateDisplay()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={handlePreviousWeek}
+                      className="flex items-center gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Föregående vecka
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleNextWeek}
+                      className="flex items-center gap-1"
+                    >
+                      Nästa vecka
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handlePreviousWeek}
-                    className="flex items-center gap-1"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Föregående vecka
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleNextWeek}
-                    className="flex items-center gap-1"
-                  >
-                    Nästa vecka
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsScheduleOpen(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsScheduleOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 

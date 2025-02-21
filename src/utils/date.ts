@@ -3,7 +3,7 @@ import { addDays, startOfWeek, format } from "date-fns";
 import { sv } from "date-fns/locale";
 
 export const getWeekDays = (date: Date) => {
-  const start = startOfWeek(date, { locale: sv });
+  const start = startOfWeek(date, { locale: sv, weekStartsOn: 1 });
   return Array.from({ length: 7 }, (_, i) => {
     const day = addDays(start, i);
     return {
