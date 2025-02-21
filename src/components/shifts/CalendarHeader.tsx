@@ -19,8 +19,8 @@ export const CalendarHeader = ({
 }: CalendarHeaderProps) => {
   const getFormattedDate = () => {
     if (currentView === 'day') {
-      // Format: "6 februari 2025" (date + month + year)
-      return format(currentDate, 'd MMMM yyyy', { locale: sv });
+      // Format: "Måndag 6 februari 2025" (weekday + date + month + year)
+      return format(currentDate, 'EEEE d MMMM yyyy', { locale: sv });
     }
     // For week and month views, just show "februari 2025" (month + year)
     return format(currentDate, 'MMMM yyyy', { locale: sv });
