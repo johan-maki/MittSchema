@@ -1,53 +1,17 @@
-import { Shift, ShiftType } from "@/types/shift";
-import { format, isSameDay } from "date-fns";
-import { ChevronDown, ChevronRight } from "lucide-react";
+
+import { Shift } from "@/types/shift";
+import { isSameDay } from "date-fns";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
+import { TimeHeader } from "./TimeHeader";
+import { RoleRow } from "./RoleRow";
+import { ROLES } from "./types/dayView";
+import type { OverlappingShifts } from "./types/dayView";
 
 interface DayViewProps {
   date: Date;
   shifts: Shift[];
-}
-
-type Role = {
-  name: string;
-  color: string;
-  bgColor: string;
-  department: string;
-  shiftType: ShiftType;
-};
-
-const ROLES: Role[] = [
-  { 
-    name: "Day shift", 
-    color: "#6B7280", 
-    bgColor: "#F3F4F6",
-    department: "Vården",
-    shiftType: "day"
-  },
-  { 
-    name: "Evening shift", 
-    color: "#DC2626", 
-    bgColor: "#FEE2E2",
-    department: "Vården",
-    shiftType: "evening"
-  },
-  { 
-    name: "Night shift", 
-    color: "#7C3AED", 
-    bgColor: "#EDE9FE",
-    department: "Vården",
-    shiftType: "night"
-  }
-];
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-
-interface OverlappingShifts {
-  shift: Shift;
-  overlap: number;
-  position: number;
 }
 
 const DayView = ({ date, shifts }: DayViewProps) => {
@@ -115,20 +79,8 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
       <div className="min-w-[1200px]">
-        <div className="grid grid-cols-[200px,1fr] bg-gray-50 border-b">
-          <div className="p-4 font-medium text-gray-500">Role</div>
-          <div className="grid grid-cols-24 border-l">
-            {HOURS.map((hour) => (
-              <div 
-                key={hour} 
-                className="text-center text-sm text-gray-500 p-4 border-r"
-              >
-                {hour}:00
-              </div>
-            ))}
-          </div>
-        </div>
-
+        <TimeHeader />
+        
         {ROLES.map(role => {
           const roleShifts = todaysShifts.filter(shift => 
             shift.shift_type === role.shiftType && 
@@ -138,66 +90,14 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           const overlappingShifts = calculateOverlappingShifts(roleShifts);
 
           return (
-            <div key={role.name} className="grid grid-cols-[200px,1fr]">
-              <div 
-                className="p-4 flex items-center gap-2 border-b cursor-pointer hover:bg-gray-50"
-                onClick={() => toggleRole(role.name)}
-              >
-                {hiddenRoles.has(role.name) ? (
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                )}
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: role.color }}
-                  />
-                  <span className="font-medium">{role.name}</span>
-                </div>
-              </div>
-
-              <div className={`relative border-b border-l ${hiddenRoles.has(role.name) ? 'h-[52px]' : 'h-24'}`}>
-                {!hiddenRoles.has(role.name) && overlappingShifts.map(({ shift, overlap, position }) => {
-                  const start = new Date(shift.start_time);
-                  const end = new Date(shift.end_time);
-                  const startPercent = (start.getHours() + start.getMinutes() / 60) * (100 / 24);
-                  const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                  const widthPercent = (duration / 24) * 100;
-                  const maxWidth = 100 / (overlap + 1);
-                  
-                  return (
-                    <div
-                      key={shift.id}
-                      className="absolute top-0 h-24 rounded-lg border text-sm transition-all cursor-pointer hover:brightness-95"
-                      style={{
-                        left: `${startPercent}%`,
-                        width: `${widthPercent}%`,
-                        backgroundColor: role.bgColor,
-                        borderColor: role.color,
-                        maxWidth: `${maxWidth}%`,
-                        transform: `translateY(${position * 33}%)`,
-                      }}
-                      onClick={() => handleShiftClick(shift)}
-                    >
-                      <div className="p-2">
-                        <div className="font-medium">
-                          {format(start, 'HH:mm')} – {format(end, 'HH:mm')}
-                        </div>
-                        {shift.profiles && (
-                          <div className="text-gray-600 truncate">
-                            {shift.profiles.first_name} {shift.profiles.last_name}
-                          </div>
-                        )}
-                        {shift.notes && (
-                          <div className="text-gray-500 text-xs truncate">{shift.notes}</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <RoleRow
+              key={role.name}
+              role={role}
+              isHidden={hiddenRoles.has(role.name)}
+              overlappingShifts={overlappingShifts}
+              onToggle={toggleRole}
+              onShiftClick={handleShiftClick}
+            />
           );
         })}
       </div>
