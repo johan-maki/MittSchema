@@ -1,5 +1,5 @@
 
-import { ShiftType } from "@/types/shift";
+import { ShiftType, Shift } from "@/types/shift";
 
 export type Role = {
   name: string;
