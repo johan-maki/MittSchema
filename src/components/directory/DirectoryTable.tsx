@@ -1,3 +1,4 @@
+
 import { Profile } from "@/types/profile";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,7 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
         <DialogContent className="max-w-[95vw] w-[1400px] p-0 gap-0 overflow-hidden">
           <div className="flex flex-col h-[90vh]">
             <div className="flex-none p-6 space-y-4 border-b">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div className="space-y-1">
                   <h2 className="text-lg font-semibold">
                     Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
@@ -141,32 +142,31 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
                     {getDateDisplay()}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsScheduleOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={handlePreviousWeek}
-                  className="flex items-center gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Föregående vecka
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleNextWeek}
-                  className="flex items-center gap-1"
-                >
-                  Nästa vecka
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousWeek}
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Föregående vecka
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleNextWeek}
+                    className="flex items-center gap-1"
+                  >
+                    Nästa vecka
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsScheduleOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
