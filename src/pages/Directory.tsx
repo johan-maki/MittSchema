@@ -1,3 +1,4 @@
+
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Profile, NewProfile } from "@/types/profile";
+import { Profile, NewProfile, InsertProfile } from "@/types/profile";
 
 const Directory = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -69,16 +70,19 @@ const Directory = () => {
         throw new Error("Förnamn, efternamn och yrkesroll är obligatoriska fält");
       }
 
+      // Skapa ett objekt som matchar InsertProfile-typen
+      const insertData: InsertProfile[] = [{
+        first_name: newProfile.first_name,
+        last_name: newProfile.last_name,
+        role: newProfile.role,
+        department: newProfile.department,
+        phone: newProfile.phone,
+        is_manager: newProfile.is_manager
+      }];
+
       const { error } = await supabase
         .from('profiles')
-        .insert({
-          first_name: newProfile.first_name,
-          last_name: newProfile.last_name,
-          role: newProfile.role,
-          department: newProfile.department,
-          phone: newProfile.phone,
-          is_manager: newProfile.is_manager
-        });
+        .insert(insertData);
 
       if (error) throw error;
 
