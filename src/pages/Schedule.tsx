@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sv } from "date-fns/locale";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { PlusCircle } from "lucide-react";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
+import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Schedule = () => {
@@ -21,18 +22,40 @@ const Schedule = () => {
   const { user } = useAuth();
 
   const { data: shifts = [], isLoading } = useQuery({
-    queryKey: ['shifts', currentDate],
+    queryKey: ['shifts', currentDate, currentView],
     queryFn: async () => {
       if (!user) return [];
       
-      const weekStart = startOfWeek(currentDate, { locale: sv });
-      const weekEnd = endOfWeek(currentDate, { locale: sv });
+      let startDate, endDate;
+      if (currentView === 'week') {
+        startDate = startOfWeek(currentDate, { locale: sv });
+        endDate = endOfWeek(currentDate, { locale: sv });
+      } else {
+        startDate = startOfMonth(currentDate);
+        endDate = endOfMonth(currentDate);
+      }
       
       const { data, error } = await supabase
         .from('shifts')
         .select('*, profiles!shifts_employee_id_fkey(first_name, last_name)')
-        .gte('start_time', weekStart.toISOString())
-        .lte('start_time', weekEnd.toISOString());
+        .gte('start_time', startDate.toISOString())
+        .lte('start_time', endDate.toISOString());
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user
+  });
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('first_name');
 
       if (error) throw error;
       return data || [];
@@ -99,6 +122,8 @@ const Schedule = () => {
     switch (currentView) {
       case 'week':
         return <WeekView date={currentDate} shifts={shifts} />;
+      case 'month':
+        return <MonthlySchedule date={currentDate} shifts={shifts} profiles={profiles} />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm border p-4">
