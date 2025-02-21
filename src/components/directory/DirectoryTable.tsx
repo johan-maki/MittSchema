@@ -1,18 +1,12 @@
 
 import { Profile } from "@/types/profile";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 interface DirectoryTableProps {
   profiles: Profile[] | undefined;
   isLoading: boolean;
 }
-
-// Function to get a random Unsplash photo URL
-const getRandomProfilePhoto = (seed: string) => {
-  // Using a collection of face photos (collection 429524)
-  return `https://source.unsplash.com/collection/429524/128x128?${seed}`;
-};
 
 export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => {
   if (isLoading) {
@@ -42,13 +36,10 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
               <td className="p-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage 
-                      src={getRandomProfilePhoto(profile.id)} 
-                      alt={`${profile.first_name} ${profile.last_name}`}
-                    />
-                    <AvatarFallback>
-                      {`${profile.first_name[0]}${profile.last_name[0]}`}
-                    </AvatarFallback>
+                    <div className="bg-[#F1F1F1] h-full w-full flex items-center justify-center text-[#333333] font-medium text-sm">
+                      {profile.first_name[0]}
+                      {profile.last_name[0]}
+                    </div>
                   </Avatar>
                   <div>
                     <div className="font-medium text-[#333333]">
