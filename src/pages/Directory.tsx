@@ -70,15 +70,18 @@ const Directory = () => {
         throw new Error("Förnamn, efternamn och yrkesroll är obligatoriska fält");
       }
 
-      // Skapa ett objekt som matchar InsertProfile-typen
-      const insertData: InsertProfile[] = [{
+      // Generate a new UUID for the profile
+      const id = crypto.randomUUID();
+
+      const insertData: InsertProfile = {
+        id,
         first_name: newProfile.first_name,
         last_name: newProfile.last_name,
         role: newProfile.role,
         department: newProfile.department,
         phone: newProfile.phone,
         is_manager: newProfile.is_manager
-      }];
+      };
 
       const { error } = await supabase
         .from('profiles')
