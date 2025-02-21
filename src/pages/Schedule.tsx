@@ -20,25 +20,31 @@ const Schedule = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
   
-  const { data: profile } = useQuery({
-    queryKey: ['profile'],
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user) return null;
+      console.log("Fetching profile for user:", user.id);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+      console.log("Profile data:", data);
       return data;
     },
     enabled: !!user
   });
 
   const isManager = profile?.is_manager ?? false;
+  console.log("Is manager:", isManager);
 
-  const { data: shifts = [], isLoading } = useQuery({
+  const { data: shifts = [], isLoading: isShiftsLoading } = useQuery({
     queryKey: ['shifts', currentDate, isManager],
     queryFn: async () => {
       if (!user) return [];
@@ -73,6 +79,11 @@ const Schedule = () => {
     enabled: !!user
   });
 
+  // Debug output
+  console.log("Current user:", user);
+  console.log("Profile loading:", isProfileLoading);
+  console.log("Profile data:", profile);
+
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
@@ -84,8 +95,8 @@ const Schedule = () => {
               currentView={currentView}
               onViewChange={setCurrentView}
             />
-            {isManager && (
-              <div className="sm:ml-auto">
+            <div className="sm:ml-auto">
+              {isManager ? (
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
@@ -104,8 +115,8 @@ const Schedule = () => {
                     />
                   </DialogContent>
                 </Dialog>
-              </div>
-            )}
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -125,7 +136,7 @@ const Schedule = () => {
   );
 
   function renderView() {
-    if (isLoading) {
+    if (isProfileLoading || isShiftsLoading) {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
