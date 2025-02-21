@@ -29,6 +29,12 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
       const startDate = startOfWeek(currentWeek, { weekStartsOn: 1 });
       const endDate = endOfWeek(currentWeek, { weekStartsOn: 1 });
       
+      console.log('Fetching shifts for:', {
+        employeeId: selectedEmployee.id,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
+
       const { data, error } = await supabase
         .from('shifts')
         .select(`
@@ -39,10 +45,15 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
           )
         `)
         .eq('employee_id', selectedEmployee.id)
-        .or(`start_time.gte.${startDate.toISOString()},end_time.gte.${startDate.toISOString()}`)
-        .lt('start_time', endDate.toISOString());
+        .gte('start_time', startDate.toISOString())
+        .lte('start_time', endDate.toISOString());
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shifts:', error);
+        throw error;
+      }
+
+      console.log('Fetched shifts:', data);
       return data;
     },
     enabled: !!selectedEmployee
