@@ -118,26 +118,25 @@ const Directory = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8 bg-gradient-to-r from-[#F2FCE2] to-[#E5DEFF] p-8 rounded-2xl">
-          <div className="bg-white/90 p-6 rounded-xl backdrop-blur-sm">
-            <h1 className="text-3xl font-bold text-[#1A1F2C] mb-2">Personalkatalog</h1>
-            <p className="text-[#6E59A5]">Hitta kontaktuppgifter till dina kollegor</p>
+      <div className="w-full px-6 py-4">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#333333] mb-1">Personal</h1>
+            <p className="text-sm text-[#8A898C]">
+              {profiles?.length || 0} personal totalt
+            </p>
           </div>
-        </header>
-
-        {currentUser?.is_manager && (
-          <div className="mb-6">
+          {currentUser?.is_manager && (
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
+                <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED]">
                   <Plus className="w-4 h-4 mr-2" />
-                  Lägg till kollega
+                  Lägg till personal
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Lägg till ny kollega</DialogTitle>
+                  <DialogTitle>Lägg till ny personal</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -189,58 +188,85 @@ const Directory = () => {
                 </form>
               </DialogContent>
             </Dialog>
-          </div>
-        )}
+          )}
+        </div>
 
-        {isLoading ? (
-          <div className="flex justify-center p-12">
-            <div className="animate-spin h-8 w-8 border-4 border-[#9b87f5] border-r-transparent rounded-full" />
+        <div className="bg-white rounded-lg border shadow-sm">
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <Input
+                className="max-w-xs"
+                placeholder="Sök personal..."
+                type="search"
+              />
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm">
+                  Filter
+                </Button>
+                <Button variant="outline" size="sm">
+                  Visa
+                </Button>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {profiles?.map((profile) => (
-              <Card key={profile.id} className="p-6 hover:shadow-lg transition-all duration-200 bg-white border-[#D6BCFA]">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-14 w-14">
-                    <div className="bg-[#F2FCE2] h-full w-full flex items-center justify-center text-[#7E69AB] font-semibold text-lg">
-                      {profile.first_name[0]}
-                      {profile.last_name[0]}
-                    </div>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-[#1A1F2C]">
-                          {profile.first_name} {profile.last_name}
-                        </h3>
-                        <p className="text-sm text-[#7E69AB] font-medium">{profile.role}</p>
-                      </div>
-                      {profile.is_manager && (
-                        <span className="px-2 py-1 bg-[#F2FCE2] text-[#4B5563] text-xs rounded-full">
-                          Chef
-                        </span>
-                      )}
-                    </div>
-                    
-                    {profile.department && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-[#6E59A5]">
-                        <Building2 className="h-4 w-4 text-[#9b87f5]" />
-                        <span>{profile.department}</span>
-                      </div>
-                    )}
-                    
-                    {profile.phone && (
-                      <div className="flex items-center gap-2 mt-1 text-sm text-[#6E59A5]">
-                        <Phone className="h-4 w-4 text-[#9b87f5]" />
-                        <span>{profile.phone}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
+
+          {isLoading ? (
+            <div className="flex justify-center p-12">
+              <div className="animate-spin h-8 w-8 border-4 border-[#8B5CF6] border-r-transparent rounded-full" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-[#F8F9FB]">
+                    <th className="text-left p-4 text-sm font-medium text-[#333333]">Namn</th>
+                    <th className="text-left p-4 text-sm font-medium text-[#333333]">Roll</th>
+                    <th className="text-left p-4 text-sm font-medium text-[#333333]">Avdelning</th>
+                    <th className="text-left p-4 text-sm font-medium text-[#333333]">Telefon</th>
+                    <th className="text-left p-4 text-sm font-medium text-[#333333]">Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {profiles?.map((profile) => (
+                    <tr key={profile.id} className="border-b last:border-b-0 hover:bg-[#F8F9FB]">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <div className="bg-[#F1F1F1] h-full w-full flex items-center justify-center text-[#333333] font-medium text-sm">
+                              {profile.first_name[0]}
+                              {profile.last_name[0]}
+                            </div>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-[#333333]">
+                              {profile.first_name} {profile.last_name}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-[#8A898C]">{profile.role}</td>
+                      <td className="p-4 text-sm text-[#8A898C]">{profile.department || '-'}</td>
+                      <td className="p-4 text-sm text-[#8A898C]">{profile.phone || '-'}</td>
+                      <td className="p-4">
+                        {profile.is_manager && (
+                          <span className="px-2 py-1 bg-[#F1F1F1] text-[#333333] text-xs rounded-full">
+                            Chef
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <Button variant="ghost" size="sm">
+                          •••
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </AppLayout>
   );

@@ -1,19 +1,11 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { Calendar, Users, MessageSquare, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-
-const menuItems = [
-  { icon: Calendar, label: "Schema", path: "/schedule" },
-  { icon: Users, label: "Personal", path: "/directory" },
-  { icon: MessageSquare, label: "Meddelanden", path: "/messages" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
@@ -24,44 +16,44 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b">
-        <div className="container flex h-16 items-center px-4">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FB]">
+      <header className="border-b bg-white">
+        <div className="flex h-14 items-center px-4 gap-8">
           <Link to="/" className="flex items-center gap-2 font-semibold text-xl">
-            <span className="text-primary">Vårdschema</span>
+            <span className="text-[#0FA0CE]">Vårdschema</span>
             <span className="text-red-500">*</span>
           </Link>
-          <nav className="flex items-center space-x-6 ml-6">
-            <Link to="/schedule" className="text-sm font-medium text-muted-foreground hover:text-primary">
+          <nav className="flex items-center space-x-1 flex-1">
+            <Link to="/schedule" className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md">
               Schema
             </Link>
-            <Link to="/directory" className="text-sm font-medium text-muted-foreground hover:text-primary">
+            <Link to="/directory" className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md bg-[#F1F1F1]">
               Personal
             </Link>
-            <Link to="/messages" className="text-sm font-medium text-muted-foreground hover:text-primary">
+            <Link to="/messages" className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md">
               Meddelanden
             </Link>
-            <Link to="/month-view" className="text-sm font-medium text-muted-foreground hover:text-primary">
+            <Link to="/month-view" className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md">
               Månadsvy
             </Link>
           </nav>
-          <div className="ml-auto flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" className="text-[#8A898C]">
               <Bell className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="text-[#8A898C]">
               <Settings className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <Button variant="ghost" size="icon" className="text-[#8A898C]" onClick={handleSignOut}>
               <LogOut className="h-5 w-5" />
             </Button>
-            <Avatar>
-              <AvatarFallback>V</AvatarFallback>
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-[#0FA0CE] text-white">V</AvatarFallback>
             </Avatar>
           </div>
         </div>
       </header>
-      <main className="flex-1 bg-[#F8F9FA] p-8 animate-fadeIn">
+      <main className="flex-1 animate-fadeIn">
         {children}
       </main>
     </div>
