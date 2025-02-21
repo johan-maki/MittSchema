@@ -123,44 +123,46 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
       </div>
 
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-        <DialogContent className="max-w-[90vw] w-[1200px]">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsScheduleOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+        <DialogContent className="max-w-[95vw] w-[1400px] p-0 gap-0 overflow-hidden">
+          <div className="flex flex-col h-[90vh]">
+            <div className="flex-none p-6 space-y-4 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">
+                  Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsScheduleOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
 
-            <div className="flex items-center justify-between border-b pb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePreviousWeek}
-                className="flex items-center gap-1"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Föregående vecka
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextWeek}
-                className="flex items-center gap-1"
-              >
-                Nästa vecka
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousWeek}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Föregående vecka
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextWeek}
+                  className="flex items-center gap-1"
+                >
+                  Nästa vecka
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {selectedEmployee && (
-              <div className="h-[600px] overflow-y-auto">
+              <div className="flex-1 overflow-y-auto p-6 min-h-0">
                 <WeekView 
                   date={currentWeek} 
                   shifts={employeeShifts || []}
