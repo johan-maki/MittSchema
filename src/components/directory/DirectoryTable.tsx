@@ -7,7 +7,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { X } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { addWeeks, subWeeks, startOfWeek } from "date-fns";
 
 interface DirectoryTableProps {
   profiles: Profile[] | undefined;
@@ -17,11 +18,15 @@ interface DirectoryTableProps {
 export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const { data: employeeShifts } = useQuery({
-    queryKey: ['employeeShifts', selectedEmployee?.id],
+    queryKey: ['employeeShifts', selectedEmployee?.id, currentWeek],
     queryFn: async () => {
       if (!selectedEmployee) return [];
+      
+      const startDate = currentWeek;
+      const endDate = addWeeks(startDate, 1);
       
       const { data, error } = await supabase
         .from('shifts')
@@ -32,7 +37,9 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
             last_name
           )
         `)
-        .eq('employee_id', selectedEmployee.id);
+        .eq('employee_id', selectedEmployee.id)
+        .gte('start_time', startDate.toISOString())
+        .lt('start_time', endDate.toISOString());
       
       if (error) throw error;
       return data;
@@ -43,6 +50,14 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
   const handleEmployeeClick = (profile: Profile) => {
     setSelectedEmployee(profile);
     setIsScheduleOpen(true);
+  };
+
+  const handlePreviousWeek = () => {
+    setCurrentWeek(prev => subWeeks(prev, 1));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentWeek(prev => addWeeks(prev, 1));
   };
 
   if (isLoading) {
@@ -109,26 +124,50 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
 
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
         <DialogContent className="max-w-[90vw] w-[1200px]">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">
-              Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsScheduleOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          {selectedEmployee && (
-            <div className="h-[600px] overflow-y-auto">
-              <WeekView 
-                date={new Date()} 
-                shifts={employeeShifts || []}
-              />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">
+                Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsScheduleOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          )}
+
+            <div className="flex items-center justify-between border-b pb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousWeek}
+                className="flex items-center gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Föregående vecka
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextWeek}
+                className="flex items-center gap-1"
+              >
+                Nästa vecka
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {selectedEmployee && (
+              <div className="h-[600px] overflow-y-auto">
+                <WeekView 
+                  date={currentWeek} 
+                  shifts={employeeShifts || []}
+                />
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
