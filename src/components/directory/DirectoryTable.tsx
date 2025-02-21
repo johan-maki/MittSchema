@@ -1,6 +1,6 @@
 
 import { Profile } from "@/types/profile";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 interface DirectoryTableProps {
@@ -42,18 +42,12 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
               <td className="p-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
+                    <AvatarImage 
+                      src={getRandomProfilePhoto(profile.id)} 
+                      alt={`${profile.first_name} ${profile.last_name}`}
+                    />
                     <AvatarFallback>
-                      <img 
-                        src={getRandomProfilePhoto(profile.id)} 
-                        alt={`${profile.first_name} ${profile.last_name}`}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          // If image fails to load, show initials
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement!.textContent = `${profile.first_name[0]}${profile.last_name[0]}`;
-                        }}
-                      />
+                      {`${profile.first_name[0]}${profile.last_name[0]}`}
                     </AvatarFallback>
                   </Avatar>
                   <div>
