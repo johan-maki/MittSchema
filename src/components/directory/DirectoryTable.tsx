@@ -1,12 +1,19 @@
 
 import { Profile } from "@/types/profile";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/avatar";
 
 interface DirectoryTableProps {
   profiles: Profile[] | undefined;
   isLoading: boolean;
 }
+
+// Function to get a random Unsplash photo URL
+const getRandomProfilePhoto = (seed: string) => {
+  // Using the seed (employee id) to get consistent photos for each employee
+  return `https://source.unsplash.com/collection/2316004/128x128?sig=${seed}`;
+};
 
 export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => {
   if (isLoading) {
@@ -36,10 +43,19 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
               <td className="p-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <div className="bg-[#F1F1F1] h-full w-full flex items-center justify-center text-[#333333] font-medium text-sm">
-                      {profile.first_name[0]}
-                      {profile.last_name[0]}
-                    </div>
+                    <AvatarFallback>
+                      <img 
+                        src={getRandomProfilePhoto(profile.id)} 
+                        alt={`${profile.first_name} ${profile.last_name}`}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          // If image fails to load, show initials
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.textContent = `${profile.first_name[0]}${profile.last_name[0]}`;
+                        }}
+                      />
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-medium text-[#333333]">
