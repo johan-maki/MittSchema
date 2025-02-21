@@ -20,69 +20,25 @@ const Schedule = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
   
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      console.log("Fetching profile for user:", user.id);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-      console.log("Profile data:", data);
-      return data;
-    },
-    enabled: !!user
-  });
-
-  const isManager = profile?.is_manager ?? false;
-  console.log("Is manager:", isManager);
-
   const { data: shifts = [], isLoading: isShiftsLoading } = useQuery({
-    queryKey: ['shifts', currentDate, isManager],
+    queryKey: ['shifts', currentDate],
     queryFn: async () => {
       if (!user) return [];
       
-      let query = supabase
+      const weekStart = startOfWeek(currentDate, { locale: sv });
+      const weekEnd = endOfWeek(currentDate, { locale: sv });
+      
+      const { data, error } = await supabase
         .from('shifts')
-        .select('*, profiles!shifts_employee_id_fkey(first_name, last_name)');
-
-      if (isManager) {
-        const weekStart = startOfWeek(currentDate, { locale: sv });
-        const weekEnd = endOfWeek(currentDate, { locale: sv });
-        query = query
-          .gte('start_time', weekStart.toISOString())
-          .lte('start_time', weekEnd.toISOString());
-      } else {
-        const startOfDay = new Date(currentDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(currentDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        query = query
-          .eq('employee_id', user.id)
-          .gte('start_time', startOfDay.toISOString())
-          .lte('start_time', endOfDay.toISOString());
-      }
-
-      const { data, error } = await query;
+        .select('*, profiles!shifts_employee_id_fkey(first_name, last_name)')
+        .gte('start_time', weekStart.toISOString())
+        .lte('start_time', weekEnd.toISOString());
 
       if (error) throw error;
       return data || [];
     },
     enabled: !!user
   });
-
-  // Debug output
-  console.log("Current user:", user);
-  console.log("Profile loading:", isProfileLoading);
-  console.log("Profile data:", profile);
 
   return (
     <AppLayout>
@@ -96,26 +52,24 @@ const Schedule = () => {
               onViewChange={setCurrentView}
             />
             <div className="sm:ml-auto">
-              {isManager ? (
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Lägg till pass
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <ShiftForm 
-                      isOpen={isCreateDialogOpen} 
-                      onOpenChange={setIsCreateDialogOpen}
-                      defaultValues={{
-                        start_time: new Date().toISOString().slice(0, 16),
-                        end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
-                      }}
-                    />
-                  </DialogContent>
-                </Dialog>
-              ) : null}
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Lägg till pass
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <ShiftForm 
+                    isOpen={isCreateDialogOpen} 
+                    onOpenChange={setIsCreateDialogOpen}
+                    defaultValues={{
+                      start_time: new Date().toISOString().slice(0, 16),
+                      end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -136,7 +90,7 @@ const Schedule = () => {
   );
 
   function renderView() {
-    if (isProfileLoading || isShiftsLoading) {
+    if (isShiftsLoading) {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
