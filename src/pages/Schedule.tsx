@@ -51,31 +51,26 @@ const Schedule = () => {
               currentView={currentView}
               onViewChange={setCurrentView}
             />
-            <Button 
-              variant="default"
-              size="default"
-              asChild
-            >
-              <DialogTrigger>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Lägg till pass
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Lägg till pass
+                </Button>
               </DialogTrigger>
-            </Button>
+              <DialogContent>
+                <ShiftForm 
+                  isOpen={isCreateDialogOpen}
+                  onOpenChange={setIsCreateDialogOpen}
+                  defaultValues={{
+                    start_time: new Date().toISOString().slice(0, 16),
+                    end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         </header>
-
-        <Dialog>
-          <DialogContent>
-            <ShiftForm 
-              isOpen={isCreateDialogOpen}
-              onOpenChange={setIsCreateDialogOpen}
-              defaultValues={{
-                start_time: new Date().toISOString().slice(0, 16),
-                end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
-              }}
-            />
-          </DialogContent>
-        </Dialog>
 
         <AnimatePresence mode="wait">
           <motion.div
