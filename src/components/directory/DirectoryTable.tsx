@@ -10,8 +10,8 @@ interface DirectoryTableProps {
 
 // Function to get a random Unsplash photo URL
 const getRandomProfilePhoto = (seed: string) => {
-  // Using the seed (employee id) to get consistent photos for each employee
-  return `https://source.unsplash.com/collection/2316004/128x128?sig=${seed}`;
+  // Using a collection of face photos (collection 429524)
+  return `https://source.unsplash.com/collection/429524/128x128?${seed}`;
 };
 
 export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => {
