@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sv } from "date-fns/locale";
-import { startOfWeek, endOfWeek } from "date-fns"; // Added these imports
+import { startOfWeek, endOfWeek } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { PlusCircle } from "lucide-react";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
+import { WeekView } from "@/components/shifts/WeekView";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -71,6 +73,19 @@ const Schedule = () => {
     enabled: !!user
   });
 
+  const renderView = () => {
+    switch (currentView) {
+      case 'week':
+        return <WeekView date={currentDate} shifts={shifts || []} />;
+      default:
+        return (
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            {currentView} vy kommer snart
+          </div>
+        );
+    }
+  };
+
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
@@ -95,11 +110,17 @@ const Schedule = () => {
             </Dialog>
           )}
         </div>
-        <div className="flex-1 p-2 sm:p-4 overflow-auto">
-          <div className="bg-white rounded-lg shadow-sm border p-4">
-            {currentView} vy kommer snart
-          </div>
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="flex-1 p-2 sm:p-4 overflow-auto"
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </AppLayout>
   );
