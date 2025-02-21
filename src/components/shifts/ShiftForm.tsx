@@ -1,3 +1,4 @@
+
 import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,20 +13,19 @@ import { useAuth } from "@/contexts/AuthContext";
 interface ShiftFormProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultValues?: {
-    start_time?: string;
-    end_time?: string;
-  };
+  defaultValues?: Partial<ShiftFormData>;
+  editMode?: boolean;
+  shiftId?: string;
 }
 
-export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProps) => {
-  const [formData, setFormData] = useState<ShiftFormData & { employee_id?: string }>({
+export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shiftId }: ShiftFormProps) => {
+  const [formData, setFormData] = useState<ShiftFormData>({
     start_time: defaultValues?.start_time || "",
     end_time: defaultValues?.end_time || "",
-    shift_type: "day",
-    department: "",
-    notes: "",
-    employee_id: ""
+    shift_type: defaultValues?.shift_type || "day",
+    department: defaultValues?.department || "",
+    notes: defaultValues?.notes || "",
+    employee_id: defaultValues?.employee_id || ""
   });
   
   const { toast } = useToast();
