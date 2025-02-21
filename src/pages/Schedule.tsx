@@ -1,23 +1,19 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Calendar } from "@/components/ui/calendar";
-import { Card } from "@/components/ui/card";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { sv } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
-import { ShiftList } from "@/components/shifts/ShiftList";
-import { Shift } from "@/types/shift";
-import { WeeklySchedule } from "@/components/shifts/WeeklySchedule";
+import { PlusCircle } from "lucide-react";
+import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 
 const Schedule = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
   
   const { data: profile } = useQuery({
@@ -39,26 +35,24 @@ const Schedule = () => {
   const isManager = profile?.is_manager ?? false;
 
   const { data: shifts, isLoading } = useQuery({
-    queryKey: ['shifts', date, isManager],
+    queryKey: ['shifts', currentDate, isManager],
     queryFn: async () => {
-      if (!date || !user) return [];
+      if (!user) return [];
       
       let query = supabase
         .from('shifts')
         .select('*, profiles!shifts_employee_id_fkey(first_name, last_name)');
 
       if (isManager) {
-        // För managers, hämta alla skift för veckan
-        const weekStart = startOfWeek(date, { locale: sv });
-        const weekEnd = endOfWeek(date, { locale: sv });
+        const weekStart = startOfWeek(currentDate, { locale: sv });
+        const weekEnd = endOfWeek(currentDate, { locale: sv });
         query = query
           .gte('start_time', weekStart.toISOString())
           .lte('start_time', weekEnd.toISOString());
       } else {
-        // För anställda, hämta bara deras egna skift för den valda dagen
-        const startOfDay = new Date(date);
+        const startOfDay = new Date(currentDate);
         startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
+        const endOfDay = new Date(currentDate);
         endOfDay.setHours(23, 59, 59, 999);
         
         query = query
@@ -70,65 +64,39 @@ const Schedule = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as Shift[];
+      return data;
     },
-    enabled: !!user && !!date
+    enabled: !!user
   });
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-[#1A1F2C]">
-            {isManager ? 'Personalschema' : 'Mitt schema'}
-          </h1>
+      <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 bg-white/30 backdrop-blur-sm border-b">
+          <CalendarHeader
+            currentDate={currentDate}
+            onDateChange={setCurrentDate}
+            currentView={currentView}
+            onViewChange={setCurrentView}
+          />
           {isManager && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-                  Lägg till arbetspass
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Lägg till pass
                 </Button>
               </DialogTrigger>
-              <ShiftForm isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
+              <DialogContent className="sm:max-w-[425px]">
+                <ShiftForm isOpen={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+              </DialogContent>
             </Dialog>
           )}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="p-6">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              locale={sv}
-              className="rounded-md border"
-            />
-          </Card>
-
-          <Card className="p-6">
-            {isManager ? (
-              <WeeklySchedule 
-                date={date}
-                shifts={shifts || []}
-                isLoading={isLoading}
-              />
-            ) : (
-              <>
-                <h2 className="text-xl font-semibold text-[#1A1F2C] mb-4">
-                  Arbetspass {date ? format(date, 'EEEE d MMMM', { locale: sv }) : 'Inget datum valt'}
-                </h2>
-                {isLoading ? (
-                  <div className="flex justify-center p-12">
-                    <div className="animate-spin h-8 w-8 border-4 border-[#9b87f5] border-r-transparent rounded-full" />
-                  </div>
-                ) : shifts?.length ? (
-                  <ShiftList shifts={shifts} />
-                ) : (
-                  <p className="text-gray-600 mt-4">Inga arbetspass schemalagda denna dag</p>
-                )}
-              </>
-            )}
-          </Card>
+        <div className="flex-1 p-2 sm:p-4 overflow-auto">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            {currentView} vy kommer snart
+          </div>
         </div>
       </div>
     </AppLayout>

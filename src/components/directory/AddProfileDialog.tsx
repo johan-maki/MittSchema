@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { NewProfile } from "@/types/profile";
+import { Dispatch, SetStateAction } from "react";
 
 interface AddProfileDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   newProfile: NewProfile;
-  setNewProfile: (profile: NewProfile) => void;
+  setNewProfile: Dispatch<SetStateAction<NewProfile>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
 }
 
