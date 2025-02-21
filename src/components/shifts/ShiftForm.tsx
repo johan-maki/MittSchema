@@ -1,5 +1,4 @@
-
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogFooter, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -125,12 +124,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
   };
 
   return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>
-          {defaultValues?.id ? "Redigera arbetspass" : "Lägg till nytt arbetspass"}
-        </DialogTitle>
-      </DialogHeader>
+    <>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="employee" className="block text-sm font-medium text-gray-700 mb-1">
@@ -224,6 +218,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
           </Button>
         </DialogFooter>
       </form>
-    </DialogContent>
+    </>
   );
 };
