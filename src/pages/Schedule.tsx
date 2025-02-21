@@ -38,7 +38,7 @@ const Schedule = () => {
 
   const isManager = profile?.is_manager ?? false;
 
-  const { data: shifts, isLoading } = useQuery({
+  const { data: shifts = [], isLoading } = useQuery({
     queryKey: ['shifts', currentDate, isManager],
     queryFn: async () => {
       if (!user) return [];
@@ -68,15 +68,23 @@ const Schedule = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!user
   });
 
   const renderView = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
     switch (currentView) {
       case 'week':
-        return <WeekView date={currentDate} shifts={shifts || []} />;
+        return <WeekView date={currentDate} shifts={shifts} />;
       default:
         return (
           <div className="bg-white rounded-lg shadow-sm border p-4">
