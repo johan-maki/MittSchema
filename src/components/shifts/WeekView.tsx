@@ -1,12 +1,14 @@
 
 import { Shift } from "@/types/shift";
 import { motion } from "framer-motion";
-import { format, isSameDay, endOfDay, startOfDay, isWithinInterval } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { getWeekDays } from "@/utils/date";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WeekViewProps {
   date: Date;
@@ -16,6 +18,19 @@ interface WeekViewProps {
 export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const weekDays = getWeekDays(date);
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
+
+  // Fetch profiles to get role and experience level information
+  const { data: profiles } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const toggleRole = (role: string) => {
     const newHiddenRoles = new Set(hiddenRoles);
@@ -30,9 +45,11 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const getShiftsForRoleAndDay = (role: string, day: Date) => {
     return shifts.filter(shift => {
       const shiftStart = new Date(shift.start_time);
+      // Find the profile for this shift
+      const profile = profiles?.find(p => p.id === shift.employee_id);
       return (
         isSameDay(shiftStart, day) &&
-        shift.profiles?.role === role
+        profile?.role === role
       );
     });
   };
@@ -73,24 +90,29 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
               {weekDays.map(({ date: dayDate }) => (
                 <div key={dayDate.toISOString()} className="border-b border-r p-2 min-h-[120px] relative">
                   <div className="space-y-2">
-                    {getShiftsForRoleAndDay(role, dayDate).map((shift) => (
-                      <motion.div
-                        key={shift.id}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border} rounded-md border p-2 text-sm`}
-                      >
-                        <div className="font-medium">
-                          {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
-                        </div>
-                        <div className="text-gray-600">
-                          {shift.profiles?.first_name} {shift.profiles?.last_name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Exp: {shift.profiles?.experience_level}
-                        </div>
-                      </motion.div>
-                    ))}
+                    {getShiftsForRoleAndDay(role, dayDate).map((shift) => {
+                      // Find the full profile for this shift
+                      const fullProfile = profiles?.find(p => p.id === shift.employee_id);
+                      
+                      return (
+                        <motion.div
+                          key={shift.id}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border} rounded-md border p-2 text-sm`}
+                        >
+                          <div className="font-medium">
+                            {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
+                          </div>
+                          <div className="text-gray-600">
+                            {shift.profiles?.first_name} {shift.profiles?.last_name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Exp: {fullProfile?.experience_level ?? '-'}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                   <Button
                     variant="ghost"
