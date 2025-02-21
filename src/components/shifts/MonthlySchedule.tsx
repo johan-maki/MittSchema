@@ -1,42 +1,20 @@
+
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
-import { Plus } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { ShiftForm } from "./ShiftForm";
-import { Button } from "@/components/ui/button";
-import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
+import { DayCell } from "./DayCell";
 import { useToast } from "@/components/ui/use-toast";
+import { ROLES, ROLE_COLORS, Role } from "./schedule.constants";
 
 interface MonthlyScheduleProps {
   date: Date;
   shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }>;
   profiles: Profile[];
 }
-
-type Role = 'Läkare' | 'Undersköterska' | 'Sjuksköterska';
-
-const ROLES: Role[] = ['Läkare', 'Undersköterska', 'Sjuksköterska'];
-
-const ROLE_COLORS: Record<Role, { bg: string, border: string, text: string }> = {
-  'Läkare': { 
-    bg: 'bg-[#9b87f5]/10', 
-    border: 'border-[#9b87f5]',
-    text: 'text-[#6E59A5]'
-  },
-  'Undersköterska': { 
-    bg: 'bg-[#F2FCE2]/50', 
-    border: 'border-[#7E69AB]',
-    text: 'text-[#7E69AB]'
-  },
-  'Sjuksköterska': { 
-    bg: 'bg-[#FEC6A1]/10', 
-    border: 'border-[#FEC6A1]',
-    text: 'text-[#D4956A]'
-  }
-};
 
 export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps) => {
   const monthStart = startOfMonth(date);
@@ -100,7 +78,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
       </div>
 
       <div className="grid grid-cols-[200px,1fr]">
-        {ROLES.map((role) => (
+        {ROLES.map((role, index) => (
           <div key={role} className="contents">
             <div className={`border-b border-r border-gray-200 p-2 font-medium ${ROLE_COLORS[role].text}`}>
               {role}
@@ -109,54 +87,18 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
               {daysInMonth.map((day) => {
                 const dayShifts = getShiftsForRoleAndDay(role, day);
                 return (
-                  <div
+                  <DayCell
                     key={`${role}-${day.toISOString()}`}
-                    className="border-b border-r border-gray-200 p-1 min-h-[120px] relative"
-                  >
-                    <div className="space-y-1 mb-8">
-                      {dayShifts.map((shift) => {
-                        const profile = profiles.find(p => p.id === shift.employee_id);
-                        return (
-                          <div
-                            key={shift.id}
-                            onClick={() => handleShiftClick(shift)}
-                            className={`
-                              rounded-md p-1 text-xs border cursor-pointer
-                              ${ROLE_COLORS[role].bg}
-                              ${ROLE_COLORS[role].border}
-                              hover:brightness-95 transition-all
-                            `}
-                          >
-                            <div className="font-medium">
-                              {format(new Date(shift.start_time), 'HH:mm')} - 
-                              {format(new Date(shift.end_time), 'HH:mm')}
-                            </div>
-                            <div className="truncate">
-                              {shift.profiles.first_name} {shift.profiles.last_name}
-                            </div>
-                            <div className="text-xs mt-1">
-                              Experience: {profile?.experience_level || 0}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute bottom-9 right-1 h-6 w-6 p-0"
-                      onClick={() => handleAddClick(day, role)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    {role === ROLES[ROLES.length - 1] && (
-                      <ExperienceLevelSummary
-                        date={day}
-                        shifts={shifts}
-                        profiles={profiles}
-                      />
-                    )}
-                  </div>
+                    day={day}
+                    role={role}
+                    isLastRole={index === ROLES.length - 1}
+                    shifts={shifts}
+                    profiles={profiles}
+                    roleColors={ROLE_COLORS[role]}
+                    onAddClick={handleAddClick}
+                    onShiftClick={handleShiftClick}
+                    dayShifts={dayShifts}
+                  />
                 );
               })}
             </div>
@@ -164,7 +106,6 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
         ))}
       </div>
 
-      {/* Add Shift Dialog */}
       <Dialog open={isAddShiftDialogOpen} onOpenChange={setIsAddShiftDialogOpen}>
         <DialogContent>
           <ShiftForm
@@ -178,7 +119,6 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
         </DialogContent>
       </Dialog>
 
-      {/* Edit Shift Dialog */}
       <Dialog open={isEditShiftDialogOpen} onOpenChange={setIsEditShiftDialogOpen}>
         <DialogContent>
           {selectedShift && (
