@@ -12,7 +12,7 @@ export const ROLE_COLORS: Record<Role, { bg: string; border: string; text: strin
   'Undersköterska': { 
     bg: 'bg-[#F2FCE2]/50', 
     border: 'border-[#7E69AB]',
-    text: 'text-[#7E69AB]'
+    text: 'text-[#10B981]'  // Changed to a green color
   },
   'Sjuksköterska': { 
     bg: 'bg-[#FEC6A1]/10', 

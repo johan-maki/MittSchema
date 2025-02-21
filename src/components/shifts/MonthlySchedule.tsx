@@ -76,7 +76,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   return (
     <div className="min-w-[1000px]">
       <div className="grid grid-cols-[200px,1fr] bg-white">
-        <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
+        <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm self-start">
           Roll
         </div>
         <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
@@ -94,13 +94,13 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
         {ROLES.map((role) => (
           <div key={role} className="grid grid-cols-subgrid col-span-2">
             <div 
-              className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-center gap-2 cursor-pointer hover:bg-gray-50`}
+              className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50`}
               onClick={() => toggleRole(role)}
             >
               {hiddenRoles.has(role) ? (
-                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-gray-400" />
+                <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
               )}
               <span className={ROLE_COLORS[role].text}>{role}</span>
             </div>
