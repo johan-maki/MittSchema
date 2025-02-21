@@ -43,34 +43,39 @@ const Schedule = () => {
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4 bg-white/30 backdrop-blur-sm border-b">
-          <div className="flex items-center justify-between w-full gap-4">
+        <header className="p-4 bg-white/30 backdrop-blur-sm border-b">
+          <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
             <CalendarHeader
               currentDate={currentDate}
               onDateChange={setCurrentDate}
               currentView={currentView}
               onViewChange={setCurrentView}
             />
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Lägg till pass
-                </Button>
+            <Button 
+              variant="default"
+              size="default"
+              asChild
+            >
+              <DialogTrigger>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Lägg till pass
               </DialogTrigger>
-              <DialogContent>
-                <ShiftForm 
-                  isOpen={isCreateDialogOpen}
-                  onOpenChange={setIsCreateDialogOpen}
-                  defaultValues={{
-                    start_time: new Date().toISOString().slice(0, 16),
-                    end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            </Button>
           </div>
-        </div>
+        </header>
+
+        <Dialog>
+          <DialogContent>
+            <ShiftForm 
+              isOpen={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+              defaultValues={{
+                start_time: new Date().toISOString().slice(0, 16),
+                end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
         <AnimatePresence mode="wait">
           <motion.div
