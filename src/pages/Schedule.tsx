@@ -13,7 +13,7 @@ import { PlusCircle } from "lucide-react";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
 import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
-import { DayView } from "@/components/shifts/DayView";
+import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Schedule = () => {

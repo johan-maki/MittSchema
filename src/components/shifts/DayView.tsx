@@ -50,7 +50,7 @@ const ROLES: Role[] = [
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-export const DayView = ({ date, shifts }: DayViewProps) => {
+const DayView = ({ date, shifts }: DayViewProps) => {
   const todaysShifts = shifts.filter(shift => isSameDay(new Date(shift.start_time), date));
 
   const renderShiftForRole = (role: Role) => {
@@ -135,3 +135,5 @@ export const DayView = ({ date, shifts }: DayViewProps) => {
     </div>
   );
 };
+
+export default DayView;
