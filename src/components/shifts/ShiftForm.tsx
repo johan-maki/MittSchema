@@ -1,13 +1,16 @@
-import { Dialog, DialogHeader, DialogTitle, DialogFooter, DialogContent } from "@/components/ui/dialog";
+
+import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShiftFormData, ShiftType, Shift } from "@/types/shift";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { EmployeeSelect } from "./form/EmployeeSelect";
+import { ShiftTypeSelect } from "./form/ShiftTypeSelect";
+import { TimeInputs } from "./form/TimeInputs";
 
 interface ShiftFormProps {
   isOpen: boolean;
@@ -28,19 +31,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-
-  const { data: employees } = useQuery({
-    queryKey: ['employees'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .order('first_name');
-
-      if (error) throw error;
-      return data;
-    }
-  });
 
   useEffect(() => {
     if (defaultValues) {
@@ -69,7 +59,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
 
     try {
       if (defaultValues?.id) {
-        // Update existing shift
         const { error } = await supabase
           .from('shifts')
           .update({
@@ -85,7 +74,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
           description: "Arbetspasset har uppdaterats i schemat",
         });
       } else {
-        // Create new shift
         const { error } = await supabase
           .from('shifts')
           .insert([{
@@ -110,8 +98,6 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
         employee_id: ""
       });
       onOpenChange(false);
-
-      // Update cache
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error: any) {
       console.error('Error saving shift:', error);
@@ -125,27 +111,17 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
 
   return (
     <>
+      <DialogHeader>
+        <DialogTitle>
+          {defaultValues?.id ? "Redigera arbetspass" : "Lägg till nytt arbetspass"}
+        </DialogTitle>
+      </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="employee" className="block text-sm font-medium text-gray-700 mb-1">
-            Anställd
-          </label>
-          <Select
-            value={formData.employee_id}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Välj anställd" />
-            </SelectTrigger>
-            <SelectContent>
-              {employees?.map((employee) => (
-                <SelectItem key={employee.id} value={employee.id}>
-                  {employee.first_name} {employee.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <EmployeeSelect
+          value={formData.employee_id || ""}
+          onChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
+        />
+        
         <div>
           <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
             Avdelning
@@ -157,48 +133,19 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
             required
           />
         </div>
-        <div>
-          <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">
-            Starttid
-          </label>
-          <Input
-            id="start_time"
-            type="datetime-local"
-            value={formData.start_time}
-            onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">
-            Sluttid
-          </label>
-          <Input
-            id="end_time"
-            type="datetime-local"
-            value={formData.end_time}
-            onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="shift_type" className="block text-sm font-medium text-gray-700 mb-1">
-            Typ av pass
-          </label>
-          <Select
-            value={formData.shift_type}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, shift_type: value as ShiftType }))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Dag</SelectItem>
-              <SelectItem value="evening">Kväll</SelectItem>
-              <SelectItem value="night">Natt</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
+        <TimeInputs
+          startTime={formData.start_time}
+          endTime={formData.end_time}
+          onStartTimeChange={(value) => setFormData(prev => ({ ...prev, start_time: value }))}
+          onEndTimeChange={(value) => setFormData(prev => ({ ...prev, end_time: value }))}
+        />
+
+        <ShiftTypeSelect
+          value={formData.shift_type}
+          onChange={(value) => setFormData(prev => ({ ...prev, shift_type: value }))}
+        />
+
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
             Anteckningar
@@ -209,6 +156,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProp
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
           />
         </div>
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Avbryt
