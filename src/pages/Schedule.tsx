@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sv } from "date-fns/locale";
+import { startOfWeek, endOfWeek } from "date-fns"; // Added these imports
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { PlusCircle } from "lucide-react";
