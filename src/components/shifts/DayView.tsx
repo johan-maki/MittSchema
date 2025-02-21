@@ -50,13 +50,63 @@ const ROLES: Role[] = [
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+interface OverlappingShifts {
+  shift: Shift;
+  overlap: number;
+  position: number;
+}
+
 const DayView = ({ date, shifts }: DayViewProps) => {
   const todaysShifts = shifts.filter(shift => isSameDay(new Date(shift.start_time), date));
+
+  const calculateOverlappingShifts = (shifts: Shift[]): OverlappingShifts[] => {
+    const sortedShifts = [...shifts].sort((a, b) => 
+      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+
+    const overlappingGroups: OverlappingShifts[] = [];
+    
+    sortedShifts.forEach((shift, index) => {
+      const shiftStart = new Date(shift.start_time);
+      const shiftEnd = new Date(shift.end_time);
+      
+      // Find overlapping shifts
+      const overlapping = sortedShifts.filter((otherShift, otherIndex) => {
+        if (otherIndex === index) return false;
+        const otherStart = new Date(otherShift.start_time);
+        const otherEnd = new Date(otherShift.end_time);
+        return (
+          (shiftStart <= otherEnd && shiftEnd >= otherStart) ||
+          (otherStart <= shiftEnd && otherEnd >= shiftStart)
+        );
+      });
+
+      // Calculate position (0 for leftmost, 1 for next, etc.)
+      const position = overlappingGroups
+        .filter(g => 
+          new Date(g.shift.start_time) <= shiftEnd && 
+          new Date(g.shift.end_time) >= shiftStart
+        )
+        .map(g => g.position)
+        .sort((a, b) => a - b)
+        .reduce((pos, current) => pos === current ? pos + 1 : pos, 0);
+
+      overlappingGroups.push({
+        shift,
+        overlap: overlapping.length,
+        position
+      });
+    });
+
+    return overlappingGroups;
+  };
 
   const renderShiftForRole = (role: Role) => {
     const roleShifts = todaysShifts.filter(shift => 
       shift.department === role.department
     );
+
+    const overlappingShifts = calculateOverlappingShifts(roleShifts);
 
     return (
       <div key={role.name} className="relative border-b border-gray-200">
@@ -77,22 +127,26 @@ const DayView = ({ date, shifts }: DayViewProps) => {
 
         {/* Time grid */}
         <div className="relative h-24 bg-gray-50">
-          {roleShifts.map((shift) => {
+          {overlappingShifts.map(({ shift, overlap, position }) => {
             const start = new Date(shift.start_time);
             const end = new Date(shift.end_time);
             const startPercent = (start.getHours() + start.getMinutes() / 60) * (100 / 24);
             const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
             const widthPercent = (duration / 24) * 100;
-
+            const maxWidth = 100 / (overlap + 1);
+            
             return (
               <div
                 key={shift.id}
-                className="absolute top-2 h-20 rounded-lg border text-sm"
+                className="absolute top-0 h-24 rounded-lg border text-sm transition-all"
                 style={{
                   left: `${startPercent}%`,
                   width: `${widthPercent}%`,
                   backgroundColor: role.bgColor,
                   borderColor: role.color,
+                  maxWidth: `${maxWidth}%`,
+                  transform: `translateX(${position * 100}%)`,
+                  zIndex: position + 1,
                 }}
               >
                 <div className="p-2">
