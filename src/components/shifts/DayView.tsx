@@ -1,5 +1,4 @@
-
-import { Shift } from "@/types/shift";
+import { Shift, ShiftType } from "@/types/shift";
 import { format, isSameDay } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -16,38 +15,30 @@ type Role = {
   color: string;
   bgColor: string;
   department: string;
+  shiftType: ShiftType;
 };
 
 const ROLES: Role[] = [
   { 
-    name: "Time off", 
+    name: "Day shift", 
     color: "#6B7280", 
     bgColor: "#F3F4F6",
-    department: "Time off" 
+    department: "Vården",
+    shiftType: "day"
   },
   { 
-    name: "Manager", 
+    name: "Evening shift", 
     color: "#DC2626", 
     bgColor: "#FEE2E2",
-    department: "Vården" 
+    department: "Vården",
+    shiftType: "evening"
   },
   { 
-    name: "Admin", 
+    name: "Night shift", 
     color: "#7C3AED", 
     bgColor: "#EDE9FE",
-    department: "Vården" 
-  },
-  { 
-    name: "Security", 
-    color: "#EA580C", 
-    bgColor: "#FFEDD5",
-    department: "Vården" 
-  },
-  { 
-    name: "Staff", 
-    color: "#2563EB", 
-    bgColor: "#EFF6FF",
-    department: "Vården" 
+    department: "Vården",
+    shiftType: "night"
   }
 ];
 
@@ -77,7 +68,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
       const shiftStart = new Date(shift.start_time);
       const shiftEnd = new Date(shift.end_time);
       
-      // Find overlapping shifts
       const overlapping = sortedShifts.filter((otherShift, otherIndex) => {
         if (otherIndex === index) return false;
         const otherStart = new Date(otherShift.start_time);
@@ -125,7 +115,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
       <div className="min-w-[1200px]">
-        {/* Time header */}
         <div className="grid grid-cols-[200px,1fr] bg-gray-50 border-b">
           <div className="p-4 font-medium text-gray-500">Role</div>
           <div className="grid grid-cols-24 border-l">
@@ -140,22 +129,16 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           </div>
         </div>
 
-        {/* Role rows */}
         {ROLES.map(role => {
-          const roleShifts = todaysShifts.filter(shift => {
-            if (role.name === "Time off") {
-              return shift.shift_type === "time_off";
-            }
-            // Map the roles to the appropriate shifts based on your data structure
-            // This is an example mapping, adjust according to your needs
-            return shift.department === role.department;
-          });
+          const roleShifts = todaysShifts.filter(shift => 
+            shift.shift_type === role.shiftType && 
+            shift.department === role.department
+          );
 
           const overlappingShifts = calculateOverlappingShifts(roleShifts);
 
           return (
             <div key={role.name} className="grid grid-cols-[200px,1fr]">
-              {/* Role header */}
               <div 
                 className="p-4 flex items-center gap-2 border-b cursor-pointer hover:bg-gray-50"
                 onClick={() => toggleRole(role.name)}
@@ -174,7 +157,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                 </div>
               </div>
 
-              {/* Time grid */}
               <div className={`relative border-b border-l ${hiddenRoles.has(role.name) ? 'h-[52px]' : 'h-24'}`}>
                 {!hiddenRoles.has(role.name) && overlappingShifts.map(({ shift, overlap, position }) => {
                   const start = new Date(shift.start_time);
