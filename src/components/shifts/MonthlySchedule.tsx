@@ -10,6 +10,7 @@ import { DayCell } from "./DayCell";
 import { useToast } from "@/components/ui/use-toast";
 import { ROLES, ROLE_COLORS, Role } from "./schedule.constants";
 import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface MonthlyScheduleProps {
   date: Date;
@@ -26,6 +27,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const [isAddShiftDialogOpen, setIsAddShiftDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isEditShiftDialogOpen, setIsEditShiftDialogOpen] = useState(false);
+  const [hiddenRoles, setHiddenRoles] = useState<Set<Role>>(new Set());
   const { toast } = useToast();
 
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
@@ -61,16 +63,26 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
     setIsEditShiftDialogOpen(true);
   };
 
+  const toggleRole = (role: Role) => {
+    const newHiddenRoles = new Set(hiddenRoles);
+    if (hiddenRoles.has(role)) {
+      newHiddenRoles.delete(role);
+    } else {
+      newHiddenRoles.add(role);
+    }
+    setHiddenRoles(newHiddenRoles);
+  };
+
   return (
     <div className="min-w-[1000px]">
-      <div className="grid grid-cols-[200px,1fr]">
-        <div className="border-b border-r border-gray-200 p-2 font-medium text-gray-500">
+      <div className="grid grid-cols-[200px,1fr] bg-white">
+        <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
           Roll
         </div>
         <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
           {daysInMonth.map((day) => (
-            <div key={day.toISOString()} className="border-b border-r border-gray-200">
-              <div className="p-2 font-medium text-gray-500 text-center">
+            <div key={day.toISOString()} className="border-b border-r border-gray-100">
+              <div className="p-2 font-medium text-gray-400 text-center text-sm">
                 {format(day, 'd EEE', { locale: sv })}
               </div>
             </div>
@@ -81,39 +93,49 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
       <div className="grid grid-cols-[200px,1fr]">
         {ROLES.map((role) => (
           <div key={role} className="contents">
-            <div className={`border-b border-r border-gray-200 p-2 font-medium ${ROLE_COLORS[role].text}`}>
-              {role}
+            <div 
+              className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-center gap-2 cursor-pointer hover:bg-gray-50`}
+              onClick={() => toggleRole(role)}
+            >
+              {hiddenRoles.has(role) ? (
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              )}
+              <span className={ROLE_COLORS[role].text}>{role}</span>
             </div>
-            <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
-              {daysInMonth.map((day) => {
-                const dayShifts = getShiftsForRoleAndDay(role, day);
-                return (
-                  <DayCell
-                    key={`${role}-${day.toISOString()}`}
-                    day={day}
-                    role={role}
-                    isLastRole={false}
-                    shifts={shifts}
-                    profiles={profiles}
-                    roleColors={ROLE_COLORS[role]}
-                    onAddClick={handleAddClick}
-                    onShiftClick={handleShiftClick}
-                    dayShifts={dayShifts}
-                  />
-                );
-              })}
-            </div>
+            {!hiddenRoles.has(role) && (
+              <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
+                {daysInMonth.map((day) => {
+                  const dayShifts = getShiftsForRoleAndDay(role, day);
+                  return (
+                    <DayCell
+                      key={`${role}-${day.toISOString()}`}
+                      day={day}
+                      role={role}
+                      isLastRole={false}
+                      shifts={shifts}
+                      profiles={profiles}
+                      roleColors={ROLE_COLORS[role]}
+                      onAddClick={handleAddClick}
+                      onShiftClick={handleShiftClick}
+                      dayShifts={dayShifts}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
 
         {/* Experience Level Summary Row */}
         <div className="contents">
-          <div className="border-b border-r border-gray-200 p-2 font-medium text-gray-500">
+          <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
             Experience Level
           </div>
           <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
             {daysInMonth.map((day) => (
-              <div key={`summary-${day.toISOString()}`} className="border-b border-r border-gray-200">
+              <div key={`summary-${day.toISOString()}`} className="border-b border-r border-gray-100">
                 <ExperienceLevelSummary
                   date={day}
                   shifts={shifts}
