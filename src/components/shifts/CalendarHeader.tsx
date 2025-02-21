@@ -17,6 +17,15 @@ export const CalendarHeader = ({
   currentView,
   onViewChange,
 }: CalendarHeaderProps) => {
+  const getFormattedDate = () => {
+    if (currentView === 'day') {
+      // Format: "6 februari 2025" (date + month + year)
+      return format(currentDate, 'd MMMM yyyy', { locale: sv });
+    }
+    // For week and month views, just show "februari 2025" (month + year)
+    return format(currentDate, 'MMMM yyyy', { locale: sv });
+  };
+
   return (
     <div className="flex flex-wrap gap-4">
       <div className="flex items-center gap-2">
@@ -25,21 +34,33 @@ export const CalendarHeader = ({
           size="icon"
           onClick={() => {
             const newDate = new Date(currentDate);
-            newDate.setDate(newDate.getDate() - 1);
+            if (currentView === 'day') {
+              newDate.setDate(newDate.getDate() - 1);
+            } else if (currentView === 'week') {
+              newDate.setDate(newDate.getDate() - 7);
+            } else {
+              newDate.setMonth(newDate.getMonth() - 1);
+            }
             onDateChange(newDate);
           }}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="text-lg font-semibold">
-          {format(currentDate, 'MMMM yyyy', { locale: sv })}
+          {getFormattedDate()}
         </div>
         <Button
           variant="outline"
           size="icon"
           onClick={() => {
             const newDate = new Date(currentDate);
-            newDate.setDate(newDate.getDate() + 1);
+            if (currentView === 'day') {
+              newDate.setDate(newDate.getDate() + 1);
+            } else if (currentView === 'week') {
+              newDate.setDate(newDate.getDate() + 7);
+            } else {
+              newDate.setMonth(newDate.getMonth() + 1);
+            }
             onDateChange(newDate);
           }}
         >
