@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -12,6 +13,7 @@ import { PlusCircle } from "lucide-react";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
 import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
+import { DayView } from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Schedule = () => {

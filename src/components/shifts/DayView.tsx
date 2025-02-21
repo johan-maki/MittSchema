@@ -54,14 +54,9 @@ export const DayView = ({ date, shifts }: DayViewProps) => {
   const todaysShifts = shifts.filter(shift => isSameDay(new Date(shift.start_time), date));
 
   const renderShiftForRole = (role: Role) => {
-    const roleShifts = todaysShifts.filter(shift => {
-      // Match shifts based on department and inferred role from employee profile
-      const employeeRole = shift.profiles?.role?.toLowerCase() || "";
-      return shift.department === role.department && 
-             (role.name === "Time off" ? 
-               employeeRole.includes("time off") : 
-               employeeRole.includes(role.name.toLowerCase()));
-    });
+    const roleShifts = todaysShifts.filter(shift => 
+      shift.department === role.department
+    );
 
     return (
       <div key={role.name} className="relative border-b border-gray-200">
