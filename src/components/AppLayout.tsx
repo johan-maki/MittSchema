@@ -18,8 +18,8 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <header className="border-b bg-white">
         <div className="flex h-14 items-center px-4 gap-8">
           <Link to="/" className="flex items-center gap-2 font-semibold text-2xl">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Vårdschema</span>
             <Sparkles className="w-5 h-5 text-indigo-600" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Vårdschema</span>
           </Link>
           <nav className="flex items-center space-x-1 flex-1">
             <Link 
