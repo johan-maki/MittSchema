@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -16,6 +15,11 @@ import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
 import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shift } from "@/types/shift";
+import { Profile } from "@/types/profile";
+
+type ShiftWithProfiles = Shift & {
+  profiles: Pick<Profile, "first_name" | "last_name">;
+};
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
@@ -38,25 +42,21 @@ const Schedule = () => {
       }
 
       // Base shift templates with required properties
-      const shiftTemplates = [
+      const shiftTemplates: Omit<ShiftWithProfiles, 'start_time' | 'end_time'>[] = [
         // Doctors (Läkare)
         {
           id: 'doc1',
           employee_id: 'doc1',
           shift_type: 'night' as const,
           department: 'Emergency',
-          profiles: { first_name: 'Meryl', last_name: 'Streep' },
-          start_time: '',
-          end_time: ''
+          profiles: { first_name: 'Meryl', last_name: 'Streep' }
         },
         {
           id: 'doc2',
           employee_id: 'doc2',
           shift_type: 'day' as const,
           department: 'Surgery',
-          profiles: { first_name: 'Morgan', last_name: 'Freeman' },
-          start_time: '',
-          end_time: ''
+          profiles: { first_name: 'Morgan', last_name: 'Freeman' }
         },
         // Nurses (Sjuksköterska)
         {
@@ -64,18 +64,14 @@ const Schedule = () => {
           employee_id: 'nurse1',
           shift_type: 'day' as const,
           department: 'Emergency',
-          profiles: { first_name: 'Emma', last_name: 'Thompson' },
-          start_time: '',
-          end_time: ''
+          profiles: { first_name: 'Emma', last_name: 'Thompson' }
         },
         {
           id: 'nurse2',
           employee_id: 'nurse2',
           shift_type: 'evening' as const,
           department: 'Pediatrics',
-          profiles: { first_name: 'Sandra', last_name: 'Bullock' },
-          start_time: '',
-          end_time: ''
+          profiles: { first_name: 'Sandra', last_name: 'Bullock' }
         },
         // Assistant Nurses (Undersköterska)
         {
@@ -83,18 +79,14 @@ const Schedule = () => {
           employee_id: 'asst1',
           shift_type: 'day' as const,
           department: 'Emergency',
-          profiles: { first_name: 'Tom', last_name: 'Hanks' },
-          start_time: '',
-          end_time: ''
+          profiles: { first_name: 'Tom', last_name: 'Hanks' }
         },
         {
           id: 'asst2',
           employee_id: 'asst2',
           shift_type: 'evening' as const,
           department: 'Surgery',
-          profiles: { first_name: 'Julia', last_name: 'Roberts' },
-          start_time: '',
-          end_time: ''
+          profiles: { first_name: 'Julia', last_name: 'Roberts' }
         }
       ];
 
@@ -125,13 +117,17 @@ const Schedule = () => {
         }
       };
 
-      const allShifts: Shift[] = [];
+      const allShifts: ShiftWithProfiles[] = [];
       let iterDate = new Date(rangeStart);
 
       while (iterDate <= rangeEnd) {
         shiftTemplates.forEach(template => {
           if (shouldWork(template.employee_id, iterDate)) {
-            const shift = { ...template };
+            const shift: ShiftWithProfiles = {
+              ...template,
+              start_time: '',
+              end_time: ''
+            };
             shift.id = `${template.id}-${iterDate.getDate()}`;
             
             // Set shift times based on shift type
@@ -153,7 +149,7 @@ const Schedule = () => {
               shift.end_time = shiftDate.toISOString();
             }
             
-            allShifts.push(shift as Shift);
+            allShifts.push(shift);
           }
         });
         
