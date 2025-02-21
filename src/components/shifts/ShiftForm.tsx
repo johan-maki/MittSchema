@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShiftFormData, ShiftType } from "@/types/shift";
-import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,21 +13,33 @@ import { useAuth } from "@/contexts/AuthContext";
 interface ShiftFormProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultValues?: {
+    employee_id?: string;
+  };
 }
 
-export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
+export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProps) => {
   const [formData, setFormData] = useState<ShiftFormData & { employee_id?: string }>({
     start_time: "",
     end_time: "",
     shift_type: "day",
     department: "",
     notes: "",
-    employee_id: ""
+    employee_id: defaultValues?.employee_id || ""
   });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (defaultValues?.employee_id) {
+      setFormData(prev => ({
+        ...prev,
+        employee_id: defaultValues.employee_id
+      }));
+    }
+  }, [defaultValues?.employee_id]);
 
   const { data: employees } = useQuery({
     queryKey: ['employees'],
@@ -70,19 +82,19 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         description: "Arbetspasset har lagts till i schemat",
       });
 
-      // Återställ formuläret och stäng dialogen
       setFormData({
         start_time: "",
         end_time: "",
         shift_type: "day",
         department: "",
         notes: "",
-        employee_id: ""
+        employee_id: defaultValues?.employee_id || ""
       });
       onOpenChange(false);
 
       // Uppdatera cache
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error: any) {
       console.error('Error creating shift:', error);
       toast({
@@ -99,26 +111,28 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         <DialogTitle>Lägg till nytt arbetspass</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="employee" className="block text-sm font-medium text-gray-700 mb-1">
-            Anställd
-          </label>
-          <Select
-            value={formData.employee_id}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Välj anställd" />
-            </SelectTrigger>
-            <SelectContent>
-              {employees?.map((employee) => (
-                <SelectItem key={employee.id} value={employee.id}>
-                  {employee.first_name} {employee.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!defaultValues?.employee_id && (
+          <div>
+            <label htmlFor="employee" className="block text-sm font-medium text-gray-700 mb-1">
+              Anställd
+            </label>
+            <Select
+              value={formData.employee_id}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Välj anställd" />
+              </SelectTrigger>
+              <SelectContent>
+                {employees?.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.first_name} {employee.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div>
           <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
             Avdelning
