@@ -111,7 +111,6 @@ const Schedule = () => {
         });
       }
 
-      // Return sample data instead of actual API call for demonstration
       return allShifts;
     },
     enabled: !!user
@@ -122,14 +121,74 @@ const Schedule = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      // Return sample profiles
+      // Return sample profiles with all required fields
       return [
-        { id: 'doc1', first_name: 'Meryl', last_name: 'Streep', role: 'Läkare', experience_level: 5 },
-        { id: 'doc2', first_name: 'Morgan', last_name: 'Freeman', role: 'Läkare', experience_level: 4 },
-        { id: 'nurse1', first_name: 'Emma', last_name: 'Thompson', role: 'Sjuksköterska', experience_level: 3 },
-        { id: 'nurse2', first_name: 'Sandra', last_name: 'Bullock', role: 'Sjuksköterska', experience_level: 4 },
-        { id: 'asst1', first_name: 'Tom', last_name: 'Hanks', role: 'Undersköterska', experience_level: 2 },
-        { id: 'asst2', first_name: 'Julia', last_name: 'Roberts', role: 'Undersköterska', experience_level: 3 }
+        {
+          id: 'doc1',
+          first_name: 'Meryl',
+          last_name: 'Streep',
+          role: 'Läkare',
+          experience_level: 5,
+          department: 'Emergency',
+          phone: '+46701234567',
+          created_at: '2025-01-01T00:00:00.000Z',
+          updated_at: '2025-01-01T00:00:00.000Z'
+        },
+        {
+          id: 'doc2',
+          first_name: 'Morgan',
+          last_name: 'Freeman',
+          role: 'Läkare',
+          experience_level: 4,
+          department: 'Surgery',
+          phone: '+46701234568',
+          created_at: '2025-01-01T00:00:00.000Z',
+          updated_at: '2025-01-01T00:00:00.000Z'
+        },
+        {
+          id: 'nurse1',
+          first_name: 'Emma',
+          last_name: 'Thompson',
+          role: 'Sjuksköterska',
+          experience_level: 3,
+          department: 'Emergency',
+          phone: '+46701234569',
+          created_at: '2025-01-01T00:00:00.000Z',
+          updated_at: '2025-01-01T00:00:00.000Z'
+        },
+        {
+          id: 'nurse2',
+          first_name: 'Sandra',
+          last_name: 'Bullock',
+          role: 'Sjuksköterska',
+          experience_level: 4,
+          department: 'Pediatrics',
+          phone: '+46701234570',
+          created_at: '2025-01-01T00:00:00.000Z',
+          updated_at: '2025-01-01T00:00:00.000Z'
+        },
+        {
+          id: 'asst1',
+          first_name: 'Tom',
+          last_name: 'Hanks',
+          role: 'Undersköterska',
+          experience_level: 2,
+          department: 'Emergency',
+          phone: '+46701234571',
+          created_at: '2025-01-01T00:00:00.000Z',
+          updated_at: '2025-01-01T00:00:00.000Z'
+        },
+        {
+          id: 'asst2',
+          first_name: 'Julia',
+          last_name: 'Roberts',
+          role: 'Undersköterska',
+          experience_level: 3,
+          department: 'Surgery',
+          phone: '+46701234572',
+          created_at: '2025-01-01T00:00:00.000Z',
+          updated_at: '2025-01-01T00:00:00.000Z'
+        }
       ];
     },
     enabled: !!user
