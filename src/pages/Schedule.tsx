@@ -15,6 +15,7 @@ import { WeekView } from "@/components/shifts/WeekView";
 import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
 import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
+import { Shift } from "@/types/shift";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
@@ -27,55 +28,73 @@ const Schedule = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      let startDate, endDate;
+      let rangeStart: Date, rangeEnd: Date;
       if (currentView === 'week') {
-        startDate = startOfWeek(currentDate, { locale: sv });
-        endDate = endOfWeek(currentDate, { locale: sv });
+        rangeStart = startOfWeek(currentDate, { locale: sv });
+        rangeEnd = endOfWeek(currentDate, { locale: sv });
       } else {
-        startDate = startOfMonth(currentDate);
-        endDate = endOfMonth(currentDate);
+        rangeStart = startOfMonth(currentDate);
+        rangeEnd = endOfMonth(currentDate);
       }
 
-      // Base shift templates
+      // Base shift templates with required properties
       const shiftTemplates = [
         // Doctors (Läkare)
         {
           id: 'doc1',
           employee_id: 'doc1',
-          shift_type: 'night',
-          profiles: { first_name: 'Meryl', last_name: 'Streep' }
+          shift_type: 'night' as const,
+          department: 'Emergency',
+          profiles: { first_name: 'Meryl', last_name: 'Streep' },
+          start_time: '',
+          end_time: ''
         },
         {
           id: 'doc2',
           employee_id: 'doc2',
-          shift_type: 'day',
-          profiles: { first_name: 'Morgan', last_name: 'Freeman' }
+          shift_type: 'day' as const,
+          department: 'Surgery',
+          profiles: { first_name: 'Morgan', last_name: 'Freeman' },
+          start_time: '',
+          end_time: ''
         },
         // Nurses (Sjuksköterska)
         {
           id: 'nurse1',
           employee_id: 'nurse1',
-          shift_type: 'day',
-          profiles: { first_name: 'Emma', last_name: 'Thompson' }
+          shift_type: 'day' as const,
+          department: 'Emergency',
+          profiles: { first_name: 'Emma', last_name: 'Thompson' },
+          start_time: '',
+          end_time: ''
         },
         {
           id: 'nurse2',
           employee_id: 'nurse2',
-          shift_type: 'evening',
-          profiles: { first_name: 'Sandra', last_name: 'Bullock' }
+          shift_type: 'evening' as const,
+          department: 'Pediatrics',
+          profiles: { first_name: 'Sandra', last_name: 'Bullock' },
+          start_time: '',
+          end_time: ''
         },
         // Assistant Nurses (Undersköterska)
         {
           id: 'asst1',
           employee_id: 'asst1',
-          shift_type: 'day',
-          profiles: { first_name: 'Tom', last_name: 'Hanks' }
+          shift_type: 'day' as const,
+          department: 'Emergency',
+          profiles: { first_name: 'Tom', last_name: 'Hanks' },
+          start_time: '',
+          end_time: ''
         },
         {
           id: 'asst2',
           employee_id: 'asst2',
-          shift_type: 'evening',
-          profiles: { first_name: 'Julia', last_name: 'Roberts' }
+          shift_type: 'evening' as const,
+          department: 'Surgery',
+          profiles: { first_name: 'Julia', last_name: 'Roberts' },
+          start_time: '',
+          end_time: ''
         }
       ];
 
@@ -106,17 +125,17 @@ const Schedule = () => {
         }
       };
 
-      const allShifts = [];
-      let currentDate = new Date(startDate);
+      const allShifts: Shift[] = [];
+      let iterDate = new Date(rangeStart);
 
-      while (currentDate <= endDate) {
+      while (iterDate <= rangeEnd) {
         shiftTemplates.forEach(template => {
-          if (shouldWork(template.employee_id, currentDate)) {
-            let shift = { ...template };
-            shift.id = `${template.id}-${currentDate.getDate()}`;
+          if (shouldWork(template.employee_id, iterDate)) {
+            const shift = { ...template };
+            shift.id = `${template.id}-${iterDate.getDate()}`;
             
             // Set shift times based on shift type
-            const shiftDate = new Date(currentDate);
+            const shiftDate = new Date(iterDate);
             if (template.shift_type === 'night') {
               shiftDate.setHours(1, 0, 0);
               shift.start_time = shiftDate.toISOString();
@@ -134,11 +153,11 @@ const Schedule = () => {
               shift.end_time = shiftDate.toISOString();
             }
             
-            allShifts.push(shift);
+            allShifts.push(shift as Shift);
           }
         });
         
-        currentDate = addDays(currentDate, 1);
+        iterDate = addDays(iterDate, 1);
       }
 
       return allShifts;
