@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sv } from "date-fns/locale";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { PlusCircle } from "lucide-react";
@@ -17,8 +17,7 @@ import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Schedule = () => {
-  // Initialize with March 2025
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1)); // Month is 0-based, so 2 is March
+  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
@@ -37,78 +36,109 @@ const Schedule = () => {
         endDate = endOfMonth(currentDate);
       }
 
-      // For demonstration purposes, let's create some sample shifts
-      const sampleShifts = [
+      // Base shift templates
+      const shiftTemplates = [
         // Doctors (Läkare)
         {
-          id: '1',
+          id: 'doc1',
           employee_id: 'doc1',
-          start_time: '2025-03-01T01:00:00',
-          end_time: '2025-03-01T09:00:00',
           shift_type: 'night',
           profiles: { first_name: 'Meryl', last_name: 'Streep' }
         },
         {
-          id: '2',
+          id: 'doc2',
           employee_id: 'doc2',
-          start_time: '2025-03-01T09:00:00',
-          end_time: '2025-03-01T17:00:00',
           shift_type: 'day',
           profiles: { first_name: 'Morgan', last_name: 'Freeman' }
         },
         // Nurses (Sjuksköterska)
         {
-          id: '3',
+          id: 'nurse1',
           employee_id: 'nurse1',
-          start_time: '2025-03-01T07:00:00',
-          end_time: '2025-03-01T15:00:00',
           shift_type: 'day',
           profiles: { first_name: 'Emma', last_name: 'Thompson' }
         },
         {
-          id: '4',
+          id: 'nurse2',
           employee_id: 'nurse2',
-          start_time: '2025-03-01T15:00:00',
-          end_time: '2025-03-01T23:00:00',
           shift_type: 'evening',
           profiles: { first_name: 'Sandra', last_name: 'Bullock' }
         },
         // Assistant Nurses (Undersköterska)
         {
-          id: '5',
+          id: 'asst1',
           employee_id: 'asst1',
-          start_time: '2025-03-01T07:00:00',
-          end_time: '2025-03-01T15:00:00',
           shift_type: 'day',
           profiles: { first_name: 'Tom', last_name: 'Hanks' }
         },
         {
-          id: '6',
+          id: 'asst2',
           employee_id: 'asst2',
-          start_time: '2025-03-01T15:00:00',
-          end_time: '2025-03-01T23:00:00',
           shift_type: 'evening',
           profiles: { first_name: 'Julia', last_name: 'Roberts' }
         }
       ];
 
-      // Duplicate shifts for other days in March
+      // Function to determine if a person should work on a given day
+      const shouldWork = (employeeId: string, date: Date) => {
+        const dayOfMonth = date.getDate();
+        const dayOfWeek = date.getDay();
+        
+        // Weekend rotation (some staff work weekends, others don't)
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        
+        // Different patterns for different employees
+        switch(employeeId) {
+          case 'doc1': // Works 3 days on, 2 days off
+            return dayOfMonth % 5 < 3;
+          case 'doc2': // Works weekdays only
+            return !isWeekend;
+          case 'nurse1': // Works 4 days on, 3 days off
+            return dayOfMonth % 7 < 4;
+          case 'nurse2': // Works alternative weekends and some weekdays
+            return isWeekend ? dayOfMonth % 14 < 7 : dayOfMonth % 3 === 0;
+          case 'asst1': // Works 5 days on, 2 days off, including some weekends
+            return (dayOfMonth + 3) % 7 < 5;
+          case 'asst2': // Works mainly evenings, with regular days off
+            return dayOfMonth % 4 !== 0;
+          default:
+            return false;
+        }
+      };
+
       const allShifts = [];
-      for (let day = 1; day <= 31; day++) {
-        sampleShifts.forEach(shift => {
-          const newShift = { ...shift };
-          newShift.id = `${shift.id}-${day}`;
-          const date = new Date(2025, 2, day); // March 2025
-          newShift.start_time = new Date(date.setHours(
-            new Date(shift.start_time).getHours(),
-            new Date(shift.start_time).getMinutes()
-          )).toISOString();
-          newShift.end_time = new Date(date.setHours(
-            new Date(shift.end_time).getHours(),
-            new Date(shift.end_time).getMinutes()
-          )).toISOString();
-          allShifts.push(newShift);
+      let currentDate = new Date(startDate);
+
+      while (currentDate <= endDate) {
+        shiftTemplates.forEach(template => {
+          if (shouldWork(template.employee_id, currentDate)) {
+            let shift = { ...template };
+            shift.id = `${template.id}-${currentDate.getDate()}`;
+            
+            // Set shift times based on shift type
+            const shiftDate = new Date(currentDate);
+            if (template.shift_type === 'night') {
+              shiftDate.setHours(1, 0, 0);
+              shift.start_time = shiftDate.toISOString();
+              shiftDate.setHours(9, 0, 0);
+              shift.end_time = shiftDate.toISOString();
+            } else if (template.shift_type === 'day') {
+              shiftDate.setHours(7, 0, 0);
+              shift.start_time = shiftDate.toISOString();
+              shiftDate.setHours(15, 0, 0);
+              shift.end_time = shiftDate.toISOString();
+            } else { // evening
+              shiftDate.setHours(15, 0, 0);
+              shift.start_time = shiftDate.toISOString();
+              shiftDate.setHours(23, 0, 0);
+              shift.end_time = shiftDate.toISOString();
+            }
+            
+            allShifts.push(shift);
+          }
         });
+        
+        currentDate = addDays(currentDate, 1);
       }
 
       return allShifts;
