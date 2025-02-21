@@ -36,15 +36,83 @@ const Schedule = () => {
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
       }
-      
-      const { data, error } = await supabase
-        .from('shifts')
-        .select('*, profiles!shifts_employee_id_fkey(first_name, last_name)')
-        .gte('start_time', startDate.toISOString())
-        .lte('start_time', endDate.toISOString());
 
-      if (error) throw error;
-      return data || [];
+      // For demonstration purposes, let's create some sample shifts
+      const sampleShifts = [
+        // Doctors (Läkare)
+        {
+          id: '1',
+          employee_id: 'doc1',
+          start_time: '2025-03-01T01:00:00',
+          end_time: '2025-03-01T09:00:00',
+          shift_type: 'night',
+          profiles: { first_name: 'Meryl', last_name: 'Streep' }
+        },
+        {
+          id: '2',
+          employee_id: 'doc2',
+          start_time: '2025-03-01T09:00:00',
+          end_time: '2025-03-01T17:00:00',
+          shift_type: 'day',
+          profiles: { first_name: 'Morgan', last_name: 'Freeman' }
+        },
+        // Nurses (Sjuksköterska)
+        {
+          id: '3',
+          employee_id: 'nurse1',
+          start_time: '2025-03-01T07:00:00',
+          end_time: '2025-03-01T15:00:00',
+          shift_type: 'day',
+          profiles: { first_name: 'Emma', last_name: 'Thompson' }
+        },
+        {
+          id: '4',
+          employee_id: 'nurse2',
+          start_time: '2025-03-01T15:00:00',
+          end_time: '2025-03-01T23:00:00',
+          shift_type: 'evening',
+          profiles: { first_name: 'Sandra', last_name: 'Bullock' }
+        },
+        // Assistant Nurses (Undersköterska)
+        {
+          id: '5',
+          employee_id: 'asst1',
+          start_time: '2025-03-01T07:00:00',
+          end_time: '2025-03-01T15:00:00',
+          shift_type: 'day',
+          profiles: { first_name: 'Tom', last_name: 'Hanks' }
+        },
+        {
+          id: '6',
+          employee_id: 'asst2',
+          start_time: '2025-03-01T15:00:00',
+          end_time: '2025-03-01T23:00:00',
+          shift_type: 'evening',
+          profiles: { first_name: 'Julia', last_name: 'Roberts' }
+        }
+      ];
+
+      // Duplicate shifts for other days in March
+      const allShifts = [];
+      for (let day = 1; day <= 31; day++) {
+        sampleShifts.forEach(shift => {
+          const newShift = { ...shift };
+          newShift.id = `${shift.id}-${day}`;
+          const date = new Date(2025, 2, day); // March 2025
+          newShift.start_time = new Date(date.setHours(
+            new Date(shift.start_time).getHours(),
+            new Date(shift.start_time).getMinutes()
+          )).toISOString();
+          newShift.end_time = new Date(date.setHours(
+            new Date(shift.end_time).getHours(),
+            new Date(shift.end_time).getMinutes()
+          )).toISOString();
+          allShifts.push(newShift);
+        });
+      }
+
+      // Return sample data instead of actual API call for demonstration
+      return allShifts;
     },
     enabled: !!user
   });
@@ -54,13 +122,15 @@ const Schedule = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('first_name');
-
-      if (error) throw error;
-      return data || [];
+      // Return sample profiles
+      return [
+        { id: 'doc1', first_name: 'Meryl', last_name: 'Streep', role: 'Läkare', experience_level: 5 },
+        { id: 'doc2', first_name: 'Morgan', last_name: 'Freeman', role: 'Läkare', experience_level: 4 },
+        { id: 'nurse1', first_name: 'Emma', last_name: 'Thompson', role: 'Sjuksköterska', experience_level: 3 },
+        { id: 'nurse2', first_name: 'Sandra', last_name: 'Bullock', role: 'Sjuksköterska', experience_level: 4 },
+        { id: 'asst1', first_name: 'Tom', last_name: 'Hanks', role: 'Undersköterska', experience_level: 2 },
+        { id: 'asst2', first_name: 'Julia', last_name: 'Roberts', role: 'Undersköterska', experience_level: 3 }
+      ];
     },
     enabled: !!user
   });
