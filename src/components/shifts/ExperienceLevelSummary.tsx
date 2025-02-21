@@ -34,25 +34,16 @@ export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLev
   const isSufficient = experiencePoints >= MINIMUM_EXPERIENCE_POINTS;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-gray-200">
-      <div className="p-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-xs font-medium text-gray-600">Exp. level:</div>
-          <div
-            className={`px-2 py-0.5 rounded-md text-sm font-semibold ${
-              isSufficient
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {experiencePoints}
-          </div>
-        </div>
-        {!isSufficient && (
-          <div className="mt-1 text-[10px] text-red-600 font-medium">
-            Min. required: {MINIMUM_EXPERIENCE_POINTS}
-          </div>
-        )}
+    <div className="flex items-center justify-between p-2">
+      <div className="text-xs font-medium text-gray-600">Exp. level:</div>
+      <div
+        className={`px-2 py-0.5 rounded-md text-sm font-semibold ${
+          isSufficient
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
+        }`}
+      >
+        {experiencePoints}
       </div>
     </div>
   );

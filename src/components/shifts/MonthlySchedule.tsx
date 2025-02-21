@@ -9,6 +9,7 @@ import { ShiftForm } from "./ShiftForm";
 import { DayCell } from "./DayCell";
 import { useToast } from "@/components/ui/use-toast";
 import { ROLES, ROLE_COLORS, Role } from "./schedule.constants";
+import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface MonthlyScheduleProps {
   date: Date;
@@ -78,7 +79,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
       </div>
 
       <div className="grid grid-cols-[200px,1fr]">
-        {ROLES.map((role, index) => (
+        {ROLES.map((role) => (
           <div key={role} className="contents">
             <div className={`border-b border-r border-gray-200 p-2 font-medium ${ROLE_COLORS[role].text}`}>
               {role}
@@ -91,7 +92,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
                     key={`${role}-${day.toISOString()}`}
                     day={day}
                     role={role}
-                    isLastRole={index === ROLES.length - 1}
+                    isLastRole={false}
                     shifts={shifts}
                     profiles={profiles}
                     roleColors={ROLE_COLORS[role]}
@@ -104,6 +105,24 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
             </div>
           </div>
         ))}
+
+        {/* Experience Level Summary Row */}
+        <div className="contents">
+          <div className="border-b border-r border-gray-200 p-2 font-medium text-gray-500">
+            Experience Level
+          </div>
+          <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
+            {daysInMonth.map((day) => (
+              <div key={`summary-${day.toISOString()}`} className="border-b border-r border-gray-200">
+                <ExperienceLevelSummary
+                  date={day}
+                  shifts={shifts}
+                  profiles={profiles}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Dialog open={isAddShiftDialogOpen} onOpenChange={setIsAddShiftDialogOpen}>
