@@ -17,7 +17,7 @@ const Directory = () => {
     role: '',
     department: null,
     phone: null,
-    is_manager: false
+    experience_level: 1
   });
   const { toast } = useToast();
 
@@ -59,10 +59,6 @@ const Directory = () => {
     e.preventDefault();
     
     try {
-      if (!currentUser?.is_manager) {
-        throw new Error("Endast chefer kan lägga till nya anställda");
-      }
-
       if (!newProfile.first_name || !newProfile.last_name || !newProfile.role) {
         throw new Error("Förnamn, efternamn och yrkesroll är obligatoriska fält");
       }
@@ -76,7 +72,7 @@ const Directory = () => {
         role: newProfile.role,
         department: newProfile.department,
         phone: newProfile.phone,
-        is_manager: newProfile.is_manager
+        experience_level: newProfile.experience_level
       };
 
       const { error } = await supabase
@@ -97,7 +93,7 @@ const Directory = () => {
         role: '',
         department: null,
         phone: null,
-        is_manager: false
+        experience_level: 1
       });
       refetch();
     } catch (error: any) {
@@ -122,15 +118,13 @@ const Directory = () => {
               {profiles?.length || 0} personal totalt
             </p>
           </div>
-          {currentUser?.is_manager && (
-            <AddProfileDialog
-              isOpen={isOpen}
-              setIsOpen={setIsOpen}
-              newProfile={newProfile}
-              setNewProfile={setNewProfile}
-              onSubmit={handleSubmit}
-            />
-          )}
+          <AddProfileDialog
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+            newProfile={newProfile}
+            setNewProfile={setNewProfile}
+            onSubmit={handleSubmit}
+          />
         </div>
 
         <div className="bg-white rounded-lg border shadow-sm">
