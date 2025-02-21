@@ -17,8 +17,9 @@ import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Schedule = () => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
+  // Initialize with March 2025
+  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1)); // Month is 0-based, so 2 is March
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
 
