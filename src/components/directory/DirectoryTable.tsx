@@ -2,7 +2,6 @@
 import { Profile } from "@/types/profile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Image } from "@/components/ui/avatar";
 
 interface DirectoryTableProps {
   profiles: Profile[] | undefined;
