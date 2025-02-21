@@ -1,7 +1,14 @@
 
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
-import { Calendar, Users, Bell, ArrowRight } from "lucide-react";
+import { 
+  Calendar, 
+  Users, 
+  ArrowRight, 
+  ClipboardCheck, 
+  UserCircle2,
+  Sparkles 
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -61,22 +68,25 @@ const Index = () => {
     description: "Hitta kontaktuppgifter till dina kollegor",
     onClick: () => navigate('/directory'),
     disabled: false
-  }, {
-    icon: Bell,
-    title: "Företagsuppdateringar",
-    description: "Håll dig uppdaterad med viktiga meddelanden och nyheter",
-    disabled: true
   }];
 
   return (
     <AppLayout>
-      <div className="min-h-[calc(100vh-56px)] bg-gradient-to-br from-indigo-50 via-purple-50/50 to-pink-50">
-        <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="min-h-[calc(100vh-56px)] relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/50 to-pink-50">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.1),transparent_50%)]" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <motion.header 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-white/30 backdrop-blur-sm rounded-full">
+                <Sparkles className="w-12 h-12 text-indigo-600" />
+              </div>
+            </div>
             <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4">
               Välkommen till Vårdschema
             </h1>
@@ -89,36 +99,11 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             {dashboardCards.map((card, index) => (
               <DashboardCard key={index} {...card} />
             ))}
-          </motion.section>
-
-          <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="relative"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-3xl" />
-            <Card className="relative p-8 border-0 bg-white/80 backdrop-blur-sm">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                Senaste uppdateringar
-              </h2>
-              <div className="space-y-4">
-                {[1, 2, 3].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100/50"
-                  >
-                    <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-3 w-1/2 bg-gray-100 rounded mt-2 animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            </Card>
           </motion.section>
         </div>
       </div>
