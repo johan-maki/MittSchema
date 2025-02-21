@@ -10,6 +10,10 @@ export type Shift = {
   department: string;
   notes?: string;
   created_by?: string;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+  };
 };
 
 export type ShiftFormData = {
@@ -18,4 +22,5 @@ export type ShiftFormData = {
   shift_type: ShiftType;
   department: string;
   notes: string;
+  employee_id?: string;
 };

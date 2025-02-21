@@ -74,10 +74,10 @@ export const WeekView = ({ date, shifts, onDeleteShift }: WeekViewProps) => {
               defaultValues={{
                 start_time: shift.start_time.slice(0, 16),
                 end_time: shift.end_time.slice(0, 16),
-                shift_type: shift.shift_type,
                 department: shift.department,
                 notes: shift.notes || "",
-                employee_id: shift.employee_id
+                employee_id: shift.employee_id,
+                shift_type: shift.shift_type
               }}
               editMode
               shiftId={shift.id}
