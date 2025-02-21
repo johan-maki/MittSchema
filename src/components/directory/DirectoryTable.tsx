@@ -8,7 +8,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { addWeeks, subWeeks, startOfWeek } from "date-fns";
+import { addWeeks, subWeeks, startOfWeek, endOfWeek, getWeek, format } from "date-fns";
+import { sv } from "date-fns/locale";
 
 interface DirectoryTableProps {
   profiles: Profile[] | undefined;
@@ -25,8 +26,8 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
     queryFn: async () => {
       if (!selectedEmployee) return [];
       
-      const startDate = currentWeek;
-      const endDate = addWeeks(startDate, 1);
+      const startDate = startOfWeek(currentWeek, { weekStartsOn: 1 });
+      const endDate = endOfWeek(currentWeek, { weekStartsOn: 1 });
       
       const { data, error } = await supabase
         .from('shifts')
@@ -38,7 +39,7 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
           )
         `)
         .eq('employee_id', selectedEmployee.id)
-        .gte('start_time', startDate.toISOString())
+        .or(`start_time.gte.${startDate.toISOString()},end_time.gte.${startDate.toISOString()}`)
         .lt('start_time', endDate.toISOString());
       
       if (error) throw error;
@@ -58,6 +59,12 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
 
   const handleNextWeek = () => {
     setCurrentWeek(prev => addWeeks(prev, 1));
+  };
+
+  const getDateDisplay = () => {
+    const weekNumber = getWeek(currentWeek, { weekStartsOn: 1, firstWeekContainsDate: 4 });
+    const monthName = format(currentWeek, 'LLLL', { locale: sv });
+    return `${monthName} - Vecka ${weekNumber}`;
   };
 
   if (isLoading) {
@@ -127,9 +134,14 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
           <div className="flex flex-col h-[90vh]">
             <div className="flex-none p-6 space-y-4 border-b">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">
-                  Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
-                </h2>
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold">
+                    Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {getDateDisplay()}
+                  </p>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
