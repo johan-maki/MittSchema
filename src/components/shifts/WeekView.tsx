@@ -9,10 +9,12 @@ import { useState } from "react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
+import { Profile } from "@/types/profile";
 
 interface WeekViewProps {
   date: Date;
-  shifts: Shift[];
+  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }>;
 }
 
 export const WeekView = ({ date, shifts }: WeekViewProps) => {
@@ -45,12 +47,8 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const getShiftsForRoleAndDay = (role: string, day: Date) => {
     return shifts.filter(shift => {
       const shiftStart = new Date(shift.start_time);
-      // Find the profile for this shift
       const profile = profiles?.find(p => p.id === shift.employee_id);
-      return (
-        isSameDay(shiftStart, day) &&
-        profile?.role === role
-      );
+      return isSameDay(shiftStart, day) && profile?.role === role;
     });
   };
 
@@ -91,7 +89,6 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                 <div key={dayDate.toISOString()} className="border-b border-r p-2 min-h-[120px] relative">
                   <div className="space-y-2">
                     {getShiftsForRoleAndDay(role, dayDate).map((shift) => {
-                      // Find the full profile for this shift
                       const fullProfile = profiles?.find(p => p.id === shift.employee_id);
                       
                       return (
@@ -126,6 +123,24 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
             </div>
           </div>
         ))}
+
+        {/* Experience Level Summary Row */}
+        <div className="grid grid-cols-[200px,repeat(7,1fr)]">
+          <div className="border-b border-r border-gray-100 p-4 font-medium text-gray-400 text-sm">
+            Experience Level
+          </div>
+          <div className="grid grid-cols-subgrid col-span-7">
+            {weekDays.map(({ date: dayDate }) => (
+              <div key={`summary-${dayDate.toISOString()}`} className="border-b border-r border-gray-100">
+                <ExperienceLevelSummary
+                  date={dayDate}
+                  shifts={shifts}
+                  profiles={profiles || []}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
