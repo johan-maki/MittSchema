@@ -21,7 +21,6 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const weekDays = getWeekDays(date);
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
 
-  // Fetch profiles to get role and experience level information
   const { data: profiles } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
@@ -53,41 +52,51 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+    <div className="bg-white rounded-lg shadow overflow-x-auto">
       <div className="min-w-[1200px]">
-        <div className="grid grid-cols-[200px,repeat(7,1fr)] gap-px bg-gray-200">
-          <div className="bg-white p-4 font-medium text-gray-400 text-sm">Roll</div>
+        {/* Header */}
+        <div className="grid grid-cols-[240px,repeat(7,1fr)] border-b">
+          <div className="p-4 font-medium text-gray-500 text-sm border-r">Roll</div>
           {weekDays.map(({ dayName, dayNumber }) => (
             <div
               key={dayName}
-              className="p-2 text-center bg-white"
+              className="p-3 text-center border-r last:border-r-0"
             >
-              <div className="text-xs sm:text-sm font-medium text-gray-600">
+              <div className="text-sm font-medium text-gray-600">
                 {dayName}
               </div>
-              <div className="text-sm sm:text-lg">{dayNumber}</div>
+              <div className="text-2xl font-semibold text-gray-900">{dayNumber}</div>
             </div>
           ))}
         </div>
 
+        {/* Role Rows */}
         {ROLES.map((role) => (
-          <div key={role} className="grid grid-cols-[200px,repeat(7,1fr)]">
+          <div key={role} className="grid grid-cols-[240px,repeat(7,1fr)] group">
             <div 
-              className="p-4 flex items-center gap-2 border-b border-r cursor-pointer hover:bg-gray-50"
+              className="p-4 flex items-center gap-2 border-r border-b cursor-pointer hover:bg-gray-50 group"
               onClick={() => toggleRole(role)}
             >
-              {hiddenRoles.has(role) ? (
-                <ChevronRight className="h-4 w-4 text-gray-400" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              )}
-              <span className={ROLE_COLORS[role].text}>{role}</span>
+              <div className="flex items-center gap-3">
+                {hiddenRoles.has(role) ? (
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                )}
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${ROLE_COLORS[role].bg.replace('bg-', 'bg-')}`} />
+                  <span className="font-medium text-gray-900">{role}</span>
+                </div>
+              </div>
             </div>
             
             <div className={`grid grid-cols-subgrid col-span-7 ${hiddenRoles.has(role) ? 'hidden' : ''}`}>
               {weekDays.map(({ date: dayDate }) => (
-                <div key={dayDate.toISOString()} className="border-b border-r p-2 min-h-[120px] relative">
-                  <div className="space-y-2">
+                <div 
+                  key={dayDate.toISOString()} 
+                  className="relative border-b border-r last:border-r-0 min-h-[140px] group"
+                >
+                  <div className="p-2 space-y-2">
                     {getShiftsForRoleAndDay(role, dayDate).map((shift) => {
                       const fullProfile = profiles?.find(p => p.id === shift.employee_id);
                       
@@ -96,17 +105,19 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                           key={shift.id}
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className={`${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border} rounded-md border p-2 text-sm`}
+                          className="rounded-lg border bg-white shadow-sm p-2 hover:shadow-md transition-shadow"
                         >
-                          <div className="font-medium">
-                            {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
+                          <div className="text-sm font-medium text-gray-900">
+                            {format(new Date(shift.start_time), 'HH:mm')} – {format(new Date(shift.end_time), 'HH:mm')}
                           </div>
-                          <div className="text-gray-600">
+                          <div className="text-sm text-gray-600 mt-1">
                             {shift.profiles?.first_name} {shift.profiles?.last_name}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            Exp: {fullProfile?.experience_level ?? '-'}
-                          </div>
+                          {fullProfile?.experience_level && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Experience: {fullProfile.experience_level}
+                            </div>
+                          )}
                         </motion.div>
                       );
                     })}
@@ -114,7 +125,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute bottom-2 right-2 h-6 w-6 p-0"
+                    className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -125,13 +136,13 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
         ))}
 
         {/* Experience Level Summary Row */}
-        <div className="grid grid-cols-[200px,repeat(7,1fr)]">
-          <div className="border-b border-r border-gray-100 p-4 font-medium text-gray-400 text-sm">
+        <div className="grid grid-cols-[240px,repeat(7,1fr)] bg-gray-50">
+          <div className="p-4 font-medium text-gray-500 text-sm border-r">
             Experience Level
           </div>
           <div className="grid grid-cols-subgrid col-span-7">
             {weekDays.map(({ date: dayDate }) => (
-              <div key={`summary-${dayDate.toISOString()}`} className="border-b border-r border-gray-100">
+              <div key={`summary-${dayDate.toISOString()}`} className="border-r last:border-r-0">
                 <ExperienceLevelSummary
                   date={dayDate}
                   shifts={shifts}
