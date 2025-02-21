@@ -154,8 +154,8 @@ export const WeekView = ({ date, shifts, onDeleteShift }: WeekViewProps) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
-      <div className="min-w-[640px]">
-        <div className="grid grid-cols-[60px,repeat(7,1fr)] gap-px bg-gray-200">
+      <div className="min-w-[1200px]"> {/* Increased from 640px to 1200px */}
+        <div className="grid grid-cols-[100px,repeat(7,1fr)] gap-px bg-gray-200"> {/* Increased time column from 60px to 100px */}
           <div className="bg-white" />
           {weekDays.map(({ dayName, dayNumber }) => (
             <div
@@ -169,7 +169,7 @@ export const WeekView = ({ date, shifts, onDeleteShift }: WeekViewProps) => {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-[60px,repeat(7,1fr)]">
+        <div className="grid grid-cols-[100px,repeat(7,1fr)]"> {/* Increased time column from 60px to 100px */}
           <div className="divide-y">
             {hours.map((hour) => (
               <div key={hour} className="h-6 flex items-start p-1">
