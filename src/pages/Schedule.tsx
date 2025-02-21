@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -120,16 +119,14 @@ const Schedule = () => {
     }
 
     switch (currentView) {
+      case 'day':
+        return <DayView date={currentDate} shifts={shifts} />;
       case 'week':
         return <WeekView date={currentDate} shifts={shifts} />;
       case 'month':
         return <MonthlySchedule date={currentDate} shifts={shifts} profiles={profiles} />;
       default:
-        return (
-          <div className="bg-white rounded-lg shadow-sm border p-4">
-            {currentView} vy kommer snart
-          </div>
-        );
+        return null;
     }
   }
 };
