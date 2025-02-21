@@ -23,11 +23,4 @@ export type NewProfile = {
 };
 
 // Detta är typen som Supabase förväntar sig vid insättning
-export type InsertProfile = {
-  first_name: string;
-  last_name: string;
-  role: string;
-  department?: string | null;
-  phone?: string | null;
-  is_manager?: boolean;
-};
+export type InsertProfile = Omit<Profile, 'id' | 'created_at' | 'updated_at'>;
