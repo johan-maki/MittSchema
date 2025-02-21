@@ -1,4 +1,3 @@
-
 import { Profile } from "@/types/profile";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -151,10 +150,9 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={handlePreviousWeek}
                   className="flex items-center gap-1"
                 >
@@ -163,7 +161,6 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={handleNextWeek}
                   className="flex items-center gap-1"
                 >
