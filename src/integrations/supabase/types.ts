@@ -13,7 +13,7 @@ export type Database = {
         Row: {
           created_at: string
           department: string | null
-          experience_level: number | null
+          experience_level: number
           first_name: string
           id: string
           last_name: string
@@ -24,7 +24,7 @@ export type Database = {
         Insert: {
           created_at?: string
           department?: string | null
-          experience_level?: number | null
+          experience_level?: number
           first_name: string
           id: string
           last_name: string
@@ -35,7 +35,7 @@ export type Database = {
         Update: {
           created_at?: string
           department?: string | null
-          experience_level?: number | null
+          experience_level?: number
           first_name?: string
           id?: string
           last_name?: string
@@ -124,7 +124,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shift_experience_levels: {
+        Row: {
+          employee_id: string | null
+          end_time: string | null
+          experience_level: number | null
+          role: string | null
+          start_time: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       create_user_with_profile: {

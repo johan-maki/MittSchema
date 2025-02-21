@@ -4,10 +4,12 @@ import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
 import { Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { ShiftForm } from "./ShiftForm";
 import { Button } from "@/components/ui/button";
+import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
+import { useToast } from "@/components/ui/use-toast";
 
 interface MonthlyScheduleProps {
   date: Date;
@@ -46,6 +48,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const [isAddShiftDialogOpen, setIsAddShiftDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isEditShiftDialogOpen, setIsEditShiftDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
     return shifts.filter(shift => 
@@ -61,6 +64,22 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   };
 
   const handleShiftClick = (shift: Shift) => {
+    // Calculate total experience without this shift
+    const remainingExperience = shifts
+      .filter(s => isSameDay(new Date(s.start_time), new Date(shift.start_time)) && s.id !== shift.id)
+      .reduce((sum, s) => {
+        const profile = profiles.find(p => p.id === s.employee_id);
+        return sum + (profile?.experience_level || 0);
+      }, 0);
+
+    if (remainingExperience < 7) {
+      toast({
+        title: "Warning",
+        description: "Editing this shift may result in insufficient experience levels for this day.",
+        variant: "destructive",
+      });
+    }
+
     setSelectedShift(shift);
     setIsEditShiftDialogOpen(true);
   };
@@ -73,11 +92,15 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
         </div>
         <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
           {daysInMonth.map((day) => (
-            <div
-              key={day.toISOString()}
-              className="border-b border-r border-gray-200 p-2 font-medium text-gray-500 text-center"
-            >
-              {format(day, 'd EEE', { locale: sv })}
+            <div key={day.toISOString()} className="border-b border-r border-gray-200">
+              <div className="p-2 font-medium text-gray-500 text-center">
+                {format(day, 'd EEE', { locale: sv })}
+              </div>
+              <ExperienceLevelSummary
+                date={day}
+                shifts={shifts}
+                profiles={profiles}
+              />
             </div>
           ))}
         </div>
@@ -98,26 +121,32 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
                     className="border-b border-r border-gray-200 p-1 min-h-[100px] relative"
                   >
                     <div className="space-y-1">
-                      {dayShifts.map((shift) => (
-                        <div
-                          key={shift.id}
-                          onClick={() => handleShiftClick(shift)}
-                          className={`
-                            rounded-md p-1 text-xs border cursor-pointer
-                            ${ROLE_COLORS[role].bg}
-                            ${ROLE_COLORS[role].border}
-                            hover:brightness-95 transition-all
-                          `}
-                        >
-                          <div className="font-medium">
-                            {format(new Date(shift.start_time), 'HH:mm')} - 
-                            {format(new Date(shift.end_time), 'HH:mm')}
+                      {dayShifts.map((shift) => {
+                        const profile = profiles.find(p => p.id === shift.employee_id);
+                        return (
+                          <div
+                            key={shift.id}
+                            onClick={() => handleShiftClick(shift)}
+                            className={`
+                              rounded-md p-1 text-xs border cursor-pointer
+                              ${ROLE_COLORS[role].bg}
+                              ${ROLE_COLORS[role].border}
+                              hover:brightness-95 transition-all
+                            `}
+                          >
+                            <div className="font-medium">
+                              {format(new Date(shift.start_time), 'HH:mm')} - 
+                              {format(new Date(shift.end_time), 'HH:mm')}
+                            </div>
+                            <div className="truncate">
+                              {shift.profiles.first_name} {shift.profiles.last_name}
+                            </div>
+                            <div className="text-xs mt-1">
+                              Experience: {profile?.experience_level || 0}
+                            </div>
                           </div>
-                          <div className="truncate">
-                            {shift.profiles.first_name} {shift.profiles.last_name}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <Button
                       variant="ghost"
