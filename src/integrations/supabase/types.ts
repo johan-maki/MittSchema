@@ -127,7 +127,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_user_with_profile: {
+        Args: {
+          email: string
+          role: string
+          first_name: string
+          last_name: string
+          department: string
+          phone: string
+          is_manager: boolean
+        }
+        Returns: string
+      }
+      postgres_fdw_disconnect: {
+        Args: {
+          "": string
+        }
+        Returns: boolean
+      }
+      postgres_fdw_disconnect_all: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      postgres_fdw_get_connections: {
+        Args: Record<PropertyKey, never>
+        Returns: Record<string, unknown>[]
+      }
+      postgres_fdw_handler: {
+        Args: Record<PropertyKey, never>
+        Returns: unknown
+      }
     }
     Enums: {
       shift_type: "day" | "evening" | "night"
