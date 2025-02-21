@@ -17,7 +17,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <header className="border-b bg-white">
         <div className="flex h-14 items-center px-4 gap-8">
           <Link to="/" className="flex items-center gap-2 font-semibold text-2xl">
-            <span className="text-[#0FA0CE]">Vårdschema</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Vårdschema</span>
             <span className="text-red-500">*</span>
           </Link>
           <nav className="flex items-center space-x-1 flex-1">
