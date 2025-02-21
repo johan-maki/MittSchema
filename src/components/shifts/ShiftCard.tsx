@@ -33,7 +33,7 @@ export const ShiftCard = ({ shift, profile, roleColors, onClick }: ShiftCardProp
         {shift.profiles.first_name} {shift.profiles.last_name}
       </div>
       <div className="text-xs mt-1">
-        Experience: {profile?.experience_level || 0}
+        Exp: {profile?.experience_level || 0}
       </div>
     </div>
   );
