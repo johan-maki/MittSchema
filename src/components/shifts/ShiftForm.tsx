@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,12 +13,16 @@ import { useAuth } from "@/contexts/AuthContext";
 interface ShiftFormProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultValues?: {
+    start_time?: string;
+    end_time?: string;
+  };
 }
 
-export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
+export const ShiftForm = ({ isOpen, onOpenChange, defaultValues }: ShiftFormProps) => {
   const [formData, setFormData] = useState<ShiftFormData & { employee_id?: string }>({
-    start_time: "",
-    end_time: "",
+    start_time: defaultValues?.start_time || "",
+    end_time: defaultValues?.end_time || "",
     shift_type: "day",
     department: "",
     notes: "",
@@ -70,7 +74,7 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
         description: "Arbetspasset har lagts till i schemat",
       });
 
-      // Återställ formuläret och stäng dialogen
+      // Reset form and close dialog
       setFormData({
         start_time: "",
         end_time: "",
@@ -81,7 +85,7 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
       });
       onOpenChange(false);
 
-      // Uppdatera cache
+      // Update cache
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error: any) {
       console.error('Error creating shift:', error);
@@ -94,7 +98,7 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
   };
 
   return (
-    <DialogContent className="sm:max-w-md">
+    <>
       <DialogHeader>
         <DialogTitle>Lägg till nytt arbetspass</DialogTitle>
       </DialogHeader>
@@ -191,6 +195,6 @@ export const ShiftForm = ({ isOpen, onOpenChange }: ShiftFormProps) => {
           </Button>
         </DialogFooter>
       </form>
-    </DialogContent>
+    </>
   );
 };
