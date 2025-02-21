@@ -92,7 +92,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
 
       <div className="grid grid-cols-[200px,1fr]">
         {ROLES.map((role) => (
-          <div key={role} className="contents">
+          <div key={role} className="grid grid-cols-subgrid col-span-2">
             <div 
               className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-center gap-2 cursor-pointer hover:bg-gray-50`}
               onClick={() => toggleRole(role)}
@@ -104,32 +104,30 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
               )}
               <span className={ROLE_COLORS[role].text}>{role}</span>
             </div>
-            {!hiddenRoles.has(role) && (
-              <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
-                {daysInMonth.map((day) => {
-                  const dayShifts = getShiftsForRoleAndDay(role, day);
-                  return (
-                    <DayCell
-                      key={`${role}-${day.toISOString()}`}
-                      day={day}
-                      role={role}
-                      isLastRole={false}
-                      shifts={shifts}
-                      profiles={profiles}
-                      roleColors={ROLE_COLORS[role]}
-                      onAddClick={handleAddClick}
-                      onShiftClick={handleShiftClick}
-                      dayShifts={dayShifts}
-                    />
-                  );
-                })}
-              </div>
-            )}
+            <div className={`grid grid-cols-[repeat(31,minmax(100px,1fr))] ${hiddenRoles.has(role) ? 'hidden' : ''}`}>
+              {daysInMonth.map((day) => {
+                const dayShifts = getShiftsForRoleAndDay(role, day);
+                return (
+                  <DayCell
+                    key={`${role}-${day.toISOString()}`}
+                    day={day}
+                    role={role}
+                    isLastRole={false}
+                    shifts={shifts}
+                    profiles={profiles}
+                    roleColors={ROLE_COLORS[role]}
+                    onAddClick={handleAddClick}
+                    onShiftClick={handleShiftClick}
+                    dayShifts={dayShifts}
+                  />
+                );
+              })}
+            </div>
           </div>
         ))}
 
         {/* Experience Level Summary Row */}
-        <div className="contents">
+        <div className="grid grid-cols-subgrid col-span-2">
           <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
             Experience Level
           </div>
