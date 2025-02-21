@@ -1,62 +1,71 @@
 
 import { Shift } from "@/types/shift";
 import { motion } from "framer-motion";
-import { format, isSameDay } from "date-fns";
+import { format, differenceInHours, isSameDay, endOfDay, startOfDay, isWithinInterval } from "date-fns";
 import { getWeekDays } from "@/utils/date";
-import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
-import { ROLES, ROLE_COLORS } from "./schedule.constants";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
-import { Profile } from "@/types/profile";
 
 interface WeekViewProps {
   date: Date;
-  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }>;
+  shifts: Shift[];
 }
 
 export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const weekDays = getWeekDays(date);
-  const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  // Fetch profiles to get role and experience level information
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (error) throw error;
-      return data;
+  const renderShiftSegment = (shift: Shift, dayDate: Date) => {
+    const startTime = new Date(shift.start_time);
+    const endTime = new Date(shift.end_time);
+    
+    // Calculate segment start and end times for this day
+    const segmentStart = isSameDay(startTime, dayDate) ? startTime : startOfDay(dayDate);
+    let segmentEnd = isSameDay(endTime, dayDate) ? endTime : endOfDay(dayDate);
+    
+    // If the shift ends at midnight (00:00), adjust the end time to 23:59:59
+    if (segmentEnd.getHours() === 0 && segmentEnd.getMinutes() === 0) {
+      segmentEnd = new Date(segmentEnd.getTime() - 1000); // Subtract 1 second
     }
-  });
+    
+    // Calculate position and height
+    const startHour = segmentStart.getHours() + segmentStart.getMinutes() / 60;
+    const duration = differenceInHours(segmentEnd, segmentStart);
+    
+    // Get employee name from the joined profiles data
+    const employeeName = shift.profiles ? 
+      `${shift.profiles.first_name} ${shift.profiles.last_name}` : 
+      'Unnamed';
 
-  const toggleRole = (role: string) => {
-    const newHiddenRoles = new Set(hiddenRoles);
-    if (hiddenRoles.has(role)) {
-      newHiddenRoles.delete(role);
-    } else {
-      newHiddenRoles.add(role);
-    }
-    setHiddenRoles(newHiddenRoles);
-  };
-
-  const getShiftsForRoleAndDay = (role: string, day: Date) => {
-    return shifts.filter(shift => {
-      const shiftStart = new Date(shift.start_time);
-      const profile = profiles?.find(p => p.id === shift.employee_id);
-      return isSameDay(shiftStart, day) && profile?.role === role;
-    });
+    return (
+      <motion.div
+        key={`${shift.id}-${dayDate.toISOString()}`}
+        className="absolute px-1 w-full"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        style={{
+          top: `${startHour * 24}px`,
+          height: `${duration * 24}px`,
+        }}
+      >
+        <div className="h-full w-full rounded-md bg-blue-100 border border-blue-200 p-1 text-[10px] overflow-hidden">
+          <div className="font-medium text-blue-900">
+            {format(segmentStart, 'HH:mm')} - {format(segmentEnd, 'HH:mm')}
+          </div>
+          <div className="text-blue-700 font-medium truncate">
+            {employeeName}
+          </div>
+          {shift.notes && (
+            <div className="text-blue-700 truncate">{shift.notes}</div>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
       <div className="min-w-[1200px]">
-        <div className="grid grid-cols-[200px,repeat(7,1fr)] gap-px bg-gray-200">
-          <div className="bg-white p-4 font-medium text-gray-400 text-sm">Roll</div>
+        <div className="grid grid-cols-[100px,repeat(7,1fr)] gap-px bg-gray-200">
+          <div className="bg-white" />
           {weekDays.map(({ dayName, dayNumber }) => (
             <div
               key={dayName}
@@ -69,77 +78,28 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
             </div>
           ))}
         </div>
-
-        {ROLES.map((role) => (
-          <div key={role} className="grid grid-cols-[200px,repeat(7,1fr)]">
-            <div 
-              className="p-4 flex items-center gap-2 border-b border-r cursor-pointer hover:bg-gray-50"
-              onClick={() => toggleRole(role)}
-            >
-              {hiddenRoles.has(role) ? (
-                <ChevronRight className="h-4 w-4 text-gray-400" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              )}
-              <span className={ROLE_COLORS[role].text}>{role}</span>
-            </div>
-            
-            <div className={`grid grid-cols-subgrid col-span-7 ${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-              {weekDays.map(({ date: dayDate }) => (
-                <div key={dayDate.toISOString()} className="border-b border-r p-2 min-h-[120px] relative">
-                  <div className="space-y-2">
-                    {getShiftsForRoleAndDay(role, dayDate).map((shift) => {
-                      const fullProfile = profiles?.find(p => p.id === shift.employee_id);
-                      
-                      return (
-                        <motion.div
-                          key={shift.id}
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border} rounded-md border p-2 text-sm`}
-                        >
-                          <div className="font-medium">
-                            {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
-                          </div>
-                          <div className="text-gray-600">
-                            {shift.profiles?.first_name} {shift.profiles?.last_name}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Exp: {fullProfile?.experience_level ?? '-'}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute bottom-2 right-2 h-6 w-6 p-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+        <div className="grid grid-cols-[100px,repeat(7,1fr)]">
+          <div className="divide-y">
+            {hours.map((hour) => (
+              <div key={hour} className="h-6 flex items-start p-1">
+                <div className="text-[10px] text-gray-600">
+                  {format(new Date().setHours(hour, 0), 'HH:mm')}
                 </div>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Experience Level Summary Row */}
-        <div className="grid grid-cols-[200px,repeat(7,1fr)]">
-          <div className="border-b border-r border-gray-100 p-4 font-medium text-gray-400 text-sm">
-            Experience Level
-          </div>
-          <div className="grid grid-cols-subgrid col-span-7">
-            {weekDays.map(({ date: dayDate }) => (
-              <div key={`summary-${dayDate.toISOString()}`} className="border-b border-r border-gray-100">
-                <ExperienceLevelSummary
-                  date={dayDate}
-                  shifts={shifts}
-                  profiles={profiles || []}
-                />
               </div>
             ))}
           </div>
+          {weekDays.map(({ date: dayDate }) => (
+            <div key={dayDate.toISOString()} className="relative divide-y border-l">
+              {hours.map((hour) => (
+                <div key={hour} className="h-6 relative" />
+              ))}
+              {shifts.filter(shift => {
+                const shiftStart = new Date(shift.start_time);
+                const shiftEnd = new Date(shift.end_time);
+                return isWithinInterval(dayDate, { start: startOfDay(shiftStart), end: endOfDay(shiftEnd) });
+              }).map(shift => renderShiftSegment(shift, dayDate))}
+            </div>
+          ))}
         </div>
       </div>
     </div>
