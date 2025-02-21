@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { addWeeks, subWeeks, startOfWeek, endOfWeek, getWeek, format } from "date-fns";
 import { sv } from "date-fns/locale";
 
@@ -97,17 +97,14 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
               <th className="text-left p-4 text-sm font-medium text-[#333333]">Avdelning</th>
               <th className="text-left p-4 text-sm font-medium text-[#333333]">Telefon</th>
               <th className="text-left p-4 text-sm font-medium text-[#333333]">Erfarenhet</th>
-              <th></th>
+              <th className="text-right p-4 text-sm font-medium text-[#333333]">Schema</th>
             </tr>
           </thead>
           <tbody>
             {profiles?.map((profile) => (
               <tr key={profile.id} className="border-b last:border-b-0 hover:bg-[#F8F9FB]">
                 <td className="p-4">
-                  <div 
-                    className="flex items-center gap-3 cursor-pointer hover:text-blue-600"
-                    onClick={() => handleEmployeeClick(profile)}
-                  >
+                  <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       <div className="bg-[#F1F1F1] h-full w-full flex items-center justify-center text-[#333333] font-medium text-sm">
                         {profile.first_name[0]}
@@ -130,8 +127,14 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
                   </span>
                 </td>
                 <td className="p-4 text-right">
-                  <Button variant="ghost" size="sm">
-                    •••
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEmployeeClick(profile)}
+                    className="gap-2"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Öppna schema
                   </Button>
                 </td>
               </tr>
