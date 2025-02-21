@@ -1,4 +1,3 @@
-
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
@@ -64,7 +63,6 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   };
 
   const handleShiftClick = (shift: Shift) => {
-    // Calculate total experience without this shift
     const remainingExperience = shifts
       .filter(s => isSameDay(new Date(s.start_time), new Date(shift.start_time)) && s.id !== shift.id)
       .reduce((sum, s) => {
@@ -96,11 +94,6 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
               <div className="p-2 font-medium text-gray-500 text-center">
                 {format(day, 'd EEE', { locale: sv })}
               </div>
-              <ExperienceLevelSummary
-                date={day}
-                shifts={shifts}
-                profiles={profiles}
-              />
             </div>
           ))}
         </div>
@@ -118,9 +111,9 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
                 return (
                   <div
                     key={`${role}-${day.toISOString()}`}
-                    className="border-b border-r border-gray-200 p-1 min-h-[100px] relative"
+                    className="border-b border-r border-gray-200 p-1 min-h-[120px] relative"
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-1 mb-8">
                       {dayShifts.map((shift) => {
                         const profile = profiles.find(p => p.id === shift.employee_id);
                         return (
@@ -151,11 +144,18 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute bottom-1 right-1 h-6 w-6 p-0"
+                      className="absolute bottom-9 right-1 h-6 w-6 p-0"
                       onClick={() => handleAddClick(day, role)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
+                    {role === ROLES[ROLES.length - 1] && (
+                      <ExperienceLevelSummary
+                        date={day}
+                        shifts={shifts}
+                        profiles={profiles}
+                      />
+                    )}
                   </div>
                 );
               })}
