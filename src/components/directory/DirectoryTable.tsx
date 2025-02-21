@@ -26,7 +26,7 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
             <th className="text-left p-4 text-sm font-medium text-[#333333]">Roll</th>
             <th className="text-left p-4 text-sm font-medium text-[#333333]">Avdelning</th>
             <th className="text-left p-4 text-sm font-medium text-[#333333]">Telefon</th>
-            <th className="text-left p-4 text-sm font-medium text-[#333333]">Status</th>
+            <th className="text-left p-4 text-sm font-medium text-[#333333]">Erfarenhet</th>
             <th></th>
           </tr>
         </thead>
@@ -52,11 +52,9 @@ export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => 
               <td className="p-4 text-sm text-[#8A898C]">{profile.department || '-'}</td>
               <td className="p-4 text-sm text-[#8A898C]">{profile.phone || '-'}</td>
               <td className="p-4">
-                {profile.is_manager && (
-                  <span className="px-2 py-1 bg-[#F1F1F1] text-[#333333] text-xs rounded-full">
-                    Chef
-                  </span>
-                )}
+                <span className="px-2 py-1 bg-[#F1F1F1] text-[#333333] text-xs rounded-full">
+                  Nivå {profile.experience_level}
+                </span>
               </td>
               <td className="p-4 text-right">
                 <Button variant="ghost" size="sm">

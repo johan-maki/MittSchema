@@ -13,9 +13,9 @@ export type Database = {
         Row: {
           created_at: string
           department: string | null
+          experience_level: number | null
           first_name: string
           id: string
-          is_manager: boolean | null
           last_name: string
           phone: string | null
           role: string
@@ -24,9 +24,9 @@ export type Database = {
         Insert: {
           created_at?: string
           department?: string | null
+          experience_level?: number | null
           first_name: string
           id: string
-          is_manager?: boolean | null
           last_name: string
           phone?: string | null
           role: string
@@ -35,9 +35,9 @@ export type Database = {
         Update: {
           created_at?: string
           department?: string | null
+          experience_level?: number | null
           first_name?: string
           id?: string
-          is_manager?: boolean | null
           last_name?: string
           phone?: string | null
           role?: string

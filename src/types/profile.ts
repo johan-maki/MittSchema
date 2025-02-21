@@ -6,23 +6,20 @@ export interface Profile {
   role: string;
   department: string | null;
   phone: string | null;
-  is_manager: boolean;
+  experience_level: number;
   created_at: string;
   updated_at: string;
 }
 
-// För nya profiler behöver vi inte created_at eller updated_at
-// eftersom dessa hanteras av Supabase, men vi behöver id
 export type NewProfile = {
   first_name: string;
   last_name: string;
   role: string;
   department: string | null;
   phone: string | null;
-  is_manager: boolean;
+  experience_level: number;
 };
 
-// Detta är typen som Supabase förväntar sig vid insättning
 export type InsertProfile = {
   id: string;
   first_name: string;
@@ -30,5 +27,5 @@ export type InsertProfile = {
   role: string;
   department?: string | null;
   phone?: string | null;
-  is_manager?: boolean | null;
+  experience_level?: number;
 };
