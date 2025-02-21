@@ -34,8 +34,8 @@ export const WeekView = ({ date, shifts, onDeleteShift }: WeekViewProps) => {
         <div className="grid grid-cols-[60px,repeat(7,1fr)]">
           <div className="divide-y">
             {hours.map((hour) => (
-              <div key={hour} className="h-16 sm:h-24 flex items-start p-2 sm:p-4">
-                <div className="text-xs sm:text-sm text-gray-600">
+              <div key={hour} className="h-12 flex items-start p-2">
+                <div className="text-xs text-gray-600">
                   {format(new Date().setHours(hour, 0), 'HH:00')}
                 </div>
               </div>
@@ -44,7 +44,7 @@ export const WeekView = ({ date, shifts, onDeleteShift }: WeekViewProps) => {
           {weekDays.map(({ date: dayDate }) => (
             <div key={dayDate.toISOString()} className="relative divide-y border-l">
               {hours.map((hour) => (
-                <div key={hour} className="h-16 sm:h-24 relative" />
+                <div key={hour} className="h-12 relative" />
               ))}
               {shifts
                 .filter((shift) => isSameDay(new Date(shift.start_time), dayDate))
@@ -61,8 +61,8 @@ export const WeekView = ({ date, shifts, onDeleteShift }: WeekViewProps) => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       style={{
-                        top: `${startHour * 64}px`,
-                        height: `${duration * 64}px`,
+                        top: `${startHour * 48}px`,
+                        height: `${duration * 48}px`,
                       }}
                     >
                       <div className="h-full w-full rounded-md bg-blue-100 border border-blue-200 p-1 text-xs overflow-hidden">
