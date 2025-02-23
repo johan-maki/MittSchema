@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
+import { convertWorkPreferences } from "@/types/profile";
 
 interface WorkPreferencesProps {
   employeeId: string;
@@ -41,14 +42,13 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         .single();
 
       if (error) throw error;
+      
+      const workPreferences = convertWorkPreferences(data.work_preferences);
+      setPreferences(workPreferences); // Set preferences in the query function
+      
       return {
-        work_preferences: data.work_preferences as WorkPreferencesType ?? defaultPreferences
+        work_preferences: workPreferences
       };
-    },
-    onSettled: (data) => {
-      if (data?.work_preferences) {
-        setPreferences(data.work_preferences);
-      }
     }
   });
 
@@ -57,7 +57,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          work_preferences: preferences as any // Required because Supabase expects Json type
+          work_preferences: preferences as Json // Cast to Json type for Supabase
         })
         .eq('id', employeeId);
 

@@ -47,6 +47,34 @@ export type DatabaseProfile = Omit<Profile, 'work_preferences'> & {
 export function convertDatabaseProfile(dbProfile: DatabaseProfile): Profile {
   return {
     ...dbProfile,
-    work_preferences: dbProfile.work_preferences as WorkPreferences,
+    work_preferences: convertWorkPreferences(dbProfile.work_preferences),
+  };
+}
+
+// Helper function to safely convert Json to WorkPreferences
+export function convertWorkPreferences(json: Json): WorkPreferences {
+  const defaultPreferences: WorkPreferences = {
+    preferred_shifts: ["day"],
+    max_shifts_per_week: 5,
+    available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+  };
+
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    return defaultPreferences;
+  }
+
+  const jsonObj = json as Record<string, unknown>;
+
+  return {
+    preferred_shifts: Array.isArray(jsonObj.preferred_shifts) 
+      ? jsonObj.preferred_shifts.filter((shift): shift is "day" | "evening" | "night" => 
+          ["day", "evening", "night"].includes(String(shift)))
+      : defaultPreferences.preferred_shifts,
+    max_shifts_per_week: typeof jsonObj.max_shifts_per_week === 'number' 
+      ? jsonObj.max_shifts_per_week 
+      : defaultPreferences.max_shifts_per_week,
+    available_days: Array.isArray(jsonObj.available_days) 
+      ? jsonObj.available_days.map(String)
+      : defaultPreferences.available_days,
   };
 }
