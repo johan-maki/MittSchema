@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShiftFormData, ShiftType } from "@/types/shift";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,15 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
     employee_id: defaultValues?.employee_id || ""
   });
   
+  useEffect(() => {
+    if (defaultValues) {
+      setFormData(prev => ({
+        ...prev,
+        ...defaultValues
+      }));
+    }
+  }, [defaultValues]);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -51,44 +60,50 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
     if (!user) {
       toast({
         title: "Fel",
-        description: "Du måste vara inloggad för att skapa arbetspass",
+        description: "Du måste vara inloggad för att hantera arbetspass",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const { data, error } = await supabase
-        .from('shifts')
-        .insert([{
-          ...formData,
-          created_by: user.id
-        }])
-        .select();
+      if (editMode && shiftId) {
+        const { error } = await supabase
+          .from('shifts')
+          .update({
+            ...formData,
+          })
+          .eq('id', shiftId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Arbetspass skapat",
-        description: "Arbetspasset har lagts till i schemat",
-      });
+        toast({
+          title: "Arbetspass uppdaterat",
+          description: "Ändringarna har sparats",
+        });
+      } else {
+        const { error } = await supabase
+          .from('shifts')
+          .insert([{
+            ...formData,
+            created_by: user.id
+          }]);
 
-      setFormData({
-        start_time: "",
-        end_time: "",
-        shift_type: "day",
-        department: "",
-        notes: "",
-        employee_id: ""
-      });
+        if (error) throw error;
+
+        toast({
+          title: "Arbetspass skapat",
+          description: "Arbetspasset har lagts till i schemat",
+        });
+      }
+
       onOpenChange(false);
-
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error: any) {
-      console.error('Error creating shift:', error);
+      console.error('Error saving shift:', error);
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte skapa arbetspass. Försök igen.",
+        description: error.message || "Kunde inte spara arbetspass",
         variant: "destructive",
       });
     }
@@ -97,7 +112,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Lägg till nytt arbetspass</DialogTitle>
+        <DialogTitle>{editMode ? "Redigera arbetspass" : "Lägg till nytt arbetspass"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -188,7 +203,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
             Avbryt
           </Button>
           <Button type="submit" className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-            Skapa pass
+            {editMode ? "Spara ändringar" : "Skapa pass"}
           </Button>
         </DialogFooter>
       </form>

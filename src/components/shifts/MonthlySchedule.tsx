@@ -1,4 +1,3 @@
-
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
@@ -44,21 +43,6 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   };
 
   const handleShiftClick = (shift: Shift) => {
-    const remainingExperience = shifts
-      .filter(s => isSameDay(new Date(s.start_time), new Date(shift.start_time)) && s.id !== shift.id)
-      .reduce((sum, s) => {
-        const profile = profiles.find(p => p.id === s.employee_id);
-        return sum + (profile?.experience_level || 0);
-      }, 0);
-
-    if (remainingExperience < 7) {
-      toast({
-        title: "Warning",
-        description: "Editing this shift may result in insufficient experience levels for this day.",
-        variant: "destructive",
-      });
-    }
-
     setSelectedShift(shift);
     setIsEditShiftDialogOpen(true);
   };
@@ -126,7 +110,6 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
           </div>
         ))}
 
-        {/* Experience Level Summary Row */}
         <div className="grid grid-cols-subgrid col-span-2">
           <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
             Experience Level
@@ -167,7 +150,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
               defaultValues={{
                 start_time: selectedShift.start_time.slice(0, 16),
                 end_time: selectedShift.end_time.slice(0, 16),
-                department: selectedShift.department,
+                department: selectedShift.department || "",
                 notes: selectedShift.notes || "",
                 employee_id: selectedShift.employee_id,
                 shift_type: selectedShift.shift_type
