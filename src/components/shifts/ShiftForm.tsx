@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 
 interface ShiftFormProps {
   isOpen: boolean;
@@ -20,20 +21,32 @@ interface ShiftFormProps {
 
 export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shiftId }: ShiftFormProps) => {
   const [formData, setFormData] = useState<ShiftFormData>({
-    start_time: defaultValues?.start_time || "",
-    end_time: defaultValues?.end_time || "",
-    shift_type: defaultValues?.shift_type || "day",
-    department: defaultValues?.department || "",
-    notes: defaultValues?.notes || "",
-    employee_id: defaultValues?.employee_id || ""
+    start_time: "",
+    end_time: "",
+    shift_type: "day",
+    department: "",
+    notes: "",
+    employee_id: ""
   });
   
   useEffect(() => {
     if (defaultValues) {
-      setFormData(prev => ({
-        ...prev,
-        ...defaultValues
-      }));
+      // Format dates to match the datetime-local input format
+      const formattedStart = defaultValues.start_time ? 
+        format(new Date(defaultValues.start_time), "yyyy-MM-dd'T'HH:mm") :
+        "";
+      const formattedEnd = defaultValues.end_time ? 
+        format(new Date(defaultValues.end_time), "yyyy-MM-dd'T'HH:mm") :
+        "";
+
+      setFormData({
+        start_time: formattedStart,
+        end_time: formattedEnd,
+        shift_type: defaultValues.shift_type || "day",
+        department: defaultValues.department || "",
+        notes: defaultValues.notes || "",
+        employee_id: defaultValues.employee_id || ""
+      });
     }
   }, [defaultValues]);
 
@@ -72,6 +85,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
           .from('shifts')
           .update({
             ...formData,
+            updated_by: user.id
           })
           .eq('id', shiftId);
 
@@ -123,7 +137,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
             value={formData.employee_id}
             onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Välj anställd" />
             </SelectTrigger>
             <SelectContent>
@@ -178,7 +192,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
             value={formData.shift_type}
             onValueChange={(value) => setFormData(prev => ({ ...prev, shift_type: value as ShiftType }))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
