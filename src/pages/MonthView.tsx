@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/AppLayout";
 import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
 import { useState } from "react";
@@ -9,20 +8,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
 import { startOfMonth, endOfMonth } from "date-fns";
+import { DatabaseProfile, convertDatabaseProfile } from "@/types/profile";
 
 const MonthView = () => {
   const [date, setDate] = useState<Date>(new Date());
 
-  const { data: profiles, isLoading: isLoadingProfiles } = useQuery({
+  const { data: profiles = [] } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .order('first_name');
-      
+        .select('*');
       if (error) throw error;
-      return data as Profile[];
+      return (data || []).map(convertDatabaseProfile);
     }
   });
 
@@ -46,7 +44,7 @@ const MonthView = () => {
     enabled: !!date
   });
 
-  const isLoading = isLoadingProfiles || isLoadingShifts;
+  const isLoading = isLoadingShifts;
 
   return (
     <AppLayout>

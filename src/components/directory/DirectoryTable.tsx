@@ -1,8 +1,7 @@
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Profile } from "@/types/profile";
+import { Profile, DatabaseProfile, convertDatabaseProfile } from "@/types/profile";
 import { Pencil } from "lucide-react";
 import { AddProfileDialog } from "./AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
@@ -33,7 +32,7 @@ export function DirectoryTable() {
         .from('profiles')
         .select('*');
       if (error) throw error;
-      return data || [];
+      return (data || []).map(convertDatabaseProfile);
     }
   });
 

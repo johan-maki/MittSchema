@@ -41,9 +41,10 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return {
+        work_preferences: data.work_preferences as WorkPreferencesType ?? defaultPreferences
+      };
     },
-    initialData: { work_preferences: defaultPreferences },
     onSettled: (data) => {
       if (data?.work_preferences) {
         setPreferences(data.work_preferences);
@@ -55,7 +56,9 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ work_preferences: preferences })
+        .update({
+          work_preferences: preferences as any // Required because Supabase expects Json type
+        })
         .eq('id', employeeId);
 
       if (error) throw error;
