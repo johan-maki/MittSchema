@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { sv } from "date-fns/locale";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { PlusCircle, Settings, FileDown } from "lucide-react";
@@ -16,6 +17,7 @@ import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
+import * as XLSX from 'xlsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
+
+type ShiftWithProfiles = Shift & {
+  profiles: Pick<Profile, 'first_name' | 'last_name'>;
+};
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
@@ -161,7 +167,6 @@ const Schedule = () => {
     queryKey: ['profiles'],
     queryFn: async () => {
       if (!user) return [];
-      
       return [
         {
           id: 'doc1',
@@ -244,11 +249,40 @@ const Schedule = () => {
       return;
     }
 
-    toast({
-      title: "Exporterar schema",
-      description: "Schemat exporteras som Excel-fil...",
-      variant: "default",
-    });
+    try {
+      // Prepare data for Excel
+      const excelData = shifts.map(shift => ({
+        'Datum': format(new Date(shift.start_time), 'yyyy-MM-dd'),
+        'Personal': `${shift.profiles.first_name} ${shift.profiles.last_name}`,
+        'Roll': shift.shift_type === 'day' ? 'Dagpass' : shift.shift_type === 'evening' ? 'Kvällspass' : 'Nattpass',
+        'Starttid': format(new Date(shift.start_time), 'HH:mm'),
+        'Sluttid': format(new Date(shift.end_time), 'HH:mm'),
+        'Avdelning': shift.department
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Schema');
+
+      // Generate Excel file
+      const monthYear = format(currentDate, 'yyyy-MM');
+      XLSX.writeFile(wb, `schema-${monthYear}.xlsx`);
+
+      toast({
+        title: "Schema exporterat",
+        description: "Schemat har exporterats som Excel-fil.",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Exportering misslyckades",
+        description: "Ett fel uppstod vid exportering av schemat.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
