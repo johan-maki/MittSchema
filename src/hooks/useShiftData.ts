@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 
 export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { user } = useAuth();
@@ -17,7 +17,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         {
           id: 'doc1',
           employee_id: 'doc1',
-          shift_type: 'night',
+          shift_type: 'day',
           department: 'Emergency',
           profiles: { first_name: 'Meryl', last_name: 'Streep' }
         },
@@ -58,16 +58,39 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         }
       ];
 
-      // Generate shifts based on templates
+      // Generate shifts for current view
       const allShifts = shiftTemplates.flatMap(template => {
         const shiftDate = new Date(currentDate);
-        shiftDate.setHours(1, 0, 0);
-        const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> } = {
-          ...template,
-          start_time: shiftDate.toISOString(),
-          end_time: new Date(shiftDate.setHours(9)).toISOString()
-        };
-        return shift;
+        const shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }> = [];
+
+        // For week and month views, create shifts across multiple days
+        const daysToGenerate = currentView === 'day' ? 1 : currentView === 'week' ? 7 : 31;
+        
+        for (let i = 0; i < daysToGenerate; i++) {
+          const currentShiftDate = addDays(shiftDate, i);
+          
+          // Generate different shift times based on shift_type
+          let startHour = 8; // default for day shift
+          let endHour = 16;
+          
+          if (template.shift_type === 'evening') {
+            startHour = 16;
+            endHour = 24;
+          } else if (template.shift_type === 'night') {
+            startHour = 0;
+            endHour = 8;
+          }
+          
+          const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> } = {
+            ...template,
+            start_time: new Date(currentShiftDate.setHours(startHour, 0, 0)).toISOString(),
+            end_time: new Date(currentShiftDate.setHours(endHour, 0, 0)).toISOString()
+          };
+          
+          shifts.push(shift);
+        }
+        
+        return shifts;
       });
 
       return allShifts;
