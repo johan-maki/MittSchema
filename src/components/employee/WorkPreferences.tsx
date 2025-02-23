@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 import { convertWorkPreferences } from "@/types/profile";
+import type { Json } from "@/integrations/supabase/types";
 
 interface WorkPreferencesProps {
   employeeId: string;
