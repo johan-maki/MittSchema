@@ -1,202 +1,117 @@
-
-import { Profile } from "@/types/profile";
-import { Avatar } from "@/components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+} from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { WeekView } from "@/components/shifts/WeekView";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { X, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import { addWeeks, subWeeks, startOfWeek, endOfWeek, getWeek, format } from "date-fns";
-import { sv } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Profile } from "@/types/profile";
+import { Pencil, UserPlus } from "lucide-react";
+import React from "react";
+import { AddProfileDialog } from "./AddProfileDialog";
+import { useDirectory } from "./DirectoryContext";
 
-interface DirectoryTableProps {
-  profiles: Profile[] | undefined;
-  isLoading: boolean;
+function getInitials(profile: Profile) {
+  return `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`;
 }
 
-export const DirectoryTable = ({ profiles, isLoading }: DirectoryTableProps) => {
-  const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
-  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
-  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+export function DirectoryTable() {
+  const { profiles, departmentFilter, searchQuery } = useDirectory();
 
-  const { data: employeeShifts } = useQuery({
-    queryKey: ['employeeShifts', selectedEmployee?.id, currentWeek],
-    queryFn: async () => {
-      if (!selectedEmployee) return [];
-      
-      const startDate = startOfWeek(currentWeek, { weekStartsOn: 1 });
-      const endDate = endOfWeek(currentWeek, { weekStartsOn: 1 });
-      
-      console.log('Fetching shifts for:', {
-        employeeId: selectedEmployee.id,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
+  const filteredProfiles = profiles.filter((profile) => {
+    const searchRegex = new RegExp(searchQuery, "i");
+    const matchesSearch =
+      searchRegex.test(profile.first_name) ||
+      searchRegex.test(profile.last_name) ||
+      searchRegex.test(profile.role);
 
-      const { data, error } = await supabase
-        .from('shifts')
-        .select(`
-          *,
-          profiles:employee_id (
-            first_name,
-            last_name
-          )
-        `)
-        .eq('employee_id', selectedEmployee.id)
-        .gte('start_time', startDate.toISOString())
-        .lte('start_time', endDate.toISOString());
-      
-      if (error) {
-        console.error('Error fetching shifts:', error);
-        throw error;
-      }
+    const matchesDepartment =
+      departmentFilter === "all" || profile.department === departmentFilter;
 
-      console.log('Fetched shifts:', data);
-      return data;
-    },
-    enabled: !!selectedEmployee
+    return matchesSearch && matchesDepartment;
   });
 
-  const handleEmployeeClick = (profile: Profile) => {
-    setSelectedEmployee(profile);
-    setIsScheduleOpen(true);
-  };
-
-  const handlePreviousWeek = () => {
-    setCurrentWeek(prev => subWeeks(prev, 1));
-  };
-
-  const handleNextWeek = () => {
-    setCurrentWeek(prev => addWeeks(prev, 1));
-  };
-
-  const getDateDisplay = () => {
-    const weekNumber = getWeek(currentWeek, { weekStartsOn: 1, firstWeekContainsDate: 4 });
-    const monthName = format(currentWeek, 'LLLL', { locale: sv });
-    return `${monthName} - Vecka ${weekNumber}`;
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center p-12">
-        <div className="animate-spin h-8 w-8 border-4 border-[#8B5CF6] border-r-transparent rounded-full" />
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div className="overflow-x-auto">
-        <table className="w-full">
+    <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <table className="min-w-full divide-y divide-gray-300">
           <thead>
-            <tr className="border-b bg-[#F8F9FB]">
-              <th className="text-left p-4 text-sm font-medium text-[#333333]">Namn</th>
-              <th className="text-left p-4 text-sm font-medium text-[#333333]">Roll</th>
-              <th className="text-left p-4 text-sm font-medium text-[#333333]">Avdelning</th>
-              <th className="text-left p-4 text-sm font-medium text-[#333333]">Telefon</th>
-              <th className="text-left p-4 text-sm font-medium text-[#333333]">Erfarenhet</th>
-              <th className="text-right p-4 text-sm font-medium text-[#333333]">Schema</th>
+            <tr>
+              <th scope="col" className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Personal
+              </th>
+              <th scope="col" className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
+                Roll
+              </th>
+              <th scope="col" className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">
+                Avdelning
+              </th>
+              <th scope="col" className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">
+                Erfarenhet
+              </th>
+              <th scope="col" className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900 hidden sm:table-cell">
+                Telefon
+              </th>
+              <th scope="col" className="relative whitespace-nowrap py-3.5 pl-3 pr-4 sm:pr-0">
+                <span className="sr-only">Redigera</span>
+              </th>
             </tr>
           </thead>
-          <tbody>
-            {profiles?.map((profile) => (
-              <tr key={profile.id} className="border-b last:border-b-0 hover:bg-[#F8F9FB]">
-                <td className="p-4">
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {filteredProfiles.map((profile) => (
+              <tr key={profile.id} className="hover:bg-gray-50">
+                <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm sm:pl-0">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
-                      <div className="bg-[#F1F1F1] h-full w-full flex items-center justify-center text-[#333333] font-medium text-sm">
-                        {profile.first_name[0]}
-                        {profile.last_name[0]}
-                      </div>
+                      <AvatarFallback>{getInitials(profile)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium text-[#333333]">
+                      <div className="font-medium text-gray-900">
                         {profile.first_name} {profile.last_name}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="p-4 text-sm text-[#8A898C]">{profile.role}</td>
-                <td className="p-4 text-sm text-[#8A898C]">{profile.department || '-'}</td>
-                <td className="p-4 text-sm text-[#8A898C]">{profile.phone || '-'}</td>
-                <td className="p-4">
-                  <span className="px-2 py-1 bg-[#F1F1F1] text-[#333333] text-xs rounded-full">
-                    Nivå {profile.experience_level}
-                  </span>
+                <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-900">
+                  {profile.role}
                 </td>
-                <td className="p-4 text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEmployeeClick(profile)}
-                    className="gap-2"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Öppna schema
-                  </Button>
+                <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500 hidden sm:table-cell">
+                  {profile.department}
+                </td>
+                <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500 hidden sm:table-cell">
+                  {profile.experience_level} år
+                </td>
+                <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500 hidden sm:table-cell">
+                  {profile.phone}
+                </td>
+                <td className="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <AddProfileDialog editProfile={profile} />
+                    </DialogContent>
+                  </Dialog>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-        <DialogContent className="max-w-[95vw] w-[1400px] p-0 gap-0 overflow-hidden">
-          <div className="flex flex-col h-[90vh]">
-            <div className="flex-none p-6 space-y-4 border-b">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-semibold">
-                      Schema för {selectedEmployee?.first_name} {selectedEmployee?.last_name}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {getDateDisplay()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handlePreviousWeek}
-                      className="flex items-center gap-1"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Föregående vecka
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleNextWeek}
-                      className="flex items-center gap-1"
-                    >
-                      Nästa vecka
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsScheduleOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {selectedEmployee && (
-              <div className="flex-1 overflow-y-auto p-6 min-h-0">
-                <WeekView 
-                  date={currentWeek} 
-                  shifts={employeeShifts || []}
-                />
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
-};
+}

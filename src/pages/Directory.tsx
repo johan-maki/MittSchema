@@ -1,135 +1,48 @@
-
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Pencil, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
-import { Profile, NewProfile, InsertProfile } from "@/types/profile";
-import { DirectoryTable } from "@/components/directory/DirectoryTable";
+import { useQuery } from "@tanstack/react-query";
+import { Profile } from "@/types/profile";
+import { useDirectory } from "@/contexts/DirectoryContext";
 import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
 import { DirectoryControls } from "@/components/directory/DirectoryControls";
+import { DirectoryTable } from "@/components/directory/DirectoryTable";
 
 const Directory = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [newProfile, setNewProfile] = useState<NewProfile>({
-    first_name: '',
-    last_name: '',
-    role: '',
-    department: null,
-    phone: null,
-    experience_level: 1
-  });
-  const { toast } = useToast();
-
-  const { data: currentUser, isLoading: isLoadingCurrentUser } = useQuery({
-    queryKey: ['currentProfile'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Ingen användare inloggad");
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
-      }
-      
-      return data as Profile | null;
-    }
-  });
-
-  const { data: profiles, isLoading: isLoadingProfiles, refetch } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('first_name');
-      
-      if (error) throw error;
-      return data as Profile[];
-    }
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      if (!newProfile.first_name || !newProfile.last_name || !newProfile.role) {
-        throw new Error("Förnamn, efternamn och yrkesroll är obligatoriska fält");
-      }
-
-      const id = crypto.randomUUID();
-
-      const insertData: InsertProfile = {
-        id,
-        first_name: newProfile.first_name,
-        last_name: newProfile.last_name,
-        role: newProfile.role,
-        department: newProfile.department,
-        phone: newProfile.phone,
-        experience_level: newProfile.experience_level
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .insert(insertData);
-
-      if (error) throw error;
-
-      toast({
-        title: "Profil skapad",
-        description: "Den nya profilen har lagts till i katalogen."
-      });
-
-      setIsOpen(false);
-      setNewProfile({
-        first_name: '',
-        last_name: '',
-        role: '',
-        department: null,
-        phone: null,
-        experience_level: 1
-      });
-      refetch();
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        title: "Ett fel uppstod",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const isLoading = isLoadingCurrentUser || isLoadingProfiles;
+  const { departmentFilter, setDepartmentFilter, searchQuery, setSearchQuery } = useDirectory();
 
   return (
     <AppLayout>
-      <div className="w-full px-6 py-4">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#333333] mb-1">Personal</h1>
-            <p className="text-sm text-[#8A898C]">
-              {profiles?.length || 0} personal totalt
-            </p>
+      <div className="max-w-[95%] mx-auto">
+        <header className="mb-4 sm:mb-8 bg-gradient-to-r from-[#F2FCE2] to-[#E5DEFF] p-4 sm:p-8 rounded-2xl">
+          <div className="bg-white/90 p-4 sm:p-6 rounded-xl backdrop-blur-sm">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F2C] mb-2">Personalkatalog</h1>
+            <p className="text-[#6E59A5]">Här hittar du all information om vårdpersonalen</p>
           </div>
-          <AddProfileDialog
-            isOpen={isOpen}
-            setIsOpen={setIsOpen}
-            newProfile={newProfile}
-            setNewProfile={setNewProfile}
-            onSubmit={handleSubmit}
-          />
-        </div>
-
-        <div className="bg-white rounded-lg border shadow-sm">
+        </header>
+        
+        <div className="grid gap-4 sm:gap-8">
           <DirectoryControls />
-          <DirectoryTable profiles={profiles} isLoading={isLoading} />
+          <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <DirectoryTable />
+          </div>
         </div>
       </div>
     </AppLayout>

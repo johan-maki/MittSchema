@@ -1,25 +1,49 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import { UserPlus } from "@/components/ui/icons";
+import { AddProfileDialog } from "@/components/add-profile-dialog";
+import { useDirectory } from "@/hooks/use-directory";
 
-export const DirectoryControls = () => {
+export function DirectoryControls() {
+  const { departmentFilter, setDepartmentFilter, searchQuery, setSearchQuery } = useDirectory();
+
   return (
-    <div className="p-4 border-b">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
         <Input
-          className="max-w-xs"
           placeholder="Sök personal..."
-          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full sm:w-[300px]"
         />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Filter
-          </Button>
-          <Button variant="outline" size="sm">
-            Visa
-          </Button>
-        </div>
+        <Select
+          value={departmentFilter}
+          onValueChange={setDepartmentFilter}
+        >
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Alla avdelningar" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alla avdelningar</SelectItem>
+            <SelectItem value="Emergency">Akuten</SelectItem>
+            <SelectItem value="Surgery">Kirurgi</SelectItem>
+            <SelectItem value="Pediatrics">Barnsjukvård</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="w-full sm:w-auto">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Lägg till personal
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <AddProfileDialog />
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+}
