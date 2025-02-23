@@ -14,28 +14,24 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 
 interface WorkPreferencesProps {
   employeeId: string;
 }
 
-interface Preferences {
-  preferred_shifts: ("day" | "evening" | "night")[];
-  max_shifts_per_week: number;
-  available_days: string[];
-}
+const defaultPreferences: WorkPreferencesType = {
+  preferred_shifts: ["day"],
+  max_shifts_per_week: 5,
+  available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+};
 
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const [preferences, setPreferences] = useState<Preferences>({
-    preferred_shifts: ["day"],
-    max_shifts_per_week: 5,
-    available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
-  });
+  const [preferences, setPreferences] = useState<WorkPreferencesType>(defaultPreferences);
 
-  const { data: savedPreferences, isLoading } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ['work-preferences', employeeId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -45,11 +41,12 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         .single();
 
       if (error) throw error;
-      return data.work_preferences as Preferences;
+      return data;
     },
-    onSuccess: (data) => {
-      if (data) {
-        setPreferences(data);
+    initialData: { work_preferences: defaultPreferences },
+    onSettled: (data) => {
+      if (data?.work_preferences) {
+        setPreferences(data.work_preferences);
       }
     }
   });
@@ -102,7 +99,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
                   setPreferences(prev => ({
                     ...prev,
                     preferred_shifts: checked
-                      ? [...prev.preferred_shifts, shift as any]
+                      ? [...prev.preferred_shifts, shift as "day" | "evening" | "night"]
                       : prev.preferred_shifts.filter(s => s !== shift)
                   }));
                 }}
