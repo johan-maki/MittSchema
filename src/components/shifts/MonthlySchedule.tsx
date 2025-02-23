@@ -44,6 +44,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   };
 
   const handleShiftClick = (shift: Shift) => {
+    // Check the total experience level for the day excluding the selected shift
     const remainingExperience = shifts
       .filter(s => isSameDay(new Date(s.start_time), new Date(shift.start_time)) && s.id !== shift.id)
       .reduce((sum, s) => {
