@@ -58,38 +58,20 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
     }
 
     try {
-      if (editMode && shiftId) {
-        // Update existing shift
-        const { error } = await supabase
-          .from('shifts')
-          .update({
-            ...formData,
-            updated_by: user.id
-          })
-          .eq('id', shiftId);
+      const { data, error } = await supabase
+        .from('shifts')
+        .insert([{
+          ...formData,
+          created_by: user.id
+        }])
+        .select();
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: "Arbetspass uppdaterat",
-          description: "Arbetspasset har uppdaterats i schemat",
-        });
-      } else {
-        // Create new shift
-        const { error } = await supabase
-          .from('shifts')
-          .insert([{
-            ...formData,
-            created_by: user.id
-          }]);
-
-        if (error) throw error;
-
-        toast({
-          title: "Arbetspass skapat",
-          description: "Arbetspasset har lagts till i schemat",
-        });
-      }
+      toast({
+        title: "Arbetspass skapat",
+        description: "Arbetspasset har lagts till i schemat",
+      });
 
       setFormData({
         start_time: "",
@@ -103,10 +85,10 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
 
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error: any) {
-      console.error('Error saving shift:', error);
+      console.error('Error creating shift:', error);
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte spara arbetspass. Försök igen.",
+        description: error.message || "Kunde inte skapa arbetspass. Försök igen.",
         variant: "destructive",
       });
     }
@@ -115,7 +97,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{editMode ? "Redigera arbetspass" : "Lägg till nytt arbetspass"}</DialogTitle>
+        <DialogTitle>Lägg till nytt arbetspass</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -206,7 +188,7 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
             Avbryt
           </Button>
           <Button type="submit" className="bg-[#9b87f5] hover:bg-[#7E69AB]">
-            {editMode ? "Spara ändringar" : "Skapa pass"}
+            Skapa pass
           </Button>
         </DialogFooter>
       </form>
