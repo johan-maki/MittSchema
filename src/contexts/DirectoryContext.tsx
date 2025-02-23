@@ -2,8 +2,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface DirectoryContextType {
-  departmentFilter: string;
-  setDepartmentFilter: (filter: string) => void;
+  roleFilter: string;
+  setRoleFilter: (filter: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
@@ -11,14 +11,14 @@ interface DirectoryContextType {
 const DirectoryContext = createContext<DirectoryContextType | undefined>(undefined);
 
 export function DirectoryProvider({ children }: { children: ReactNode }) {
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <DirectoryContext.Provider
       value={{
-        departmentFilter,
-        setDepartmentFilter,
+        roleFilter,
+        setRoleFilter,
         searchQuery,
         setSearchQuery,
       }}

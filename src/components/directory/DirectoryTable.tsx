@@ -8,13 +8,23 @@ import { AddProfileDialog } from "./AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 function getInitials(profile: Profile) {
   return `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`;
 }
 
 export function DirectoryTable() {
-  const { departmentFilter, searchQuery } = useDirectory();
+  const { roleFilter, searchQuery } = useDirectory();
+  const [editingProfile, setEditingProfile] = useState({
+    first_name: '',
+    last_name: '',
+    role: '',
+    department: '',
+    phone: '',
+    experience_level: 1
+  });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['profiles'],
@@ -34,11 +44,28 @@ export function DirectoryTable() {
       searchRegex.test(profile.last_name) ||
       searchRegex.test(profile.role);
 
-    const matchesDepartment =
-      departmentFilter === "all" || profile.department === departmentFilter;
+    const matchesRole =
+      roleFilter === "all" || profile.role === roleFilter;
 
-    return matchesSearch && matchesDepartment;
+    return matchesSearch && matchesRole;
   });
+
+  const handleEditProfile = (profile: Profile) => {
+    setEditingProfile({
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      role: profile.role,
+      department: profile.department || '',
+      phone: profile.phone || '',
+      experience_level: profile.experience_level
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    // Handle submit logic here
+    setIsEditDialogOpen(false);
+  };
 
   return (
     <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -94,14 +121,20 @@ export function DirectoryTable() {
                   {profile.phone}
                 </td>
                 <td className="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                  <Dialog>
+                  <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditProfile(profile)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
-                      <AddProfileDialog profile={profile} />
+                      <AddProfileDialog
+                        isOpen={isEditDialogOpen}
+                        setIsOpen={setIsEditDialogOpen}
+                        newProfile={editingProfile}
+                        setNewProfile={setEditingProfile}
+                        onSubmit={handleSubmit}
+                      />
                     </DialogContent>
                   </Dialog>
                 </td>
