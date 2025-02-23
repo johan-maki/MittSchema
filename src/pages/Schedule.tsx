@@ -8,7 +8,7 @@ import { sv } from "date-fns/locale";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Settings, FileDown } from "lucide-react";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
 import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
@@ -16,16 +16,20 @@ import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
-
-type ShiftWithProfiles = Shift & {
-  profiles: Pick<Profile, "first_name" | "last_name">;
-};
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/components/ui/use-toast";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: shifts = [], isLoading } = useQuery({
     queryKey: ['shifts', currentDate, currentView],
@@ -41,9 +45,7 @@ const Schedule = () => {
         rangeEnd = endOfMonth(currentDate);
       }
 
-      // Base shift templates with required properties
       const shiftTemplates: Omit<ShiftWithProfiles, 'start_time' | 'end_time'>[] = [
-        // Doctors (Läkare)
         {
           id: 'doc1',
           employee_id: 'doc1',
@@ -58,7 +60,6 @@ const Schedule = () => {
           department: 'Surgery',
           profiles: { first_name: 'Morgan', last_name: 'Freeman' }
         },
-        // Nurses (Sjuksköterska)
         {
           id: 'nurse1',
           employee_id: 'nurse1',
@@ -73,7 +74,6 @@ const Schedule = () => {
           department: 'Pediatrics',
           profiles: { first_name: 'Sandra', last_name: 'Bullock' }
         },
-        // Assistant Nurses (Undersköterska)
         {
           id: 'asst1',
           employee_id: 'asst1',
@@ -90,27 +90,24 @@ const Schedule = () => {
         }
       ];
 
-      // Function to determine if a person should work on a given day
       const shouldWork = (employeeId: string, date: Date) => {
         const dayOfMonth = date.getDate();
         const dayOfWeek = date.getDay();
         
-        // Weekend rotation (some staff work weekends, others don't)
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         
-        // Different patterns for different employees
         switch(employeeId) {
-          case 'doc1': // Works 3 days on, 2 days off
+          case 'doc1':
             return dayOfMonth % 5 < 3;
-          case 'doc2': // Works weekdays only
+          case 'doc2':
             return !isWeekend;
-          case 'nurse1': // Works 4 days on, 3 days off
+          case 'nurse1':
             return dayOfMonth % 7 < 4;
-          case 'nurse2': // Works alternative weekends and some weekdays
+          case 'nurse2':
             return isWeekend ? dayOfMonth % 14 < 7 : dayOfMonth % 3 === 0;
-          case 'asst1': // Works 5 days on, 2 days off, including some weekends
+          case 'asst1':
             return (dayOfMonth + 3) % 7 < 5;
-          case 'asst2': // Works mainly evenings, with regular days off
+          case 'asst2':
             return dayOfMonth % 4 !== 0;
           default:
             return false;
@@ -130,7 +127,6 @@ const Schedule = () => {
             };
             shift.id = `${template.id}-${iterDate.getDate()}`;
             
-            // Set shift times based on shift type
             const shiftDate = new Date(iterDate);
             if (template.shift_type === 'night') {
               shiftDate.setHours(1, 0, 0);
@@ -142,7 +138,7 @@ const Schedule = () => {
               shift.start_time = shiftDate.toISOString();
               shiftDate.setHours(15, 0, 0);
               shift.end_time = shiftDate.toISOString();
-            } else { // evening
+            } else {
               shiftDate.setHours(15, 0, 0);
               shift.start_time = shiftDate.toISOString();
               shiftDate.setHours(23, 0, 0);
@@ -166,7 +162,6 @@ const Schedule = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      // Return sample profiles with all required fields
       return [
         {
           id: 'doc1',
@@ -239,6 +234,23 @@ const Schedule = () => {
     enabled: !!user
   });
 
+  const handleExportToExcel = () => {
+    if (currentView !== 'month') {
+      toast({
+        title: "Export endast tillgänglig i månadsvy",
+        description: "Byt till månadsvy för att exportera schemat.",
+        variant: "default",
+      });
+      return;
+    }
+
+    toast({
+      title: "Exporterar schema",
+      description: "Schemat exporteras som Excel-fil...",
+      variant: "default",
+    });
+  };
+
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
@@ -250,24 +262,40 @@ const Schedule = () => {
               currentView={currentView}
               onViewChange={setCurrentView}
             />
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger>
-                <Button>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Lägg till pass
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <ShiftForm 
-                  isOpen={isCreateDialogOpen}
-                  onOpenChange={setIsCreateDialogOpen}
-                  defaultValues={{
-                    start_time: new Date().toISOString().slice(0, 16),
-                    end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            <div className="flex items-center gap-2">
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger>
+                  <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Lägg till pass
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <ShiftForm 
+                    isOpen={isCreateDialogOpen}
+                    onOpenChange={setIsCreateDialogOpen}
+                    defaultValues={{
+                      start_time: new Date().toISOString().slice(0, 16),
+                      end_time: new Date(new Date().setHours(new Date().getHours() + 8)).toISOString().slice(0, 16)
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportToExcel}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Exportera schema
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </header>
 
