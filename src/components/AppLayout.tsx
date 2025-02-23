@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Menu } from "lucide-react";
+import { Sparkles, Menu, UserCircle2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -27,6 +27,13 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md"
       >
         Personal
+      </Link>
+      <Link 
+        to="/employee" 
+        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1"
+      >
+        <UserCircle2 className="w-4 h-4" />
+        Min profil
       </Link>
     </>
   );
