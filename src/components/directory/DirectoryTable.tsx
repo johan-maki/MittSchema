@@ -1,33 +1,31 @@
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Profile } from "@/types/profile";
-import { Pencil, UserPlus } from "lucide-react";
-import React from "react";
+import { Pencil } from "lucide-react";
 import { AddProfileDialog } from "./AddProfileDialog";
-import { useDirectory } from "./DirectoryContext";
+import { useDirectory } from "@/contexts/DirectoryContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 function getInitials(profile: Profile) {
   return `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`;
 }
 
 export function DirectoryTable() {
-  const { profiles, departmentFilter, searchQuery } = useDirectory();
+  const { departmentFilter, searchQuery } = useDirectory();
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const filteredProfiles = profiles.filter((profile) => {
     const searchRegex = new RegExp(searchQuery, "i");
@@ -103,7 +101,7 @@ export function DirectoryTable() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
-                      <AddProfileDialog editProfile={profile} />
+                      <AddProfileDialog profile={profile} />
                     </DialogContent>
                   </Dialog>
                 </td>

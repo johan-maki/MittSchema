@@ -1,10 +1,11 @@
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
-import { UserPlus } from "@/components/ui/icons";
-import { AddProfileDialog } from "@/components/add-profile-dialog";
-import { useDirectory } from "@/hooks/use-directory";
+import { UserPlus } from "lucide-react";
+import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
+import { useDirectory } from "@/contexts/DirectoryContext";
 
 export function DirectoryControls() {
   const { departmentFilter, setDepartmentFilter, searchQuery, setSearchQuery } = useDirectory();
