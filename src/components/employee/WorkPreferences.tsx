@@ -28,6 +28,15 @@ const defaultPreferences: WorkPreferencesType = {
   available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
 };
 
+// Helper function to convert WorkPreferences to a Json-compatible object
+const toJsonObject = (preferences: WorkPreferencesType): Record<string, Json> => {
+  return {
+    preferred_shifts: preferences.preferred_shifts as Json[],
+    max_shifts_per_week: preferences.max_shifts_per_week as number,
+    available_days: preferences.available_days as Json[]
+  };
+};
+
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -45,7 +54,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       if (error) throw error;
       
       const workPreferences = convertWorkPreferences(data.work_preferences);
-      setPreferences(workPreferences); // Set preferences in the query function
+      setPreferences(workPreferences);
       
       return {
         work_preferences: workPreferences
@@ -58,7 +67,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          work_preferences: preferences as Json // Cast to Json type for Supabase
+          work_preferences: toJsonObject(preferences)
         })
         .eq('id', employeeId);
 
