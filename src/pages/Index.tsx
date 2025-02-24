@@ -1,6 +1,7 @@
 
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
+import { WavyBackground } from "@/components/ui/wavy-background";
 import { 
   Calendar, 
   Users, 
@@ -72,41 +73,43 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <div className="min-h-[calc(100vh-56px)] relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/50 to-pink-50">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.1),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.1),transparent_50%)]" />
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-          <motion.header 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
-            <div className="flex justify-center mb-6">
-              <div className="p-4 bg-white/30 backdrop-blur-sm rounded-full">
-                <Sparkles className="w-12 h-12 text-indigo-600" />
-              </div>
+      <WavyBackground 
+        className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8"
+        colors={["#c084fc", "#818cf8", "#38bdf8"]}
+        backgroundFill="#1e1b4b"
+        blur={20}
+        speed="slow"
+        waveOpacity={0.5}
+      >
+        <motion.header 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
+        >
+          <div className="flex justify-center mb-6">
+            <div className="p-4 bg-white/10 backdrop-blur-sm rounded-full">
+              <Sparkles className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4">
-              Välkommen till Vårdschema
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Hantera vårdpersonal enkelt och effektivt med vårt moderna schemaläggningssystem
-            </p>
-          </motion.header>
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+            Välkommen till Vårdschema
+          </h1>
+          <p className="text-xl text-gray-200 max-w-2xl mx-auto">
+            Hantera vårdpersonal enkelt och effektivt med vårt moderna schemaläggningssystem
+          </p>
+        </motion.header>
 
-          <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            {dashboardCards.map((card, index) => (
-              <DashboardCard key={index} {...card} />
-            ))}
-          </motion.section>
-        </div>
-      </div>
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          {dashboardCards.map((card, index) => (
+            <DashboardCard key={index} {...card} />
+          ))}
+        </motion.section>
+      </WavyBackground>
     </AppLayout>
   );
 };
