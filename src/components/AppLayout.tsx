@@ -33,7 +33,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1"
       >
         <UserCircle2 className="w-4 h-4" />
-        Min profil
+        Anställda vy
       </Link>
     </>
   );
