@@ -58,6 +58,13 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         }
       ];
 
+      // Map roles to shift types for proper filtering
+      const roleShiftTypes = {
+        'Läkare': 'day',
+        'Sjuksköterska': 'evening',
+        'Undersköterska': 'night'
+      };
+
       // Generate shifts for current view with more variety
       const allShifts = shiftTemplates.flatMap(template => {
         const shiftDate = new Date(currentDate);
@@ -107,13 +114,30 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
             
             const endTime = addMinutes(startTime, shiftDuration * 60);
             
-            const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
-              ...template,
-              start_time: startTime.toISOString(),
-              end_time: endTime.toISOString()
-            };
-            
-            shifts.push(shift);
+            // Only create the shift if it matches the role-shift type mapping
+            // Add more variety to shift types for Undersköterska
+            if (template.employee_id.startsWith('asst')) {
+              // For Undersköterska, create both evening and night shifts
+              const shiftTypes = ['evening', 'night'];
+              const selectedType = shiftTypes[Math.floor(Math.random() * shiftTypes.length)];
+              
+              const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
+                ...template,
+                shift_type: selectedType,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString()
+              };
+              
+              shifts.push(shift);
+            } else {
+              const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
+                ...template,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString()
+              };
+              
+              shifts.push(shift);
+            }
           }
         }
         
