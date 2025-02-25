@@ -1,3 +1,4 @@
+
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
@@ -8,12 +9,11 @@ import { ShiftForm } from "./ShiftForm";
 import { DayCell } from "./DayCell";
 import { useToast } from "@/components/ui/use-toast";
 import { ROLES, ROLE_COLORS, Role } from "./schedule.constants";
-import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface MonthlyScheduleProps {
   date: Date;
-  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }>;
+  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>;
   profiles: Profile[];
 }
 
