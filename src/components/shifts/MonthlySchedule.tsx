@@ -31,10 +31,13 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const { toast } = useToast();
 
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
-    return shifts.filter(shift => 
-      isSameDay(new Date(shift.start_time), day) && 
-      profiles.find(p => p.id === shift.employee_id)?.role === role
-    );
+    return shifts.filter(shift => {
+      // Find the profile for this shift
+      const profile = profiles.find(p => p.id === shift.employee_id);
+      
+      // Check if the shift is on the correct day and the employee has the correct role
+      return isSameDay(new Date(shift.start_time), day) && profile?.role === role;
+    });
   };
 
   const handleAddClick = (day: Date, role: Role) => {
