@@ -7,7 +7,7 @@ import { ShiftForm } from "./ShiftForm";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
@@ -43,10 +43,8 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     return shiftsWithProfiles.filter(shift => {
       const shiftDate = new Date(shift.start_time);
       return (
-        shiftDate.getDate() === date.getDate() &&
-        shiftDate.getMonth() === date.getMonth() &&
-        shiftDate.getFullYear() === date.getFullYear() &&
-        shift.shift_type === role
+        isSameDay(shiftDate, date) &&
+        shift.shift_type === role.toLowerCase()
       );
     });
   };
@@ -85,50 +83,53 @@ const DayView = ({ date, shifts }: DayViewProps) => {
         </div>
 
         <div className="grid grid-cols-[200px,1fr]">
-          {ROLES.map((role) => (
-            <div key={role} className="grid grid-cols-subgrid col-span-2">
-              <div 
-                className="border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50"
-                onClick={() => toggleRole(role)}
-              >
-                {hiddenRoles.has(role) ? (
-                  <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
-                )}
-                <span className={ROLE_COLORS[role].text}>{role}</span>
-              </div>
-              
-              <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-                <div className="border-b border-r border-gray-100 h-24 relative">
-                  {getShiftsForRole(role).map((shift) => {
-                    const { startPercent, widthPercent } = calculateShiftPosition(shift);
-                    return (
-                      <div
-                        key={shift.id}
-                        className={`absolute top-1 h-[calc(100%-8px)] rounded-md border cursor-pointer hover:brightness-95 ${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border}`}
-                        style={{
-                          left: `${startPercent}%`,
-                          width: `${widthPercent}%`,
-                        }}
-                        onClick={() => handleShiftClick(shift)}
-                      >
-                        <div className="p-2 text-xs">
-                          <div className="font-medium truncate">
-                            {format(new Date(shift.start_time), 'HH:mm')} - 
-                            {format(new Date(shift.end_time), 'HH:mm')}
-                          </div>
-                          <div className="truncate">
-                            {shift.profiles.first_name} {shift.profiles.last_name}
+          {ROLES.map((role) => {
+            const roleShifts = getShiftsForRole(role);
+            return (
+              <div key={role} className="grid grid-cols-subgrid col-span-2">
+                <div 
+                  className="border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50"
+                  onClick={() => toggleRole(role)}
+                >
+                  {hiddenRoles.has(role) ? (
+                    <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
+                  )}
+                  <span className={ROLE_COLORS[role].text}>{role}</span>
+                </div>
+                
+                <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
+                  <div className="border-b border-r border-gray-100 h-24 relative">
+                    {roleShifts.map((shift) => {
+                      const { startPercent, widthPercent } = calculateShiftPosition(shift);
+                      return (
+                        <div
+                          key={shift.id}
+                          className={`absolute top-1 h-[calc(100%-8px)] rounded-md border cursor-pointer hover:brightness-95 ${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border}`}
+                          style={{
+                            left: `${startPercent}%`,
+                            width: `${widthPercent}%`,
+                          }}
+                          onClick={() => handleShiftClick(shift)}
+                        >
+                          <div className="p-2 text-xs">
+                            <div className="font-medium truncate">
+                              {format(new Date(shift.start_time), 'HH:mm')} - 
+                              {format(new Date(shift.end_time), 'HH:mm')}
+                            </div>
+                            <div className="truncate">
+                              {shift.profiles.first_name} {shift.profiles.last_name}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <div className="grid grid-cols-subgrid col-span-2">
             <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">

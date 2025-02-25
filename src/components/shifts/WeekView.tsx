@@ -3,7 +3,7 @@ import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { motion } from "framer-motion";
 import { getWeekDays } from "@/utils/date";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
@@ -41,10 +41,8 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
     return shiftsWithProfiles.filter(shift => {
       const shiftDate = new Date(shift.start_time);
       return (
-        shiftDate.getDate() === dayDate.getDate() &&
-        shiftDate.getMonth() === dayDate.getMonth() &&
-        shiftDate.getFullYear() === dayDate.getFullYear() &&
-        shift.shift_type === role
+        isSameDay(shiftDate, dayDate) &&
+        shift.shift_type === role.toLowerCase()
       );
     });
   };
