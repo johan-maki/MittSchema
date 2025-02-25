@@ -4,10 +4,9 @@ import { Profile } from "@/types/profile";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
@@ -16,7 +15,8 @@ interface DayViewProps {
   shifts: Shift[];
 }
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+// Create array of hours from 1 AM to 11 PM
+const HOURS = Array.from({ length: 23 }, (_, i) => i + 1);
 
 const DayView = ({ date, shifts }: DayViewProps) => {
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
@@ -39,13 +39,18 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     setHiddenRoles(newHiddenRoles);
   };
 
+  // Map role names to shift types
+  const roleToShiftType: { [key: string]: string } = {
+    'Läkare': 'day',
+    'Undersköterska': 'evening',
+    'Sjuksköterska': 'night'
+  };
+
   const getShiftsForRole = (role: string) => {
     return shiftsWithProfiles.filter(shift => {
-      const shiftDate = new Date(shift.start_time);
-      return (
-        isSameDay(shiftDate, date) &&
-        shift.shift_type === role.toLowerCase()
-      );
+      const shiftDate = parseISO(shift.start_time);
+      const roleShiftType = roleToShiftType[role];
+      return isSameDay(shiftDate, date) && shift.shift_type === roleShiftType;
     });
   };
 
@@ -55,6 +60,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     const startHour = startTime.getHours() + startTime.getMinutes() / 60;
     const endHour = endTime.getHours() + endTime.getMinutes() / 60;
     
+    // Calculate position and width based on 24-hour format
     const startPercent = (startHour / 24) * 100;
     const widthPercent = ((endHour - startHour) / 24) * 100;
     
@@ -68,20 +74,22 @@ const DayView = ({ date, shifts }: DayViewProps) => {
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[1000px] max-w-full">
+      <div className="min-w-[1200px] max-w-full">
+        {/* Time header */}
         <div className="grid grid-cols-[200px,1fr] bg-white">
           <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
             Roll
           </div>
-          <div className="grid grid-cols-24 border-b border-r border-gray-100">
+          <div className="grid grid-cols-[repeat(23,1fr)] border-b">
             {HOURS.map((hour) => (
-              <div key={hour} className="text-center text-xs text-gray-400 py-2 border-r">
-                {hour}:00
+              <div key={hour} className="text-center text-xs text-gray-400 py-2 border-r border-gray-100">
+                {hour % 12 || 12}{hour >= 12 ? 'PM' : 'AM'}
               </div>
             ))}
           </div>
         </div>
 
+        {/* Role rows */}
         <div className="grid grid-cols-[200px,1fr]">
           {ROLES.map((role) => {
             const roleShifts = getShiftsForRole(role);
@@ -96,7 +104,10 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                   ) : (
                     <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
                   )}
-                  <span className={ROLE_COLORS[role].text}>{role}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${ROLE_COLORS[role].bg}`} />
+                    <span>{role}</span>
+                  </div>
                 </div>
                 
                 <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
@@ -115,8 +126,8 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                         >
                           <div className="p-2 text-xs">
                             <div className="font-medium truncate">
-                              {format(new Date(shift.start_time), 'HH:mm')} - 
-                              {format(new Date(shift.end_time), 'HH:mm')}
+                              {format(parseISO(shift.start_time), 'HH:mm')} - 
+                              {format(parseISO(shift.end_time), 'HH:mm')}
                             </div>
                             <div className="truncate">
                               {shift.profiles.first_name} {shift.profiles.last_name}
@@ -131,6 +142,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
             );
           })}
 
+          {/* Experience Level Summary row */}
           <div className="grid grid-cols-subgrid col-span-2">
             <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
               Experience Level
@@ -145,6 +157,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           </div>
         </div>
 
+        {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             {selectedShift && (
