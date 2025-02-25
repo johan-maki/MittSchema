@@ -9,7 +9,7 @@ import { ShiftForm } from "./ShiftForm";
 import { DayCell } from "./DayCell";
 import { useToast } from "@/components/ui/use-toast";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface MonthlyScheduleProps {
@@ -31,26 +31,17 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const { toast } = useToast();
 
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
-    // Get all profiles with this role
-    const profilesWithRole = profiles.filter(p => p.role === role);
-    const profileIdsWithRole = new Set(profilesWithRole.map(p => p.id));
-    
-    // Filter shifts for this day where the employee has the correct role
+    if (!shifts || !profiles) return [];
+
     return shifts.filter(shift => {
-      const isCorrectDay = isSameDay(new Date(shift.start_time), day);
-      const hasCorrectRole = profileIdsWithRole.has(shift.employee_id || '');
+      // Check if shift is on the correct day
+      if (!isSameDay(new Date(shift.start_time), day)) return false;
+
+      // Find the employee for this shift
+      const employee = profiles.find(p => p.id === shift.employee_id);
       
-      console.log({
-        role,
-        day: format(day, 'yyyy-MM-dd'),
-        shiftDay: format(new Date(shift.start_time), 'yyyy-MM-dd'),
-        employeeId: shift.employee_id,
-        profilesWithRole: profilesWithRole.map(p => p.id),
-        isCorrectDay,
-        hasCorrectRole
-      });
-      
-      return isCorrectDay && hasCorrectRole;
+      // Check if employee exists and has the correct role
+      return employee?.role === role;
     });
   };
 
@@ -75,6 +66,14 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
     setHiddenRoles(newHiddenRoles);
   };
 
+  if (!shifts || !profiles) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-w-[1000px]">
       <div className="grid grid-cols-[200px,1fr] bg-white">
@@ -93,7 +92,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
       </div>
 
       <div className="grid grid-cols-[200px,1fr]">
-        {ROLES.map((role) => (
+        {ROLES.map((role, index) => (
           <div key={role} className="grid grid-cols-subgrid col-span-2">
             <div 
               className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50`}
@@ -114,7 +113,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
                     key={`${role}-${day.toISOString()}`}
                     day={day}
                     role={role}
-                    isLastRole={false}
+                    isLastRole={index === ROLES.length - 1}
                     shifts={shifts}
                     profiles={profiles}
                     roleColors={ROLE_COLORS[role]}
