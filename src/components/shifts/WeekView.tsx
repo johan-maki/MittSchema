@@ -14,18 +14,12 @@ import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface WeekViewProps {
   date: Date;
-  shifts: Shift[];
+  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>;
 }
 
 export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const weekDays = getWeekDays(date);
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
-
-  // Add profiles property to shifts if missing
-  const shiftsWithProfiles = shifts.map(shift => ({
-    ...shift,
-    profiles: shift.profiles || { first_name: '', last_name: '' }
-  }));
 
   const toggleRole = (roleName: string) => {
     const newHiddenRoles = new Set(hiddenRoles);
@@ -45,7 +39,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
       'Sjuksköterska': 'night'
     };
 
-    return shiftsWithProfiles.filter(shift => {
+    return shifts.filter(shift => {
       const shiftDate = parseISO(shift.start_time);
       const roleShiftType = roleToShiftType[role];
       return isSameDay(shiftDate, dayDate) && shift.shift_type === roleShiftType;
@@ -53,10 +47,11 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   };
 
   console.log('Current week days:', weekDays.map(day => day.date.toISOString()));
-  console.log('Available shifts:', shiftsWithProfiles.map(shift => ({
+  console.log('Available shifts:', shifts.map(shift => ({
     startTime: shift.start_time,
     type: shift.shift_type,
-    name: shift.profiles?.first_name
+    name: shift.profiles?.first_name,
+    exp: shift.profiles?.experience_level
   })));
 
   return (
@@ -102,7 +97,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                         <ShiftCard
                           key={shift.id}
                           shift={shift}
-                          profile={undefined}
+                          profile={shift.profiles}
                           roleColors={ROLE_COLORS[role]}
                           onClick={() => {}}
                         />
@@ -131,7 +126,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
               <div key={`summary-${dayDate.toISOString()}`} className="border-b border-r border-gray-100 p-2">
                 <ExperienceLevelSummary
                   date={dayDate}
-                  shifts={shiftsWithProfiles}
+                  shifts={shifts}
                   profiles={[]}
                 />
               </div>

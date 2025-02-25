@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 interface ExperienceLevelSummaryProps {
-  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }>;
+  shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>;
   profiles: Profile[];
   date: Date;
 }
@@ -23,8 +23,7 @@ export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLev
     });
 
     const totalExperience = dayShifts.reduce((sum, shift) => {
-      const profile = profiles.find(p => p.id === shift.employee_id);
-      return sum + (profile?.experience_level || 0);
+      return sum + (shift.profiles?.experience_level || 0);
     }, 0);
 
     return totalExperience;
