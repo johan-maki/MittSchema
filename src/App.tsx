@@ -9,6 +9,7 @@ import Directory from "./pages/Directory";
 import EmployeeView from "./pages/EmployeeView";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import ScheduleSettings from "./pages/ScheduleSettings";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Schedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/schedule/settings"
+              element={
+                <ProtectedRoute>
+                  <ScheduleSettings />
                 </ProtectedRoute>
               }
             />
