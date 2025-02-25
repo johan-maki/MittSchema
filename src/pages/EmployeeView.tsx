@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import { Globe } from "@/components/ui/globe";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -111,8 +112,8 @@ const EmployeeView = () => {
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              Välj en anställd för att se deras schema och inställningar
+            <div className="relative h-[600px] flex items-center justify-center">
+              <Globe />
             </div>
           )}
         </div>
