@@ -1,15 +1,16 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Auth from "@/pages/Auth";
+import Schedule from "@/pages/Schedule";
+import Directory from "@/pages/Directory";
+import EmployeeView from "@/pages/EmployeeView";
+import NotFound from "@/pages/NotFound";
+import ScheduleSettings from "@/pages/ScheduleSettings";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { DirectoryProvider } from "@/contexts/DirectoryContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import Schedule from "./pages/Schedule";
-import Auth from "./pages/Auth";
-import Directory from "./pages/Directory";
-import EmployeeView from "./pages/EmployeeView";
-import NotFound from "./pages/NotFound";
-import Index from "./pages/Index";
-import "./App.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient();
 
@@ -17,37 +18,47 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/schedule"
-              element={
-                <ProtectedRoute>
-                  <Schedule />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/directory"
-              element={
-                <ProtectedRoute>
-                  <Directory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employee"
-              element={
-                <ProtectedRoute>
-                  <EmployeeView />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
+        <DirectoryProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Auth />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Schedule />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/directory"
+                element={
+                  <ProtectedRoute>
+                    <Directory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employee/:id"
+                element={
+                  <ProtectedRoute>
+                    <EmployeeView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/schedule"
+                element={
+                  <ProtectedRoute>
+                    <ScheduleSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster />
+        </DirectoryProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
