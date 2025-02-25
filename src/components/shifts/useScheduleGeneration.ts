@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Shift } from "@/types/shift";
+import { convertDatabaseProfile } from "@/types/profile";
+import type { DatabaseProfile } from "@/types/profile";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
@@ -37,7 +39,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         return [];
       }
 
-      return data;
+      return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
     }
   });
 
