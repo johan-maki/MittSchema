@@ -97,8 +97,8 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      <Card className="p-4">
+    <div className="space-y-4 max-w-full">
+      <Card className="p-4 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-gray-500" />
@@ -157,15 +157,17 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
           </div>
         </div>
         
-        {view === 'week' ? (
-          <WeekView date={currentDate} shifts={shifts || []} />
-        ) : (
-          <MonthlySchedule 
-            date={currentDate}
-            shifts={shifts || []}
-            profiles={[]}
-          />
-        )}
+        <div className="overflow-x-auto">
+          {view === 'week' ? (
+            <WeekView date={currentDate} shifts={shifts || []} />
+          ) : (
+            <MonthlySchedule 
+              date={currentDate}
+              shifts={shifts || []}
+              profiles={[]}
+            />
+          )}
+        </div>
       </Card>
     </div>
   );
