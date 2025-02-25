@@ -1,9 +1,7 @@
 
 import { DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShiftFormData, ShiftType } from "@/types/shift";
+import { ShiftFormData } from "@/types/shift";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -11,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
+import { ShiftDateTime } from "./form/ShiftDateTime";
+import { ShiftEmployee } from "./form/ShiftEmployee";
+import { ShiftDetails } from "./form/ShiftDetails";
 
 interface ShiftFormProps {
   isOpen: boolean;
@@ -55,6 +56,10 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
       return data;
     }
   });
+
+  const handleFormDataChange = (key: keyof ShiftFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,89 +150,19 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
         <DialogTitle>{editMode ? "Redigera arbetspass" : "Lägg till nytt arbetspass"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="employee" className="block text-sm font-medium text-gray-700 mb-1">
-            Anställd
-          </label>
-          <Select
-            value={formData.employee_id}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Välj anställd" />
-            </SelectTrigger>
-            <SelectContent>
-              {employees?.map((employee) => (
-                <SelectItem key={employee.id} value={employee.id}>
-                  {employee.first_name} {employee.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
-            Avdelning
-          </label>
-          <Input
-            id="department"
-            value={formData.department}
-            onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">
-            Starttid
-          </label>
-          <Input
-            id="start_time"
-            type="datetime-local"
-            value={formData.start_time}
-            onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">
-            Sluttid
-          </label>
-          <Input
-            id="end_time"
-            type="datetime-local"
-            value={formData.end_time}
-            onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="shift_type" className="block text-sm font-medium text-gray-700 mb-1">
-            Typ av pass
-          </label>
-          <Select
-            value={formData.shift_type}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, shift_type: value as ShiftType }))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Dag</SelectItem>
-              <SelectItem value="evening">Kväll</SelectItem>
-              <SelectItem value="night">Natt</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Anteckningar
-          </label>
-          <Input
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-          />
-        </div>
+        <ShiftEmployee 
+          formData={formData}
+          employees={employees}
+          onChange={handleFormDataChange}
+        />
+        <ShiftDateTime 
+          formData={formData}
+          onChange={handleFormDataChange}
+        />
+        <ShiftDetails 
+          formData={formData}
+          onChange={handleFormDataChange}
+        />
         <DialogFooter className="gap-2">
           {editMode && (
             <AlertDialog>
