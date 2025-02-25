@@ -2,7 +2,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
-import { MonthlySchedule } from "./MonthlySchedule";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
+import { Card } from "@/components/ui/card";
 import type { Shift } from "@/types/shift";
 import type { Profile } from "@/types/profile";
 
@@ -23,20 +25,22 @@ export const ScheduleGenerationPreview = ({
   onApply,
   onCancel
 }: ScheduleGenerationPreviewProps) => {
-  // Add profiles information to shifts
-  const shiftsWithProfiles = generatedShifts.map(shift => ({
-    ...shift,
-    profiles: profiles.find(p => p.id === shift.employee_id) 
-      ? {
-          first_name: profiles.find(p => p.id === shift.employee_id)!.first_name,
-          last_name: profiles.find(p => p.id === shift.employee_id)!.last_name,
-        }
-      : { first_name: '', last_name: '' }
-  }));
+  const getShiftTypeInSwedish = (type: string) => {
+    switch (type) {
+      case 'day':
+        return 'Dagpass';
+      case 'evening':
+        return 'Kvällspass';
+      case 'night':
+        return 'Nattpass';
+      default:
+        return type;
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
           <DialogDescription>
@@ -44,12 +48,32 @@ export const ScheduleGenerationPreview = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="max-h-[70vh] overflow-auto">
-          <MonthlySchedule 
-            date={new Date()} 
-            shifts={shiftsWithProfiles} 
-            profiles={profiles}
-          />
+        <div className="max-h-[60vh] overflow-y-auto space-y-2">
+          {generatedShifts.sort((a, b) => 
+            new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+          ).map((shift) => {
+            const employee = profiles.find(p => p.id === shift.employee_id);
+            return (
+              <Card key={`${shift.employee_id}-${shift.start_time}`} className="p-4 flex justify-between items-center">
+                <div>
+                  <div className="text-base font-medium">
+                    {format(new Date(shift.start_time), 'yyyy-MM-dd', { locale: sv })}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {format(new Date(shift.start_time), 'HH:mm')} -{format(new Date(shift.end_time), 'HH:mm')}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-base font-medium">
+                    {employee?.first_name} {employee?.last_name}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {getShiftTypeInSwedish(shift.shift_type)}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
         <DialogFooter className="sm:justify-between">
