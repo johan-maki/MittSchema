@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface ShiftFormProps {
   isOpen: boolean;
@@ -109,6 +111,34 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
     }
   };
 
+  const handleDelete = async () => {
+    if (!shiftId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('shifts')
+        .delete()
+        .eq('id', shiftId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Arbetspass borttaget",
+        description: "Arbetspasset har tagits bort från schemat",
+      });
+
+      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+    } catch (error: any) {
+      console.error('Error deleting shift:', error);
+      toast({
+        title: "Fel",
+        description: error.message || "Kunde inte ta bort arbetspass",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <DialogHeader>
@@ -198,7 +228,30 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
+          {editMode && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="destructive" size="icon">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Är du säker?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Detta kommer att permanent ta bort arbetspasset från schemat.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Ta bort
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Avbryt
           </Button>

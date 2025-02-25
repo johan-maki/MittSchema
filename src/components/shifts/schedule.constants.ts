@@ -1,22 +1,22 @@
 
-export type Role = 'Läkare' | 'Undersköterska' | 'Sjuksköterska';
+import { Role } from "@/types/shift";
 
-export const ROLES: Role[] = ['Läkare', 'Undersköterska', 'Sjuksköterska'];
+export const ROLES: Role[] = ['Läkare', 'Sjuksköterska', 'Undersköterska'];
 
-export const ROLE_COLORS: Record<Role, { bg: string; border: string; text: string }> = {
-  'Läkare': { 
-    bg: 'bg-[#9b87f5]/10', 
-    border: 'border-[#9b87f5]',
-    text: 'text-[#6E59A5]'
+export const ROLE_COLORS: Record<Role, { text: string; bg: string; border: string }> = {
+  'Läkare': {
+    text: 'text-blue-700',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200'
   },
-  'Undersköterska': { 
-    bg: 'bg-[#F2FCE2]/50', 
-    border: 'border-[#7E69AB]',
-    text: 'text-[#10B981]'  // Changed to a green color
+  'Sjuksköterska': {
+    text: 'text-green-700',
+    bg: 'bg-green-50',
+    border: 'border-green-200'
   },
-  'Sjuksköterska': { 
-    bg: 'bg-[#FEC6A1]/10', 
-    border: 'border-[#FEC6A1]',
-    text: 'text-[#D4956A]'
+  'Undersköterska': {
+    text: 'text-purple-700',
+    bg: 'bg-purple-50',
+    border: 'border-purple-200'
   }
 };
