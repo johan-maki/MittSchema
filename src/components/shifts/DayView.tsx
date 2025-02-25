@@ -8,7 +8,6 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { format, isSameDay, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface DayViewProps {
   date: Date;
@@ -141,20 +140,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
               </div>
             );
           })}
-
-          {/* Experience Level Summary row */}
-          <div className="grid grid-cols-subgrid col-span-2">
-            <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
-              Experience Level
-            </div>
-            <div className="border-b border-r border-gray-100">
-              <ExperienceLevelSummary
-                date={date}
-                shifts={shiftsWithProfiles}
-                profiles={[]}
-              />
-            </div>
-          </div>
         </div>
 
         {/* Edit Dialog */}
