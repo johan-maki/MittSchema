@@ -1,5 +1,5 @@
 
-import { addDays, startOfWeek, format } from "date-fns";
+import { addDays, startOfWeek, format as dateFnsFormat } from "date-fns";
 import { sv } from "date-fns/locale";
 
 export const getWeekDays = (date: Date) => {
@@ -8,12 +8,14 @@ export const getWeekDays = (date: Date) => {
     const day = addDays(start, i);
     return {
       date: day,
-      dayName: format(day, 'EEEE', { locale: sv }),
-      dayNumber: format(day, 'd', { locale: sv }),
+      dayName: dateFnsFormat(day, 'EEEE', { locale: sv }),
+      dayNumber: dateFnsFormat(day, 'd', { locale: sv }),
     };
   });
 };
 
 export const formatShiftTime = (date: Date) => {
-  return format(date, 'HH:mm');
+  return dateFnsFormat(date, 'HH:mm');
 };
+
+export const format = dateFnsFormat;

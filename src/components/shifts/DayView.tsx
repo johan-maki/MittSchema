@@ -1,5 +1,5 @@
-
 import { Shift } from "@/types/shift";
+import { Profile } from "@/types/profile";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
@@ -40,7 +40,10 @@ const DayView = ({ date, shifts }: DayViewProps) => {
         shiftDate.getFullYear() === date.getFullYear() &&
         shift.shift_type === role
       );
-    });
+    }).map(shift => ({
+      ...shift,
+      profiles: shift.profiles || { first_name: '', last_name: '' }
+    }));
   };
 
   const handleShiftClick = (shift: Shift) => {
