@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
@@ -63,7 +64,7 @@ const Schedule = () => {
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
         <header className="p-4 bg-white/30 backdrop-blur-sm border-b">
-          <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CalendarHeader
               currentDate={currentDate}
               onDateChange={setCurrentDate}
@@ -88,7 +89,9 @@ const Schedule = () => {
             exit={{ opacity: 0, y: -20 }}
             className="flex-1 p-2 sm:p-4 overflow-auto"
           >
-            {renderView()}
+            <div className="max-w-[100vw] overflow-x-auto">
+              {renderView()}
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
