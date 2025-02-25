@@ -52,7 +52,7 @@ export const CalendarHeader = ({
         <Button
           variant="outline"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-purple-50 hover:bg-purple-100 border-purple-100"
+          className="h-10 w-10 rounded-lg bg-[#D6BCFA] hover:bg-[#C4A3F9] border-[#D6BCFA]"
           onClick={() => {
             const newDate = new Date(currentDate);
             if (currentView === 'day') {
@@ -68,7 +68,7 @@ export const CalendarHeader = ({
           <ChevronLeft className="h-4 w-4 text-purple-700" />
         </Button>
 
-        <div className="min-w-[200px] text-center px-4 py-2 bg-purple-50 rounded-lg">
+        <div className="min-w-[200px] text-center px-4 py-2 bg-[#D6BCFA] rounded-lg">
           <span className="text-lg text-purple-700 font-medium">
             {getFormattedDate()}
           </span>
@@ -77,7 +77,7 @@ export const CalendarHeader = ({
         <Button
           variant="outline"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-purple-50 hover:bg-purple-100 border-purple-100"
+          className="h-10 w-10 rounded-lg bg-[#D6BCFA] hover:bg-[#C4A3F9] border-[#D6BCFA]"
           onClick={() => {
             const newDate = new Date(currentDate);
             if (currentView === 'day') {
@@ -98,27 +98,27 @@ export const CalendarHeader = ({
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className="min-w-[160px] bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700"
+            className="min-w-[160px] bg-[#D6BCFA] hover:bg-[#C4A3F9] border-[#D6BCFA] text-purple-700"
           >
-            {`${getViewLabel()} efter område`}
+            {getViewLabel()}
             <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
           <DropdownMenuItem 
-            className={`${currentView === 'day' ? 'bg-purple-50 text-purple-700' : ''}`}
+            className={`${currentView === 'day' ? 'bg-[#D6BCFA] text-purple-700' : ''}`}
             onClick={() => onViewChange('day')}
           >
             Dag
           </DropdownMenuItem>
           <DropdownMenuItem 
-            className={`${currentView === 'week' ? 'bg-purple-50 text-purple-700' : ''}`}
+            className={`${currentView === 'week' ? 'bg-[#D6BCFA] text-purple-700' : ''}`}
             onClick={() => onViewChange('week')}
           >
             Vecka
           </DropdownMenuItem>
           <DropdownMenuItem 
-            className={`${currentView === 'month' ? 'bg-purple-50 text-purple-700' : ''}`}
+            className={`${currentView === 'month' ? 'bg-[#D6BCFA] text-purple-700' : ''}`}
             onClick={() => onViewChange('month')}
           >
             Månad
