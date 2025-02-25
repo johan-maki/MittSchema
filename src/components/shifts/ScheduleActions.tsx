@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import * as XLSX from 'xlsx';
 import { format } from "date-fns";
 import { Shift } from "@/types/shift";
+import { useNavigate } from "react-router-dom";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -25,6 +26,7 @@ export const ScheduleActions = ({
   setIsCreateDialogOpen
 }: ScheduleActionsProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleExportToExcel = () => {
     if (currentView !== 'month') {
@@ -66,6 +68,10 @@ export const ScheduleActions = ({
     }
   };
 
+  const handleSettingsClick = () => {
+    navigate('/schedule/settings');
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -94,6 +100,10 @@ export const ScheduleActions = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleSettingsClick}>
+            <Settings className="mr-2 h-4 w-4" />
+            Inställningar
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleExportToExcel}>
             <FileDown className="mr-2 h-4 w-4" />
             Exportera schema
