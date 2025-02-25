@@ -1,3 +1,4 @@
+
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { useState } from "react";
@@ -21,6 +22,12 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  // Add profiles property to shifts if missing
+  const shiftsWithProfiles = shifts.map(shift => ({
+    ...shift,
+    profiles: shift.profiles || { first_name: '', last_name: '' }
+  }));
+
   const toggleRole = (roleName: string) => {
     const newHiddenRoles = new Set(hiddenRoles);
     if (hiddenRoles.has(roleName)) {
@@ -32,7 +39,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   };
 
   const getShiftsForRole = (role: string) => {
-    return shifts.filter(shift => {
+    return shiftsWithProfiles.filter(shift => {
       const shiftDate = new Date(shift.start_time);
       return (
         shiftDate.getDate() === date.getDate() &&
@@ -40,10 +47,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
         shiftDate.getFullYear() === date.getFullYear() &&
         shift.shift_type === role
       );
-    }).map(shift => ({
-      ...shift,
-      profiles: shift.profiles || { first_name: '', last_name: '' }
-    }));
+    });
   };
 
   const handleShiftClick = (shift: Shift) => {
@@ -112,7 +116,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           <div className="border-b border-r border-gray-100">
             <ExperienceLevelSummary
               date={date}
-              shifts={shifts}
+              shifts={shiftsWithProfiles}
               profiles={[]}
             />
           </div>

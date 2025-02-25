@@ -1,3 +1,4 @@
+
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { motion } from "framer-motion";
@@ -20,6 +21,12 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const weekDays = getWeekDays(date);
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
 
+  // Add profiles property to shifts if missing
+  const shiftsWithProfiles = shifts.map(shift => ({
+    ...shift,
+    profiles: shift.profiles || { first_name: '', last_name: '' }
+  }));
+
   const toggleRole = (roleName: string) => {
     const newHiddenRoles = new Set(hiddenRoles);
     if (hiddenRoles.has(roleName)) {
@@ -31,7 +38,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   };
 
   const getShiftsForDay = (dayDate: Date, role: string) => {
-    return shifts.filter(shift => {
+    return shiftsWithProfiles.filter(shift => {
       const shiftDate = new Date(shift.start_time);
       return (
         shiftDate.getDate() === dayDate.getDate() &&
@@ -39,10 +46,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
         shiftDate.getFullYear() === dayDate.getFullYear() &&
         shift.shift_type === role
       );
-    }).map(shift => ({
-      ...shift,
-      profiles: shift.profiles || { first_name: '', last_name: '' }
-    }));
+    });
   };
 
   return (
@@ -114,7 +118,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
               <div key={`summary-${dayDate.toISOString()}`} className="border-b border-r border-gray-100 p-2">
                 <ExperienceLevelSummary
                   date={dayDate}
-                  shifts={shifts}
+                  shifts={shiftsWithProfiles}
                   profiles={[]}
                 />
               </div>
