@@ -3,7 +3,7 @@ import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { motion } from "framer-motion";
 import { getWeekDays } from "@/utils/date";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
@@ -39,13 +39,20 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
 
   const getShiftsForDay = (dayDate: Date, role: string) => {
     return shiftsWithProfiles.filter(shift => {
-      const shiftDate = new Date(shift.start_time);
+      const shiftDate = parseISO(shift.start_time);
       return (
         isSameDay(shiftDate, dayDate) &&
-        shift.shift_type === role.toLowerCase()
+        shift.shift_type.toLowerCase() === role.toLowerCase()
       );
     });
   };
+
+  console.log('Current week days:', weekDays.map(day => day.date.toISOString()));
+  console.log('Available shifts:', shiftsWithProfiles.map(shift => ({
+    startTime: shift.start_time,
+    type: shift.shift_type,
+    name: shift.profiles?.first_name
+  })));
 
   return (
     <div className="min-w-[1000px]">
@@ -81,28 +88,31 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
             </div>
             
             <div className={`grid grid-cols-7 ${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-              {weekDays.map(({ date: dayDate }) => (
-                <div key={dayDate.toISOString()} className="border-b border-r border-gray-100 p-1 min-h-[120px] relative">
-                  <div className="space-y-1 mb-8">
-                    {getShiftsForDay(dayDate, role).map((shift) => (
-                      <ShiftCard
-                        key={shift.id}
-                        shift={shift}
-                        profile={undefined}
-                        roleColors={ROLE_COLORS[role]}
-                        onClick={() => {}}
-                      />
-                    ))}
+              {weekDays.map(({ date: dayDate }) => {
+                const dayShifts = getShiftsForDay(dayDate, role);
+                return (
+                  <div key={dayDate.toISOString()} className="border-b border-r border-gray-100 p-1 min-h-[120px] relative">
+                    <div className="space-y-1 mb-8">
+                      {dayShifts.map((shift) => (
+                        <ShiftCard
+                          key={shift.id}
+                          shift={shift}
+                          profile={undefined}
+                          roleColors={ROLE_COLORS[role]}
+                          onClick={() => {}}
+                        />
+                      ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute bottom-2 right-1 h-6 w-6 p-0"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute bottom-2 right-1 h-6 w-6 p-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
