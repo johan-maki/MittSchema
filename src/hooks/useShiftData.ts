@@ -13,55 +13,55 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
     queryFn: async () => {
       if (!user) return [];
       
-      const shiftTemplates: Omit<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }, 'start_time' | 'end_time'>[] = [
+      const shiftTemplates: Omit<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }, 'start_time' | 'end_time'>[] = [
         {
           id: 'doc1',
           employee_id: 'doc1',
           shift_type: 'day',
           department: 'Emergency',
-          profiles: { first_name: 'Meryl', last_name: 'Streep' }
+          profiles: { first_name: 'Meryl', last_name: 'Streep', experience_level: 5 }
         },
         {
           id: 'doc2',
           employee_id: 'doc2',
           shift_type: 'evening',
           department: 'Surgery',
-          profiles: { first_name: 'Morgan', last_name: 'Freeman' }
+          profiles: { first_name: 'Morgan', last_name: 'Freeman', experience_level: 4 }
         },
         {
           id: 'nurse1',
           employee_id: 'nurse1',
           shift_type: 'day',
           department: 'Emergency',
-          profiles: { first_name: 'Emma', last_name: 'Thompson' }
+          profiles: { first_name: 'Emma', last_name: 'Thompson', experience_level: 3 }
         },
         {
           id: 'nurse2',
           employee_id: 'nurse2',
           shift_type: 'evening',
           department: 'Pediatrics',
-          profiles: { first_name: 'Sandra', last_name: 'Bullock' }
+          profiles: { first_name: 'Sandra', last_name: 'Bullock', experience_level: 4 }
         },
         {
           id: 'asst1',
           employee_id: 'asst1',
           shift_type: 'night',
           department: 'Emergency',
-          profiles: { first_name: 'Tom', last_name: 'Hanks' }
+          profiles: { first_name: 'Tom', last_name: 'Hanks', experience_level: 2 }
         },
         {
           id: 'asst2',
           employee_id: 'asst2',
           shift_type: 'evening',
           department: 'Surgery',
-          profiles: { first_name: 'Julia', last_name: 'Roberts' }
+          profiles: { first_name: 'Julia', last_name: 'Roberts', experience_level: 3 }
         }
       ];
 
       // Generate shifts for current view with more variety
       const allShifts = shiftTemplates.flatMap(template => {
         const shiftDate = new Date(currentDate);
-        const shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> }> = [];
+        const shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }> = [];
         
         // For week and month views, create shifts across multiple days
         const daysToGenerate = currentView === 'day' ? 1 : currentView === 'week' ? 7 : 31;
@@ -107,7 +107,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
             
             const endTime = addMinutes(startTime, shiftDuration * 60);
             
-            const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> } = {
+            const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
               ...template,
               start_time: startTime.toISOString(),
               end_time: endTime.toISOString()
