@@ -38,12 +38,17 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   };
 
   const getShiftsForDay = (dayDate: Date, role: string) => {
+    // Map role names to shift types
+    const roleToShiftType: { [key: string]: string } = {
+      'Läkare': 'day',
+      'Undersköterska': 'evening',
+      'Sjuksköterska': 'night'
+    };
+
     return shiftsWithProfiles.filter(shift => {
       const shiftDate = parseISO(shift.start_time);
-      return (
-        isSameDay(shiftDate, dayDate) &&
-        shift.shift_type.toLowerCase() === role.toLowerCase()
-      );
+      const roleShiftType = roleToShiftType[role];
+      return isSameDay(shiftDate, dayDate) && shift.shift_type === roleShiftType;
     });
   };
 
