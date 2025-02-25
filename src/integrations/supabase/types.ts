@@ -16,7 +16,6 @@ export type Database = {
           experience_level: number
           first_name: string
           id: string
-          is_manager: boolean
           last_name: string
           phone: string | null
           role: string
@@ -29,7 +28,6 @@ export type Database = {
           experience_level?: number
           first_name: string
           id: string
-          is_manager?: boolean
           last_name: string
           phone?: string | null
           role: string
@@ -42,60 +40,11 @@ export type Database = {
           experience_level?: number
           first_name?: string
           id?: string
-          is_manager?: boolean
           last_name?: string
           phone?: string | null
           role?: string
           updated_at?: string
           work_preferences?: Json | null
-        }
-        Relationships: []
-      }
-      schedule_settings: {
-        Row: {
-          afternoon_shift: Database["public"]["CompositeTypes"]["shift_time_config"]
-          created_at: string
-          created_by: string | null
-          department: string
-          id: string
-          max_consecutive_days: number
-          min_rest_hours: number
-          min_weekly_rest_hours: number
-          morning_shift: Database["public"]["CompositeTypes"]["shift_time_config"]
-          night_shift: Database["public"]["CompositeTypes"]["shift_time_config"]
-          require_night_shift_qualification: boolean
-          senior_experience_threshold: number
-          updated_at: string
-        }
-        Insert: {
-          afternoon_shift: Database["public"]["CompositeTypes"]["shift_time_config"]
-          created_at?: string
-          created_by?: string | null
-          department: string
-          id?: string
-          max_consecutive_days?: number
-          min_rest_hours?: number
-          min_weekly_rest_hours?: number
-          morning_shift: Database["public"]["CompositeTypes"]["shift_time_config"]
-          night_shift: Database["public"]["CompositeTypes"]["shift_time_config"]
-          require_night_shift_qualification?: boolean
-          senior_experience_threshold?: number
-          updated_at?: string
-        }
-        Update: {
-          afternoon_shift?: Database["public"]["CompositeTypes"]["shift_time_config"]
-          created_at?: string
-          created_by?: string | null
-          department?: string
-          id?: string
-          max_consecutive_days?: number
-          min_rest_hours?: number
-          min_weekly_rest_hours?: number
-          morning_shift?: Database["public"]["CompositeTypes"]["shift_time_config"]
-          night_shift?: Database["public"]["CompositeTypes"]["shift_time_config"]
-          require_night_shift_qualification?: boolean
-          senior_experience_threshold?: number
-          updated_at?: string
         }
         Relationships: []
       }
@@ -233,13 +182,7 @@ export type Database = {
       shift_type: "day" | "evening" | "night"
     }
     CompositeTypes: {
-      shift_time_config: {
-        start_time: string | null
-        end_time: string | null
-        min_staff: number | null
-        min_experience_sum: number | null
-        min_senior_count: number | null
-      }
+      [_ in never]: never
     }
   }
 }
