@@ -64,7 +64,7 @@ export default function ScheduleSettings() {
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
+    defaultValues: settings || {
       max_consecutive_days: 5,
       min_rest_hours: 11,
       min_weekly_rest_hours: 36,
@@ -92,17 +92,44 @@ export default function ScheduleSettings() {
         min_senior_count: 1,
       },
     },
-    values: settings as SettingsFormData,
   });
 
   const mutation = useMutation({
     mutationFn: async (data: SettingsFormData) => {
+      // Ensure all required properties are present in the update
+      const updateData = {
+        department: 'General' as const,
+        max_consecutive_days: data.max_consecutive_days,
+        min_rest_hours: data.min_rest_hours,
+        min_weekly_rest_hours: data.min_weekly_rest_hours,
+        senior_experience_threshold: data.senior_experience_threshold,
+        require_night_shift_qualification: data.require_night_shift_qualification,
+        morning_shift: {
+          start_time: data.morning_shift.start_time,
+          end_time: data.morning_shift.end_time,
+          min_staff: data.morning_shift.min_staff,
+          min_experience_sum: data.morning_shift.min_experience_sum,
+          min_senior_count: data.morning_shift.min_senior_count,
+        },
+        afternoon_shift: {
+          start_time: data.afternoon_shift.start_time,
+          end_time: data.afternoon_shift.end_time,
+          min_staff: data.afternoon_shift.min_staff,
+          min_experience_sum: data.afternoon_shift.min_experience_sum,
+          min_senior_count: data.afternoon_shift.min_senior_count,
+        },
+        night_shift: {
+          start_time: data.night_shift.start_time,
+          end_time: data.night_shift.end_time,
+          min_staff: data.night_shift.min_staff,
+          min_experience_sum: data.night_shift.min_experience_sum,
+          min_senior_count: data.night_shift.min_senior_count,
+        },
+      };
+
       const { error } = await supabase
         .from('schedule_settings')
-        .update({
-          ...data,
-          department: 'General'
-        })
+        .update(updateData)
         .eq('department', 'General');
 
       if (error) throw error;
