@@ -1,4 +1,3 @@
-
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
@@ -10,6 +9,7 @@ import { DayCell } from "./DayCell";
 import { useToast } from "@/components/ui/use-toast";
 import { ROLES, ROLE_COLORS, Role } from "./schedule.constants";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface MonthlyScheduleProps {
   date: Date;
