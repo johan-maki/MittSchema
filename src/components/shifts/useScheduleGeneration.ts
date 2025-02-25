@@ -20,9 +20,14 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         .from('schedule_settings')
         .select('*')
         .eq('department', 'General')
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching settings:', error);
+        throw error;
+      }
+
+      console.log('Fetched settings:', data);
       return data;
     },
   });
@@ -39,14 +44,23 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         return [];
       }
 
-      return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
+      const convertedProfiles = (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
+      console.log('Fetched and converted profiles:', convertedProfiles);
+      return convertedProfiles;
     }
   });
 
   const validateConstraints = () => {
-    if (isLoadingSettings) return true;
+    console.log('Validating constraints with settings:', settings);
+    console.log('Loading state:', isLoadingSettings);
+
+    if (isLoadingSettings) {
+      console.log('Settings are still loading');
+      return true;
+    }
 
     if (!settings) {
+      console.log('No settings found');
       toast({
         title: "Inställningar saknas",
         description: "Vänligen konfigurera schemaläggningsinställningar först.",
@@ -55,7 +69,12 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       return false;
     }
 
+    // Check basic constraints
     if (!settings.max_consecutive_days || !settings.min_rest_hours) {
+      console.log('Missing basic constraints:', {
+        max_consecutive_days: settings.max_consecutive_days,
+        min_rest_hours: settings.min_rest_hours
+      });
       toast({
         title: "Ofullständiga inställningar",
         description: "Vänligen kontrollera att alla grundläggande begränsningar är konfigurerade.",
@@ -64,10 +83,14 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       return false;
     }
 
+    // Check shift settings
     const shifts = ['morning_shift', 'afternoon_shift', 'night_shift'] as const;
     for (const shift of shifts) {
       const shiftSettings = settings[shift];
+      console.log(`Checking ${shift} settings:`, shiftSettings);
+      
       if (!shiftSettings?.min_staff || !shiftSettings?.min_experience_sum) {
+        console.log(`Invalid settings for ${shift}:`, shiftSettings);
         toast({
           title: "Ofullständiga skiftinställningar",
           description: `Vänligen kontrollera inställningarna för ${shift}.`,
@@ -77,11 +100,15 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       }
     }
 
+    console.log('All constraints validated successfully');
     return true;
   };
 
   const generateSchedule = async () => {
+    console.log('Starting schedule generation');
+    
     if (isLoadingSettings) {
+      console.log('Settings are still loading');
       toast({
         title: "Laddar inställningar",
         description: "Vänta medan inställningarna laddas...",
@@ -89,12 +116,21 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       return false;
     }
 
+    console.log('About to validate constraints');
     if (!validateConstraints()) {
+      console.log('Constraint validation failed');
       return false;
     }
 
     setIsGenerating(true);
     try {
+      console.log('Calling generate-schedule function with:', {
+        settings,
+        profiles,
+        currentDate: currentDate.toISOString(),
+        view: currentView
+      });
+
       const { data, error } = await supabase.functions.invoke('generate-schedule', {
         body: {
           settings,
@@ -106,11 +142,14 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
       if (error) throw error;
 
+      console.log('Generate schedule response:', data);
+
       if (data?.shifts?.length > 0) {
         setGeneratedShifts(data.shifts);
         setShowPreview(true);
         return true;
       } else {
+        console.log('No shifts generated');
         toast({
           title: "Kunde inte generera schema",
           description: "Det gick inte att hitta en giltig schemaläggning med nuvarande begränsningar.",
