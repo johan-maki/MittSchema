@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
@@ -12,82 +13,48 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
-  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const { data: shifts = [], isLoading } = useShiftData(currentDate, currentView);
+  const { data: shifts = [], isLoading } = useQuery({
+    queryKey: ['shifts', currentDate, currentView],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shifts')
+        .select(`
+          *,
+          profiles:employee_id (
+            first_name,
+            last_name,
+            role,
+            experience_level
+          )
+        `)
+        .gte('start_time', new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString())
+        .lte('start_time', new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString());
+
+      if (error) {
+        console.error('Error fetching shifts:', error);
+        return [];
+      }
+
+      return data || [];
+    }
+  });
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
-      return [
-        {
-          id: 'doc1',
-          first_name: 'Meryl',
-          last_name: 'Streep',
-          role: 'Läkare',
-          experience_level: 5,
-          department: 'Emergency',
-          phone: '+46701234567',
-          created_at: '2025-01-01T00:00:00.000Z',
-          updated_at: '2025-01-01T00:00:00.000Z'
-        },
-        {
-          id: 'doc2',
-          first_name: 'Morgan',
-          last_name: 'Freeman',
-          role: 'Läkare',
-          experience_level: 4,
-          department: 'Surgery',
-          phone: '+46701234568',
-          created_at: '2025-01-01T00:00:00.000Z',
-          updated_at: '2025-01-01T00:00:00.000Z'
-        },
-        {
-          id: 'nurse1',
-          first_name: 'Emma',
-          last_name: 'Thompson',
-          role: 'Sjuksköterska',
-          experience_level: 3,
-          department: 'Emergency',
-          phone: '+46701234569',
-          created_at: '2025-01-01T00:00:00.000Z',
-          updated_at: '2025-01-01T00:00:00.000Z'
-        },
-        {
-          id: 'nurse2',
-          first_name: 'Sandra',
-          last_name: 'Bullock',
-          role: 'Sjuksköterska',
-          experience_level: 4,
-          department: 'Pediatrics',
-          phone: '+46701234570',
-          created_at: '2025-01-01T00:00:00.000Z',
-          updated_at: '2025-01-01T00:00:00.000Z'
-        },
-        {
-          id: 'asst1',
-          first_name: 'Tom',
-          last_name: 'Hanks',
-          role: 'Undersköterska',
-          experience_level: 2,
-          department: 'Emergency',
-          phone: '+46701234571',
-          created_at: '2025-01-01T00:00:00.000Z',
-          updated_at: '2025-01-01T00:00:00.000Z'
-        },
-        {
-          id: 'asst2',
-          first_name: 'Julia',
-          last_name: 'Roberts',
-          role: 'Undersköterska',
-          experience_level: 3,
-          department: 'Surgery',
-          phone: '+46701234572',
-          created_at: '2025-01-01T00:00:00.000Z',
-          updated_at: '2025-01-01T00:00:00.000Z'
-        }
-      ];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        return [];
+      }
+
+      return data || [];
     }
   });
 
