@@ -1,3 +1,4 @@
+
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
@@ -30,13 +31,27 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const { toast } = useToast();
 
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
+    // Get all profiles with this role
     const profilesWithRole = profiles.filter(p => p.role === role);
     const profileIdsWithRole = new Set(profilesWithRole.map(p => p.id));
     
-    return shifts.filter(shift => 
-      isSameDay(new Date(shift.start_time), day) && 
-      profileIdsWithRole.has(shift.employee_id)
-    );
+    // Filter shifts for this day where the employee has the correct role
+    return shifts.filter(shift => {
+      const isCorrectDay = isSameDay(new Date(shift.start_time), day);
+      const hasCorrectRole = profileIdsWithRole.has(shift.employee_id || '');
+      
+      console.log({
+        role,
+        day: format(day, 'yyyy-MM-dd'),
+        shiftDay: format(new Date(shift.start_time), 'yyyy-MM-dd'),
+        employeeId: shift.employee_id,
+        profilesWithRole: profilesWithRole.map(p => p.id),
+        isCorrectDay,
+        hasCorrectRole
+      });
+      
+      return isCorrectDay && hasCorrectRole;
+    });
   };
 
   const handleAddClick = (day: Date, role: Role) => {
