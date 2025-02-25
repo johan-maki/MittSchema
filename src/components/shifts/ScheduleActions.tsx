@@ -1,17 +1,17 @@
-
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
-import { PlusCircle, Settings, FileDown, Wand2 } from "lucide-react";
+import { PlusCircle, Settings, FileDown, Wand2, Check, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import * as XLSX from 'xlsx';
 import { format } from "date-fns";
 import { Shift } from "@/types/shift";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -30,7 +30,10 @@ export const ScheduleActions = ({
 }: ScheduleActionsProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
 
   // Fetch settings for validation
   const { data: settings } = useQuery({
@@ -121,17 +124,8 @@ export const ScheduleActions = ({
       if (error) throw error;
 
       if (data?.shifts?.length > 0) {
-        // Insert generated shifts into the database
-        const { error: insertError } = await supabase
-          .from('shifts')
-          .insert(data.shifts);
-
-        if (insertError) throw insertError;
-
-        toast({
-          title: "Schema genererat",
-          description: "Det nya schemat har skapats och sparats.",
-        });
+        setGeneratedShifts(data.shifts);
+        setShowPreview(true);
       } else {
         toast({
           title: "Kunde inte generera schema",
@@ -149,6 +143,38 @@ export const ScheduleActions = ({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleApplySchedule = async () => {
+    try {
+      const { error: insertError } = await supabase
+        .from('shifts')
+        .insert(generatedShifts);
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Schema applicerat",
+        description: "Det nya schemat har sparats.",
+      });
+
+      // Clear preview and refresh shifts
+      setShowPreview(false);
+      setGeneratedShifts([]);
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+    } catch (error) {
+      console.error('Error applying schedule:', error);
+      toast({
+        title: "Ett fel uppstod",
+        description: "Kunde inte spara schemat. Försök igen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelPreview = () => {
+    setShowPreview(false);
+    setGeneratedShifts([]);
   };
 
   const handleExportToExcel = () => {
@@ -213,6 +239,62 @@ export const ScheduleActions = ({
           </>
         )}
       </Button>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
+            <DialogDescription>
+              Granska det genererade schemat innan du applicerar det.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[60vh] overflow-y-auto">
+            <div className="space-y-4">
+              {generatedShifts.map((shift, index) => {
+                const employee = profiles.find(p => p.id === shift.employee_id);
+                return (
+                  <Card key={index}>
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="font-semibold">
+                            {format(new Date(shift.start_time), 'yyyy-MM-dd')}
+                          </p>
+                          <p>
+                            {format(new Date(shift.start_time), 'HH:mm')} - 
+                            {format(new Date(shift.end_time), 'HH:mm')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {employee ? `${employee.first_name} ${employee.last_name}` : 'Ingen tilldelad'}
+                          </p>
+                          <p className="text-sm text-gray-500 capitalize">
+                            {shift.shift_type === 'day' ? 'Dagpass' : 
+                             shift.shift_type === 'evening' ? 'Kvällspass' : 'Nattpass'}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="sm:justify-between">
+            <Button variant="destructive" onClick={handleCancelPreview}>
+              <X className="mr-2 h-4 w-4" />
+              Avbryt
+            </Button>
+            <Button onClick={handleApplySchedule}>
+              <Check className="mr-2 h-4 w-4" />
+              Applicera schema
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogTrigger>
