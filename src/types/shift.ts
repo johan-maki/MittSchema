@@ -1,6 +1,8 @@
 
 export type ShiftType = 'day' | 'evening' | 'night';
 
+export type Role = 'Läkare' | 'Sjuksköterska' | 'Undersköterska';
+
 export type Shift = {
   id: string;
   employee_id: string;
