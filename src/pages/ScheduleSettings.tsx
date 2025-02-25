@@ -20,16 +20,22 @@ const settingsSchema = z.object({
   senior_experience_threshold: z.number().min(1).max(10),
   require_night_shift_qualification: z.boolean(),
   morning_shift: z.object({
+    start_time: z.string(),
+    end_time: z.string(),
     min_staff: z.number().min(1),
     min_experience_sum: z.number().min(1),
     min_senior_count: z.number().min(0),
   }),
   afternoon_shift: z.object({
+    start_time: z.string(),
+    end_time: z.string(),
     min_staff: z.number().min(1),
     min_experience_sum: z.number().min(1),
     min_senior_count: z.number().min(0),
   }),
   night_shift: z.object({
+    start_time: z.string(),
+    end_time: z.string(),
     min_staff: z.number().min(1),
     min_experience_sum: z.number().min(1),
     min_senior_count: z.number().min(0),
@@ -65,16 +71,22 @@ export default function ScheduleSettings() {
       senior_experience_threshold: 4,
       require_night_shift_qualification: true,
       morning_shift: {
+        start_time: '07:00',
+        end_time: '15:00',
         min_staff: 3,
         min_experience_sum: 6,
         min_senior_count: 1,
       },
       afternoon_shift: {
+        start_time: '15:00',
+        end_time: '23:00',
         min_staff: 3,
         min_experience_sum: 6,
         min_senior_count: 1,
       },
       night_shift: {
+        start_time: '23:00',
+        end_time: '07:00',
         min_staff: 2,
         min_experience_sum: 4,
         min_senior_count: 1,
@@ -87,7 +99,10 @@ export default function ScheduleSettings() {
     mutationFn: async (data: SettingsFormData) => {
       const { error } = await supabase
         .from('schedule_settings')
-        .update(data)
+        .update({
+          ...data,
+          department: 'General'
+        })
         .eq('department', 'General');
 
       if (error) throw error;
