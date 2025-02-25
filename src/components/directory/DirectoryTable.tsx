@@ -33,7 +33,8 @@ export function DirectoryTable() {
         .from('profiles')
         .select('*');
       if (error) throw error;
-      return (data || []).map(convertDatabaseProfile);
+      // Convert the raw database profiles to our internal Profile type
+      return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
     }
   });
 
