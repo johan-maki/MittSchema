@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -36,7 +37,7 @@ export const ScheduleActions = ({
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
 
   // Fetch settings for validation
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['schedule-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -68,6 +69,9 @@ export const ScheduleActions = ({
   });
 
   const validateConstraints = () => {
+    // Don't validate while settings are still loading
+    if (isLoadingSettings) return true;
+
     if (!settings) {
       toast({
         title: "Inställningar saknas",
@@ -105,6 +109,16 @@ export const ScheduleActions = ({
   };
 
   const handleGenerateSchedule = async () => {
+    // First check if settings are still loading
+    if (isLoadingSettings) {
+      toast({
+        title: "Laddar inställningar",
+        description: "Vänta medan inställningarna laddas...",
+      });
+      return;
+    }
+
+    // Then validate constraints
     if (!validateConstraints()) {
       navigate('/schedule/settings');
       return;
@@ -225,7 +239,7 @@ export const ScheduleActions = ({
     <div className="flex items-center gap-2">
       <Button
         onClick={handleGenerateSchedule}
-        disabled={isGenerating}
+        disabled={isGenerating || isLoadingSettings}
       >
         {isGenerating ? (
           <>
