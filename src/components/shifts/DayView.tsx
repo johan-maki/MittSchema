@@ -1,13 +1,15 @@
 
 import { Shift } from "@/types/shift";
-import { isSameDay } from "date-fns";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
-import { TimeHeader } from "./TimeHeader";
-import { RoleRow } from "./RoleRow";
-import { ROLES } from "./types/dayView";
-import type { OverlappingShifts } from "./types/dayView";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ROLES, ROLE_COLORS } from "./schedule.constants";
+import { ShiftCard } from "./ShiftCard";
+import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
 
 interface DayViewProps {
   date: Date;
@@ -19,53 +21,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const todaysShifts = shifts.filter(shift => isSameDay(new Date(shift.start_time), date));
-
-  const calculateOverlappingShifts = (shifts: Shift[]): OverlappingShifts[] => {
-    const sortedShifts = [...shifts].sort((a, b) => 
-      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    );
-
-    const overlappingGroups: OverlappingShifts[] = [];
-    
-    sortedShifts.forEach((shift, index) => {
-      const shiftStart = new Date(shift.start_time);
-      const shiftEnd = new Date(shift.end_time);
-      
-      const overlapping = sortedShifts.filter((otherShift, otherIndex) => {
-        if (otherIndex === index) return false;
-        const otherStart = new Date(otherShift.start_time);
-        const otherEnd = new Date(otherShift.end_time);
-        return (
-          (shiftStart <= otherEnd && shiftEnd >= otherStart) ||
-          (otherStart <= shiftEnd && otherEnd >= shiftStart)
-        );
-      });
-
-      const position = overlappingGroups
-        .filter(g => 
-          new Date(g.shift.start_time) <= shiftEnd && 
-          new Date(g.shift.end_time) >= shiftStart
-        )
-        .map(g => g.position)
-        .sort((a, b) => a - b)
-        .reduce((pos, current) => pos === current ? pos + 1 : pos, 0);
-
-      overlappingGroups.push({
-        shift,
-        overlap: overlapping.length,
-        position
-      });
-    });
-
-    return overlappingGroups;
-  };
-
-  const handleShiftClick = (shift: Shift) => {
-    setSelectedShift(shift);
-    setIsEditDialogOpen(true);
-  };
-
   const toggleRole = (roleName: string) => {
     const newHiddenRoles = new Set(hiddenRoles);
     if (hiddenRoles.has(roleName)) {
@@ -76,30 +31,89 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     setHiddenRoles(newHiddenRoles);
   };
 
+  const getShiftsForRole = (role: string) => {
+    return shifts.filter(shift => {
+      const shiftDate = new Date(shift.start_time);
+      return (
+        shiftDate.getDate() === date.getDate() &&
+        shiftDate.getMonth() === date.getMonth() &&
+        shiftDate.getFullYear() === date.getFullYear() &&
+        shift.shift_type === role
+      );
+    });
+  };
+
+  const handleShiftClick = (shift: Shift) => {
+    setSelectedShift(shift);
+    setIsEditDialogOpen(true);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
-      <div className="min-w-[1200px]">
-        <TimeHeader />
-        
-        {ROLES.map(role => {
-          const roleShifts = todaysShifts.filter(shift => 
-            shift.shift_type === role.shiftType && 
-            shift.department === role.department
-          );
+    <div className="min-w-[1000px]">
+      <div className="grid grid-cols-[200px,1fr] bg-white">
+        <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
+          Roll
+        </div>
+        <div className="border-b border-r border-gray-100">
+          <div className="p-2 font-medium text-gray-400 text-center">
+            <div className="text-sm">{format(date, 'EEEE', { locale: sv })}</div>
+            <div className="text-lg">{format(date, 'd')}</div>
+          </div>
+        </div>
+      </div>
 
-          const overlappingShifts = calculateOverlappingShifts(roleShifts);
+      <div className="grid grid-cols-[200px,1fr]">
+        {ROLES.map((role) => (
+          <div key={role} className="grid grid-cols-subgrid col-span-2">
+            <div 
+              className="border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50"
+              onClick={() => toggleRole(role)}
+            >
+              {hiddenRoles.has(role) ? (
+                <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
+              )}
+              <span className={ROLE_COLORS[role].text}>{role}</span>
+            </div>
+            
+            <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
+              <div className="border-b border-r border-gray-100 p-1 min-h-[120px] relative">
+                <div className="space-y-1 mb-8">
+                  {getShiftsForRole(role).map((shift) => (
+                    <ShiftCard
+                      key={shift.id}
+                      shift={shift}
+                      profile={undefined}
+                      roleColors={ROLE_COLORS[role]}
+                      onClick={handleShiftClick}
+                    />
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute bottom-2 right-1 h-6 w-6 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
 
-          return (
-            <RoleRow
-              key={role.name}
-              role={role}
-              isHidden={hiddenRoles.has(role.name)}
-              overlappingShifts={overlappingShifts}
-              onToggle={toggleRole}
-              onShiftClick={handleShiftClick}
+        <div className="grid grid-cols-subgrid col-span-2">
+          <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
+            Experience Level
+          </div>
+          <div className="border-b border-r border-gray-100">
+            <ExperienceLevelSummary
+              date={date}
+              shifts={shifts}
+              profiles={[]}
             />
-          );
-        })}
+          </div>
+        </div>
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
