@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
@@ -10,6 +9,8 @@ import { useShiftData } from "@/hooks/useShiftData";
 import { ScheduleActions } from "@/components/shifts/ScheduleActions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { convertDatabaseProfile } from "@/types/profile";
+import type { DatabaseProfile } from "@/types/profile";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
@@ -54,7 +55,7 @@ const Schedule = () => {
         return [];
       }
 
-      return data || [];
+      return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
     }
   });
 
