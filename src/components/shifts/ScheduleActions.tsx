@@ -53,11 +53,13 @@ export const ScheduleActions = ({
 
   const handleApplySchedule = async () => {
     try {
-      const shiftsToInsert = generatedShifts.map(shift => ({
+      type ShiftInsert = Omit<Shift, 'id' | 'profiles'>;
+      
+      const shiftsToInsert: ShiftInsert[] = generatedShifts.map(shift => ({
         start_time: shift.start_time,
         end_time: shift.end_time,
         shift_type: shift.shift_type,
-        department: shift.department,
+        department: shift.department || 'General',
         employee_id: shift.employee_id,
         is_published: false
       }));
