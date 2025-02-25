@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { Shift } from "@/types/shift";
+import { Shift, ShiftType } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { format, addDays, addMinutes } from "date-fns";
 
@@ -59,7 +59,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       ];
 
       // Map roles to shift types for proper filtering
-      const roleShiftTypes = {
+      const roleShiftTypes: Record<string, ShiftType> = {
         'Läkare': 'day',
         'Sjuksköterska': 'evening',
         'Undersköterska': 'night'
@@ -118,7 +118,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
             // Add more variety to shift types for Undersköterska
             if (template.employee_id.startsWith('asst')) {
               // For Undersköterska, create both evening and night shifts
-              const shiftTypes = ['evening', 'night'];
+              const shiftTypes: ShiftType[] = ['evening', 'night'];
               const selectedType = shiftTypes[Math.floor(Math.random() * shiftTypes.length)];
               
               const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
