@@ -47,7 +47,8 @@ export const ScheduleActions = ({
         end_time: shift.end_time,
         shift_type: shift.shift_type,
         department: shift.department || 'General',
-        employee_id: shift.employee_id
+        employee_id: shift.employee_id,
+        is_published: false  // Make sure new shifts are unpublished by default
       }));
 
       const { error: insertError } = await supabase
@@ -79,7 +80,7 @@ export const ScheduleActions = ({
       const { error: updateError } = await supabase
         .from('shifts')
         .update({ is_published: true })
-        .filter('is_published', 'is', null);
+        .is('is_published', false); // Change from null to false
 
       if (updateError) throw updateError;
 
@@ -103,7 +104,7 @@ export const ScheduleActions = ({
       const { error: deleteError } = await supabase
         .from('shifts')
         .delete()
-        .filter('is_published', 'is', null);
+        .is('is_published', false); // Change from null to false
 
       if (deleteError) throw deleteError;
 
