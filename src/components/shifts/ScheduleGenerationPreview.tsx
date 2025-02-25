@@ -23,6 +23,17 @@ export const ScheduleGenerationPreview = ({
   onApply,
   onCancel
 }: ScheduleGenerationPreviewProps) => {
+  // Add profiles information to shifts
+  const shiftsWithProfiles = generatedShifts.map(shift => ({
+    ...shift,
+    profiles: profiles.find(p => p.id === shift.employee_id) 
+      ? {
+          first_name: profiles.find(p => p.id === shift.employee_id)!.first_name,
+          last_name: profiles.find(p => p.id === shift.employee_id)!.last_name,
+        }
+      : { first_name: '', last_name: '' }
+  }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl">
@@ -36,7 +47,7 @@ export const ScheduleGenerationPreview = ({
         <div className="max-h-[70vh] overflow-auto">
           <MonthlySchedule 
             date={new Date()} 
-            shifts={generatedShifts} 
+            shifts={shiftsWithProfiles} 
             profiles={profiles}
           />
         </div>

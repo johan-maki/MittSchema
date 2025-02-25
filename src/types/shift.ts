@@ -10,6 +10,7 @@ export type Shift = {
   department: string;
   notes?: string;
   created_by?: string;
+  is_published?: boolean;
   profiles?: {
     first_name: string;
     last_name: string;

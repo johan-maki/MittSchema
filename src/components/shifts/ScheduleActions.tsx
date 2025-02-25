@@ -53,9 +53,18 @@ export const ScheduleActions = ({
 
   const handleApplySchedule = async () => {
     try {
+      const shiftsToInsert = generatedShifts.map(shift => ({
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        shift_type: shift.shift_type,
+        department: shift.department,
+        employee_id: shift.employee_id,
+        is_published: false
+      }));
+
       const { error: insertError } = await supabase
         .from('shifts')
-        .insert(generatedShifts);
+        .insert(shiftsToInsert);
 
       if (insertError) throw insertError;
 
@@ -87,7 +96,7 @@ export const ScheduleActions = ({
       const { error: updateError } = await supabase
         .from('shifts')
         .update({ is_published: true })
-        .eq('is_published', false);
+        .filter('is_published', 'is', null);
 
       if (updateError) throw updateError;
 
@@ -111,7 +120,7 @@ export const ScheduleActions = ({
       const { error: deleteError } = await supabase
         .from('shifts')
         .delete()
-        .eq('is_published', false);
+        .filter('is_published', 'is', null);
 
       if (deleteError) throw deleteError;
 
