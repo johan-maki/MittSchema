@@ -7,15 +7,16 @@ import { ShiftForm } from "./ShiftForm";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
-import { ShiftCard } from "./ShiftCard";
-import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface DayViewProps {
   date: Date;
   shifts: Shift[];
 }
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const DayView = ({ date, shifts }: DayViewProps) => {
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
@@ -50,6 +51,18 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     });
   };
 
+  const calculateShiftPosition = (shift: Shift) => {
+    const startTime = new Date(shift.start_time);
+    const endTime = new Date(shift.end_time);
+    const startHour = startTime.getHours() + startTime.getMinutes() / 60;
+    const endHour = endTime.getHours() + endTime.getMinutes() / 60;
+    
+    const startPercent = (startHour / 24) * 100;
+    const widthPercent = ((endHour - startHour) / 24) * 100;
+    
+    return { startPercent, widthPercent };
+  };
+
   const handleShiftClick = (shift: Shift) => {
     setSelectedShift(shift);
     setIsEditDialogOpen(true);
@@ -61,11 +74,12 @@ const DayView = ({ date, shifts }: DayViewProps) => {
         <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
           Roll
         </div>
-        <div className="border-b border-r border-gray-100">
-          <div className="p-2 font-medium text-gray-400 text-center">
-            <div className="text-sm">{format(date, 'EEEE', { locale: sv })}</div>
-            <div className="text-lg">{format(date, 'd')}</div>
-          </div>
+        <div className="grid grid-cols-24 border-b border-r border-gray-100">
+          {HOURS.map((hour) => (
+            <div key={hour} className="text-center text-xs text-gray-400 py-2 border-r">
+              {hour}:00
+            </div>
+          ))}
         </div>
       </div>
 
@@ -85,25 +99,31 @@ const DayView = ({ date, shifts }: DayViewProps) => {
             </div>
             
             <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-              <div className="border-b border-r border-gray-100 p-1 min-h-[120px] relative">
-                <div className="space-y-1 mb-8">
-                  {getShiftsForRole(role).map((shift) => (
-                    <ShiftCard
+              <div className="border-b border-r border-gray-100 h-24 relative">
+                {getShiftsForRole(role).map((shift) => {
+                  const { startPercent, widthPercent } = calculateShiftPosition(shift);
+                  return (
+                    <div
                       key={shift.id}
-                      shift={shift}
-                      profile={undefined}
-                      roleColors={ROLE_COLORS[role]}
-                      onClick={handleShiftClick}
-                    />
-                  ))}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute bottom-2 right-1 h-6 w-6 p-0"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                      className={`absolute top-1 h-[calc(100%-8px)] rounded-md border cursor-pointer hover:brightness-95 ${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border}`}
+                      style={{
+                        left: `${startPercent}%`,
+                        width: `${widthPercent}%`,
+                      }}
+                      onClick={() => handleShiftClick(shift)}
+                    >
+                      <div className="p-2 text-xs">
+                        <div className="font-medium truncate">
+                          {format(new Date(shift.start_time), 'HH:mm')} - 
+                          {format(new Date(shift.end_time), 'HH:mm')}
+                        </div>
+                        <div className="truncate">
+                          {shift.profiles.first_name} {shift.profiles.last_name}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
