@@ -31,7 +31,8 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
           *,
           profiles:employee_id (
             first_name,
-            last_name
+            last_name,
+            experience_level
           )
         `)
         .eq('employee_id', employeeId);

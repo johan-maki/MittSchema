@@ -1,11 +1,11 @@
 
-import { format } from "date-fns";
-import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
+import { Profile } from "@/types/profile";
+import { format, parseISO } from "date-fns";
 
 interface ShiftCardProps {
-  shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name'> };
-  profile: Profile | undefined;
+  shift: Shift;
+  profile?: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'>;
   roleColors: {
     bg: string;
     border: string;
@@ -15,25 +15,21 @@ interface ShiftCardProps {
 }
 
 export const ShiftCard = ({ shift, profile, roleColors, onClick }: ShiftCardProps) => {
+  if (!profile) return null;
+
   return (
     <div
+      className={`p-2 rounded-md border cursor-pointer hover:brightness-95 ${roleColors.bg} ${roleColors.border}`}
       onClick={() => onClick(shift)}
-      className={`
-        rounded-md p-1 text-xs border cursor-pointer
-        ${roleColors.bg}
-        ${roleColors.border}
-        hover:brightness-95 transition-all
-      `}
     >
-      <div className="font-medium">
-        {format(new Date(shift.start_time), 'HH:mm')} - 
-        {format(new Date(shift.end_time), 'HH:mm')}
-      </div>
-      <div className="truncate">
-        {shift.profiles.first_name} {shift.profiles.last_name}
-      </div>
-      <div className="text-xs mt-1">
-        Exp: {profile?.experience_level || 0}
+      <div className="text-xs">
+        <div className="font-medium">
+          {format(parseISO(shift.start_time), 'HH:mm')} - 
+          {format(parseISO(shift.end_time), 'HH:mm')}
+        </div>
+        <div className="truncate">
+          {profile.first_name} {profile.last_name}
+        </div>
       </div>
     </div>
   );
