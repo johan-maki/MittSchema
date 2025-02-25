@@ -6,7 +6,7 @@ import Directory from "@/pages/Directory";
 import EmployeeView from "@/pages/EmployeeView";
 import NotFound from "@/pages/NotFound";
 import ScheduleSettings from "@/pages/ScheduleSettings";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DirectoryProvider } from "@/contexts/DirectoryContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
