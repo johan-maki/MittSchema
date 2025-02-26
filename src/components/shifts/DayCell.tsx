@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
 import { ShiftCard } from "./ShiftCard";
-import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 
 interface DayCellProps {
   day: Date;
@@ -49,18 +48,11 @@ export const DayCell = ({
       <Button
         variant="ghost"
         size="sm"
-        className="absolute bottom-9 right-1 h-6 w-6 p-0"
+        className="absolute bottom-1 right-1 h-6 w-6 p-0"
         onClick={() => onAddClick(day, role)}
       >
         <Plus className="h-4 w-4" />
       </Button>
-      {isLastRole && (
-        <ExperienceLevelSummary
-          date={day}
-          shifts={shifts}
-          profiles={profiles}
-        />
-      )}
     </div>
   );
 };

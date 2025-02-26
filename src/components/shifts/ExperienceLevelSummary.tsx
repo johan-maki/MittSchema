@@ -30,11 +30,6 @@ export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLev
   const experiencePoints = calculateExperienceForDay(date);
   const isSufficient = experiencePoints >= MINIMUM_EXPERIENCE_POINTS;
 
-  // Only render in the summary row, not in the role rows
-  if (!profiles) {
-    return null;
-  }
-
   return (
     <div className="flex items-center justify-center p-2">
       <div
