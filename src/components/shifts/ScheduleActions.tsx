@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
-import { Wand2, MoreVertical, CheckCircle2, Ban, PlusCircle } from "lucide-react";
+import { Wand2, MoreVertical, CheckCircle2, Ban, PlusCircle, Settings } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Shift } from "@/types/shift";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useScheduleGeneration } from "./useScheduleGeneration";
 import { ScheduleGenerationPreview } from "./ScheduleGenerationPreview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -28,6 +29,7 @@ export const ScheduleActions = ({
 }: ScheduleActionsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const {
     isGenerating,
@@ -39,6 +41,14 @@ export const ScheduleActions = ({
     generateSchedule,
     profiles
   } = useScheduleGeneration(currentDate, currentView);
+
+  const handleAddClick = () => {
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/schedule/settings');
+  };
 
   const handleApplySchedule = async () => {
     try {
@@ -172,6 +182,10 @@ export const ScheduleActions = ({
             <DropdownMenuItem onClick={handleClearUnpublished} className="text-red-600">
               <Ban className="mr-2 h-4 w-4" />
               Rensa opublicerat
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSettingsClick} className="text-gray-600">
+              <Settings className="mr-2 h-4 w-4" />
+              Schemainställningar
             </DropdownMenuItem>
             <DialogTrigger asChild>
               <DropdownMenuItem>
