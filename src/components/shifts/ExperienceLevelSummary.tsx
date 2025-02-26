@@ -2,8 +2,6 @@
 import { format } from "date-fns";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
-import { Alert } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 interface ExperienceLevelSummaryProps {
   shifts: Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>;
@@ -31,6 +29,11 @@ export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLev
 
   const experiencePoints = calculateExperienceForDay(date);
   const isSufficient = experiencePoints >= MINIMUM_EXPERIENCE_POINTS;
+
+  // Only render in the summary row, not in the role rows
+  if (!profiles) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-center p-2">

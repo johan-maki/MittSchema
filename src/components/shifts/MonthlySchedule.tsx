@@ -38,14 +38,17 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
 
       // Find the employee for this shift
       const employee = profiles.find(p => p.id === shift.employee_id);
+
+      // If no employee found, skip this shift
+      if (!employee) return false;
       
       // For Undersköterska, accept both evening and night shifts
       if (role === 'Undersköterska') {
-        return employee?.role === role && (shift.shift_type === 'evening' || shift.shift_type === 'night');
+        return employee.role === 'Undersköterska';
       }
       
       // For other roles, match exactly
-      return employee?.role === role;
+      return employee.role === role;
     });
   };
 
