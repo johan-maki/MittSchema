@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Menu, UserCircle2 } from "lucide-react";
+import { Sparkles, Menu, UserCircle2, HelpCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -34,6 +34,13 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       >
         <UserCircle2 className="w-4 h-4" />
         Anställda vy
+      </Link>
+      <Link 
+        to="/help" 
+        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1"
+      >
+        <HelpCircle className="w-4 h-4" />
+        Hjälp
       </Link>
     </>
   );

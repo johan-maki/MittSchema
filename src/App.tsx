@@ -7,6 +7,7 @@ import Schedule from "./pages/Schedule";
 import Auth from "./pages/Auth";
 import Directory from "./pages/Directory";
 import EmployeeView from "./pages/EmployeeView";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import ScheduleSettings from "./pages/ScheduleSettings";
@@ -51,6 +52,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EmployeeView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <Help />
                 </ProtectedRoute>
               }
             />
