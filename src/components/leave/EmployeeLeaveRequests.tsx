@@ -64,7 +64,7 @@ export function EmployeeLeaveRequests() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as LeaveRequest[];
+      return data as unknown as LeaveRequest[];
     },
     enabled: !!user,
   });

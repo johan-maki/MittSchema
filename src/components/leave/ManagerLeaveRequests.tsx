@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +66,7 @@ export function ManagerLeaveRequests() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as LeaveRequest[];
+      return data as unknown as LeaveRequest[];
     },
   });
   

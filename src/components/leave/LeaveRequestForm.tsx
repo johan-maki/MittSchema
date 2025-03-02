@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -91,7 +90,7 @@ export function LeaveRequestForm() {
         recipient_type: 'manager',
         title: 'Ny frånvaroansökan',
         content: `En ny frånvaroansökan har skickats in för perioden ${format(startDate, 'yyyy-MM-dd')} till ${format(endDate, 'yyyy-MM-dd')}`,
-        link: '/leave-management',
+        link: '/leave',
         is_read: false
       });
       

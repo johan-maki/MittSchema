@@ -12,7 +12,7 @@ import ScheduleSettings from "@/pages/ScheduleSettings";
 import Auth from "@/pages/Auth";
 import Help from "@/pages/Help";
 import NotFound from "@/pages/NotFound";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LeaveManagement from "@/pages/LeaveManagement";
 
 const queryClient = new QueryClient({

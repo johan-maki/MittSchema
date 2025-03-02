@@ -7,10 +7,16 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+interface MenuItem {
+  name: string;
+  href: string;
+  isActive: boolean;
+}
+
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { name: "Översikt", href: "/", isActive: location.pathname === "/" },
     { name: "Schema", href: "/schedule", isActive: location.pathname === "/schedule" },
     { name: "Medarbetare", href: "/directory", isActive: location.pathname === "/directory" },
