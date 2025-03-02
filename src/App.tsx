@@ -11,6 +11,7 @@ import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import ScheduleSettings from "./pages/ScheduleSettings";
+import BasicCalendar from "./pages/BasicCalendar"; // New import
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Schedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/basic-calendar"
+              element={
+                <ProtectedRoute>
+                  <BasicCalendar />
                 </ProtectedRoute>
               }
             />
