@@ -3,7 +3,7 @@ import { Shift, ShiftType } from "@/types/shift";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { format, isSameDay, parseISO } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -110,13 +110,20 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                 </div>
                 
                 <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-                  <div className="border-b border-r border-gray-200 h-40 relative" onDoubleClick={() => handleAddClick(date, role)}>
+                  <div 
+                    className="border-b border-r border-gray-200 h-40 relative" 
+                    onDoubleClick={() => handleAddClick(date, role)}
+                  >
                     {roleShifts.map((shift) => {
                       const { startPercent, widthPercent } = calculateShiftPosition(shift);
+                      const bgColor = role === 'Läkare' ? 'bg-blue-50 border-blue-200' : 
+                                     role === 'Sjuksköterska' ? 'bg-green-50 border-green-200' : 
+                                     'bg-purple-50 border-purple-200';
+                      
                       return (
                         <div
                           key={shift.id}
-                          className="absolute top-1 h-[calc(100%-8px)] rounded-md border border-gray-200 bg-gray-100 cursor-pointer hover:bg-gray-200"
+                          className={`absolute top-1 h-[calc(100%-8px)] rounded-md border ${bgColor} cursor-pointer hover:bg-opacity-80`}
                           style={{
                             left: `${startPercent}%`,
                             width: `${widthPercent}%`,
@@ -135,10 +142,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                         </div>
                       );
                     })}
-                    <Plus 
-                      className="h-5 w-5 text-gray-400 absolute bottom-2 right-2 cursor-pointer hover:text-gray-600"
-                      onClick={() => handleAddClick(date, role)}
-                    />
                   </div>
                 </div>
               </div>

@@ -1,5 +1,4 @@
 
-import { Plus } from "lucide-react";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
 import { ShiftCard } from "./ShiftCard";
@@ -47,10 +46,6 @@ export const DayCell = ({
           />
         ))}
       </div>
-      <Plus 
-        className="h-5 w-5 text-gray-400 absolute bottom-2 right-2 cursor-pointer hover:text-gray-600"
-        onClick={() => onAddClick(day, role)}
-      />
     </div>
   );
 };

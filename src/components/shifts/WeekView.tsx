@@ -6,12 +6,14 @@ import { getWeekDays } from "@/utils/date";
 import { format, isSameDay, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { ShiftCard } from "./ShiftCard";
 import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ShiftForm } from "./ShiftForm";
 
 interface WeekViewProps {
   date: Date;
@@ -21,6 +23,8 @@ interface WeekViewProps {
 export const WeekView = ({ date, shifts }: WeekViewProps) => {
   const weekDays = getWeekDays(date);
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newShiftParams, setNewShiftParams] = useState<{day: Date, role: string} | null>(null);
 
   const toggleRole = (roleName: string) => {
     const newHiddenRoles = new Set(hiddenRoles);
@@ -48,6 +52,11 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
     });
     
     return dayShifts;
+  };
+
+  const handleAddShift = (dayDate: Date, role: string) => {
+    setNewShiftParams({ day: dayDate, role });
+    setIsCreateDialogOpen(true);
   };
 
   return (
@@ -88,7 +97,11 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                 {weekDays.map(({ date: dayDate }) => {
                   const dayShifts = getShiftsForDay(dayDate, role);
                   return (
-                    <div key={dayDate.toISOString()} className="border-b border-r border-gray-100 p-1 min-h-[160px] relative">
+                    <div 
+                      key={dayDate.toISOString()} 
+                      className="border-b border-r border-gray-100 p-1 min-h-[160px] relative"
+                      onDoubleClick={() => handleAddShift(dayDate, role)}
+                    >
                       <div className="space-y-1 mb-8">
                         {dayShifts.map((shift) => (
                           <ShiftCard
@@ -100,13 +113,6 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                           />
                         ))}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute bottom-2 right-1 h-6 w-6 p-0"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
                     </div>
                   );
                 })}
@@ -132,6 +138,23 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
           </div>
         </div>
       </div>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          {newShiftParams && (
+            <ShiftForm
+              isOpen={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+              defaultValues={{
+                start_time: `${newShiftParams.day.toISOString().slice(0, 10)}T09:00`,
+                end_time: `${newShiftParams.day.toISOString().slice(0, 10)}T16:00`,
+                shift_type: newShiftParams.role === 'Läkare' ? 'day' : 
+                           newShiftParams.role === 'Sjuksköterska' ? 'evening' : 'night'
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </ScrollArea>
   );
 };
