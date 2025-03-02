@@ -1,10 +1,11 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
+import { useState } from "react";
 import type { Shift } from "@/types/shift";
 import type { Profile } from "@/types/profile";
 
@@ -25,6 +26,8 @@ export const ScheduleGenerationPreview = ({
   onApply,
   onCancel
 }: ScheduleGenerationPreviewProps) => {
+  const [isApplying, setIsApplying] = useState(false);
+  
   const getShiftTypeInSwedish = (type: string) => {
     switch (type) {
       case 'day':
@@ -37,9 +40,34 @@ export const ScheduleGenerationPreview = ({
         return type;
     }
   };
+  
+  const handleApply = async () => {
+    try {
+      setIsApplying(true);
+      await onApply();
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  // Sort shifts by date and shift type for better organization
+  const sortedShifts = [...generatedShifts].sort((a, b) => {
+    // First sort by date
+    const dateComparison = new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    if (dateComparison !== 0) return dateComparison;
+    
+    // Then by shift type (day, evening, night)
+    const shiftTypeOrder = { day: 1, evening: 2, night: 3 };
+    return (shiftTypeOrder[a.shift_type as keyof typeof shiftTypeOrder] || 0) - 
+           (shiftTypeOrder[b.shift_type as keyof typeof shiftTypeOrder] || 0);
+  });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Prevent dialog from closing during the apply operation
+      if (isApplying && !newOpen) return;
+      onOpenChange(newOpen);
+    }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
@@ -49,9 +77,7 @@ export const ScheduleGenerationPreview = ({
         </DialogHeader>
         
         <div className="max-h-[60vh] overflow-y-auto space-y-2">
-          {generatedShifts.sort((a, b) => 
-            new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-          ).map((shift) => {
+          {sortedShifts.map((shift) => {
             const employee = profiles.find(p => p.id === shift.employee_id);
             return (
               <Card key={`${shift.employee_id}-${shift.start_time}`} className="p-4 flex justify-between items-center">
@@ -60,7 +86,7 @@ export const ScheduleGenerationPreview = ({
                     {format(new Date(shift.start_time), 'yyyy-MM-dd', { locale: sv })}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {format(new Date(shift.start_time), 'HH:mm')} -{format(new Date(shift.end_time), 'HH:mm')}
+                    {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
                   </div>
                 </div>
                 <div className="text-right">
@@ -77,13 +103,22 @@ export const ScheduleGenerationPreview = ({
         </div>
 
         <DialogFooter className="sm:justify-between">
-          <Button variant="destructive" onClick={onCancel}>
+          <Button variant="destructive" onClick={onCancel} disabled={isApplying}>
             <X className="mr-2 h-4 w-4" />
             Avbryt
           </Button>
-          <Button onClick={onApply}>
-            <Check className="mr-2 h-4 w-4" />
-            Applicera schema
+          <Button onClick={handleApply} disabled={isApplying}>
+            {isApplying ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Applicerar...
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Applicera schema
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

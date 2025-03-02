@@ -83,6 +83,8 @@ export const useScheduleActionHandlers = () => {
         return;
       }
       
+      // Process shifts in smaller batches to avoid timeouts
+      const BATCH_SIZE = 50;
       const shiftsToInsert = validatedShifts.map(shift => ({
         start_time: shift.start_time,
         end_time: shift.end_time,
@@ -91,12 +93,17 @@ export const useScheduleActionHandlers = () => {
         employee_id: shift.employee_id,
         is_published: false
       }));
-
-      const { error: insertError } = await supabase
-        .from('shifts')
-        .insert(shiftsToInsert);
-
-      if (insertError) throw insertError;
+      
+      // Insert shifts in batches
+      for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {
+        const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
+        
+        const { error: insertError } = await supabase
+          .from('shifts')
+          .insert(batch);
+          
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Schema applicerat",
