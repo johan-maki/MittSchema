@@ -50,8 +50,8 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
       });
       
       setIsAuthenticated(true);
-      
-      // Typmässigt korrekt returnering av void
+      // Return void to match the function signature
+      return;
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast({
@@ -74,6 +74,7 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
       });
       
       // Vi behåller inloggningsstatus i utvecklingsläge
+      return;
     } catch (error: any) {
       console.error("Sign out error:", error);
       toast({

@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -34,7 +35,7 @@ export function DirectoryControls() {
     e.preventDefault();
     
     try {
-      // Ta bort autentiseringskontroll i utvecklingsläge
+      console.log("Adding new profile in development mode");
       
       // Generate a UUID for the new profile
       const newId = crypto.randomUUID();
@@ -49,19 +50,27 @@ export function DirectoryControls() {
         experience_level: newProfile.experience_level
       };
       
-      console.log("Adding new profile:", profileData);
+      // In development mode, first create a minimal entry in auth.users
+      // This is a special query that uses the function we created in the SQL migration
+      const { data: userData, error: userError } = await supabase.rpc(
+        'create_user_with_profile',
+        {
+          email: `${newProfile.first_name.toLowerCase()}.${newProfile.last_name.toLowerCase()}@example.com`,
+          role: newProfile.role,
+          first_name: newProfile.first_name,
+          last_name: newProfile.last_name,
+          department: newProfile.department || null,
+          phone: newProfile.phone || null,
+          is_manager: false
+        }
+      );
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert(profileData)
-        .select();
-      
-      if (error) {
-        console.error('Error details:', error);
-        throw error;
+      if (userError) {
+        console.error('Error creating user:', userError);
+        throw userError;
       }
       
-      console.log("Profile added successfully:", data);
+      console.log("Profile added successfully:", userData);
       
       toast({
         title: "Profil tillagd",
