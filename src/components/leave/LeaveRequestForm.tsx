@@ -75,25 +75,34 @@ export function LeaveRequestForm() {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.from('leave_requests').insert({
+      // Use type casting to work around TypeScript limitations
+      const leaveRequestData = {
         employee_id: user.id,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         leave_type: leaveType,
         reason,
         status: 'pending'
-      } as any);
+      };
+      
+      const { error } = await supabase
+        .from('leave_requests')
+        .insert(leaveRequestData as any);
       
       if (error) throw error;
       
       // Create notification for managers
-      await supabase.from('notifications').insert({
+      const notificationData = {
         recipient_type: 'manager',
         title: 'Ny frånvaroansökan',
         content: `En ny frånvaroansökan har skickats in för perioden ${format(startDate, 'yyyy-MM-dd')} till ${format(endDate, 'yyyy-MM-dd')}`,
         link: '/leave',
         is_read: false
-      } as any);
+      };
+      
+      await supabase
+        .from('notifications')
+        .insert(notificationData as any);
       
       toast({
         title: "Frånvaroansökan skickad",

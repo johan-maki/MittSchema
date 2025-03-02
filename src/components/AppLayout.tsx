@@ -26,7 +26,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar menuItems={menuItems} mobileMenuItems={menuItems} />
+      <Sidebar menuItems={menuItems} />
       <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
         <header className="sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b bg-white/80 backdrop-blur-sm">
           <h1 className="text-lg font-semibold">Vårdschema</h1>

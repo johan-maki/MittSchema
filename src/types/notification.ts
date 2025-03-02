@@ -1,5 +1,5 @@
 
-export type Notification = {
+export interface Notification {
   id: string;
   recipient_id?: string;
   recipient_type?: string;
@@ -8,4 +8,4 @@ export type Notification = {
   link?: string;
   is_read: boolean;
   created_at: string;
-};
+}

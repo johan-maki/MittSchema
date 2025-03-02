@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,9 +63,11 @@ export function ManagerLeaveRequests() {
     setProcessingId(id);
     
     try {
+      const updateData = { status };
+      
       const { error } = await supabase
         .from('leave_requests')
-        .update({ status } as any)
+        .update(updateData as any)
         .eq('id', id);
       
       if (error) throw error;
@@ -73,13 +76,17 @@ export function ManagerLeaveRequests() {
       
       if (request) {
         // Create notification for employee
-        await supabase.from('notifications').insert({
+        const notificationData = {
           recipient_id: request.employee_id,
           title: `Frånvaroansökan ${status === 'approved' ? 'godkänd' : 'avslagen'}`,
           content: `Din frånvaroansökan för perioden ${format(parseISO(request.start_date), 'yyyy-MM-dd')} till ${format(parseISO(request.end_date), 'yyyy-MM-dd')} har blivit ${status === 'approved' ? 'godkänd' : 'avslagen'}.`,
           link: '/leave',
           is_read: false
-        } as any);
+        };
+        
+        await supabase
+          .from('notifications')
+          .insert(notificationData as any);
       }
       
       toast({
