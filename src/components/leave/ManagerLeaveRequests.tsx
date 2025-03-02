@@ -9,21 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
-type LeaveRequest = {
-  id: string;
-  employee_id: string;
-  start_date: string;
-  end_date: string;
-  leave_type: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  profiles: {
-    first_name: string;
-    last_name: string;
-  };
-};
+import { LeaveRequest, LeaveStatus } from "@/types/leave";
 
 const STATUS_COLORS = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -70,7 +56,7 @@ export function ManagerLeaveRequests() {
     },
   });
   
-  const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
+  const handleStatusUpdate = async (id: string, status: LeaveStatus) => {
     if (!user) return;
     
     setProcessingId(id);
@@ -78,7 +64,7 @@ export function ManagerLeaveRequests() {
     try {
       const { error } = await supabase
         .from('leave_requests')
-        .update({ status })
+        .update({ status } as any)
         .eq('id', id);
       
       if (error) throw error;
@@ -93,7 +79,7 @@ export function ManagerLeaveRequests() {
           content: `Din frånvaroansökan för perioden ${format(parseISO(request.start_date), 'yyyy-MM-dd')} till ${format(parseISO(request.end_date), 'yyyy-MM-dd')} har blivit ${status === 'approved' ? 'godkänd' : 'avslagen'}.`,
           link: '/leave',
           is_read: false
-        });
+        } as any);
       }
       
       toast({

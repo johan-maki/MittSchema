@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -81,7 +82,7 @@ export function LeaveRequestForm() {
         leave_type: leaveType,
         reason,
         status: 'pending'
-      });
+      } as any);
       
       if (error) throw error;
       
@@ -92,7 +93,7 @@ export function LeaveRequestForm() {
         content: `En ny frånvaroansökan har skickats in för perioden ${format(startDate, 'yyyy-MM-dd')} till ${format(endDate, 'yyyy-MM-dd')}`,
         link: '/leave',
         is_read: false
-      });
+      } as any);
       
       toast({
         title: "Frånvaroansökan skickad",

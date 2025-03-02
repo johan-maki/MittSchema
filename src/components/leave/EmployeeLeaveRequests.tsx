@@ -7,21 +7,7 @@ import { sv } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-
-type LeaveRequest = {
-  id: string;
-  employee_id: string;
-  start_date: string;
-  end_date: string;
-  leave_type: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  profiles: {
-    first_name: string;
-    last_name: string;
-  };
-};
+import { LeaveRequest } from "@/types/leave";
 
 const STATUS_COLORS = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
