@@ -1,11 +1,12 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Shift } from "@/types/shift";
 import type { Profile } from "@/types/profile";
 
@@ -27,6 +28,14 @@ export const ScheduleGenerationPreview = ({
   onCancel
 }: ScheduleGenerationPreviewProps) => {
   const [isApplying, setIsApplying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Reset error state when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setError(null);
+    }
+  }, [open]);
   
   const getShiftTypeInSwedish = (type: string) => {
     switch (type) {
@@ -44,7 +53,12 @@ export const ScheduleGenerationPreview = ({
   const handleApply = async () => {
     try {
       setIsApplying(true);
+      setError(null);
+      console.log("Applying schedule with", generatedShifts.length, "shifts");
       await onApply();
+    } catch (err) {
+      console.error("Error applying schedule:", err);
+      setError(err instanceof Error ? err.message : "Ett fel uppstod när schemat skulle appliceras");
     } finally {
       setIsApplying(false);
     }
@@ -62,6 +76,16 @@ export const ScheduleGenerationPreview = ({
            (shiftTypeOrder[b.shift_type as keyof typeof shiftTypeOrder] || 0);
   });
 
+  // Group shifts by date for better display
+  const shiftsByDate = sortedShifts.reduce<Record<string, typeof sortedShifts>>((acc, shift) => {
+    const dateKey = format(new Date(shift.start_time), 'yyyy-MM-dd');
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(shift);
+    return acc;
+  }, {});
+
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
       // Prevent dialog from closing during the apply operation
@@ -76,34 +100,48 @@ export const ScheduleGenerationPreview = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="max-h-[60vh] overflow-y-auto space-y-2">
-          {sortedShifts.map((shift) => {
-            const employee = profiles.find(p => p.id === shift.employee_id);
-            return (
-              <Card key={`${shift.employee_id}-${shift.start_time}`} className="p-4 flex justify-between items-center">
-                <div>
-                  <div className="text-base font-medium">
-                    {format(new Date(shift.start_time), 'yyyy-MM-dd', { locale: sv })}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-base font-medium">
-                    {employee?.first_name} {employee?.last_name}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {getShiftTypeInSwedish(shift.shift_type)}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+        {error && (
+          <Alert variant="destructive" className="my-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="max-h-[60vh] overflow-y-auto space-y-4">
+          {Object.entries(shiftsByDate).map(([date, shifts]) => (
+            <div key={date} className="space-y-2">
+              <h3 className="font-semibold text-md border-b pb-1">{format(new Date(date), 'EEEE d MMMM', { locale: sv })}</h3>
+              <div className="grid gap-2">
+                {shifts.map((shift) => {
+                  const employee = profiles.find(p => p.id === shift.employee_id);
+                  return (
+                    <Card key={`${shift.employee_id}-${shift.start_time}`} className="p-3 flex justify-between items-center">
+                      <div>
+                        <div className="text-sm text-gray-600">
+                          {format(new Date(shift.start_time), 'HH:mm')} - {format(new Date(shift.end_time), 'HH:mm')}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {getShiftTypeInSwedish(shift.shift_type)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-medium">
+                          {employee ? `${employee.first_name} ${employee.last_name}` : "Okänd anställd"}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {employee?.role || "Ingen roll"}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <DialogFooter className="sm:justify-between">
-          <Button variant="destructive" onClick={onCancel} disabled={isApplying}>
+        <DialogFooter className="sm:justify-between mt-4">
+          <Button variant="outline" onClick={onCancel} disabled={isApplying}>
             <X className="mr-2 h-4 w-4" />
             Avbryt
           </Button>
