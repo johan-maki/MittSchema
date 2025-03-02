@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { InsertProfile, Profile } from "@/types/profile";
+import { convertDatabaseProfile, InsertProfile, Profile } from "@/types/profile";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -14,7 +14,6 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
     console.log("Adding new profile with ID:", newId);
     
     // Call the dev_add_profile RPC function to bypass foreign key constraints
-    // @ts-ignore - RPC function isn't in the TypeScript types
     const { data, error } = await supabase.rpc('dev_add_profile', {
       profile_id: newId,
       first_name: profileData.first_name,
@@ -34,8 +33,11 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
       throw new Error('No profile data returned from database');
     }
     
-    console.log("Profile successfully added:", data[0]);
-    return data[0] as unknown as Profile;
+    // Convert the database response to our Profile type
+    const profile = convertDatabaseProfile(data[0]);
+    
+    console.log("Profile successfully added:", profile);
+    return profile;
   } catch (error) {
     console.error('Error adding profile:', error);
     throw error;
@@ -54,8 +56,11 @@ export const fetchProfiles = async (): Promise<Profile[]> => {
     
     if (error) throw error;
     
-    console.log("Profiles fetched:", data);
-    return data as Profile[];
+    // Convert database profiles to our Profile type
+    const profiles = data.map(convertDatabaseProfile);
+    
+    console.log("Profiles fetched:", profiles);
+    return profiles;
   } catch (error) {
     console.error('Error fetching profiles:', error);
     throw error;
