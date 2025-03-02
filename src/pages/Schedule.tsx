@@ -12,11 +12,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { convertDatabaseProfile } from "@/types/profile";
 import type { DatabaseProfile } from "@/types/profile";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ShiftForm } from "@/components/shifts/ShiftForm";
+import { Shift } from "@/types/shift";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [newShiftParams, setNewShiftParams] = useState<{day: Date, role: string} | null>(null);
 
   const { data: shifts = [], isLoading } = useShiftData(currentDate, currentView);
 
@@ -35,6 +41,16 @@ const Schedule = () => {
       return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
     }
   });
+
+  const handleShiftClick = (shift: Shift) => {
+    setSelectedShift(shift);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleAddShift = (day: Date, role: string) => {
+    setNewShiftParams({ day, role });
+    setIsCreateDialogOpen(true);
+  };
 
   return (
     <AppLayout>
@@ -65,11 +81,49 @@ const Schedule = () => {
             exit={{ opacity: 0, y: -20 }}
             className="flex-1 p-2 sm:p-4 overflow-hidden"
           >
-            <div className="h-full">
+            <div className="h-full bg-white border border-gray-200 rounded-md shadow-sm">
               {renderView()}
             </div>
           </motion.div>
         </AnimatePresence>
+
+        {/* Edit Shift Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            {selectedShift && (
+              <ShiftForm
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                defaultValues={{
+                  start_time: selectedShift.start_time.slice(0, 16),
+                  end_time: selectedShift.end_time.slice(0, 16),
+                  department: selectedShift.department || "",
+                  notes: selectedShift.notes || "",
+                  employee_id: selectedShift.employee_id || "",
+                  shift_type: selectedShift.shift_type
+                }}
+                editMode
+                shiftId={selectedShift.id}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Shift Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            {newShiftParams && (
+              <ShiftForm
+                isOpen={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+                defaultValues={{
+                  start_time: `${newShiftParams.day.toISOString().slice(0, 10)}T09:00`,
+                  end_time: `${newShiftParams.day.toISOString().slice(0, 10)}T16:00`,
+                }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
@@ -89,7 +143,15 @@ const Schedule = () => {
       case 'week':
         return <WeekView date={currentDate} shifts={shifts} />;
       case 'month':
-        return <MonthlySchedule date={currentDate} shifts={shifts} profiles={profiles} />;
+        return (
+          <MonthlySchedule 
+            date={currentDate} 
+            shifts={shifts} 
+            profiles={profiles} 
+            onShiftClick={handleShiftClick}
+            onAddShift={handleAddShift}
+          />
+        );
       default:
         return null;
     }

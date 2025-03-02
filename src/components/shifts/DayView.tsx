@@ -1,13 +1,11 @@
 
 import { Shift } from "@/types/shift";
-import { Profile } from "@/types/profile";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { format, isSameDay, parseISO } from "date-fns";
-import { sv } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DayViewProps {
@@ -22,6 +20,8 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   const [hiddenRoles, setHiddenRoles] = useState<Set<string>>(new Set());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newShiftParams, setNewShiftParams] = useState<{date: Date, role: string} | null>(null);
 
   // Add profiles property to shifts if missing
   const shiftsWithProfiles = shifts.map(shift => ({
@@ -72,17 +72,22 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     setIsEditDialogOpen(true);
   };
 
+  const handleAddClick = (cellDate: Date, role: string) => {
+    setNewShiftParams({ date: cellDate, role });
+    setIsCreateDialogOpen(true);
+  };
+
   return (
     <ScrollArea className="h-[calc(100vh-180px)]">
       <div className="min-w-[1200px] max-w-full">
         {/* Time header */}
         <div className="grid grid-cols-[200px,1fr] bg-white sticky top-0 z-10">
-          <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
+          <div className="border-b border-r border-gray-200 p-3 font-medium text-gray-500 text-sm">
             Roll
           </div>
-          <div className="grid grid-cols-[repeat(23,1fr)] border-b">
+          <div className="grid grid-cols-[repeat(23,1fr)] border-b border-gray-200">
             {HOURS.map((hour) => (
-              <div key={hour} className="text-center text-xs text-gray-400 py-2 border-r border-gray-100">
+              <div key={hour} className="text-center text-xs text-gray-500 py-3 border-r border-gray-200">
                 {hour % 12 || 12}{hour >= 12 ? 'PM' : 'AM'}
               </div>
             ))}
@@ -91,12 +96,12 @@ const DayView = ({ date, shifts }: DayViewProps) => {
 
         {/* Role rows */}
         <div className="grid grid-cols-[200px,1fr]">
-          {ROLES.map((role) => {
+          {ROLES.map((role, index) => {
             const roleShifts = getShiftsForRole(role);
             return (
               <div key={role} className="grid grid-cols-subgrid col-span-2">
                 <div 
-                  className="border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50 sticky left-0 bg-white"
+                  className={`border-b border-r border-gray-200 p-3 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50 sticky left-0 bg-white ${!index ? 'bg-gray-50' : ''}`}
                   onClick={() => toggleRole(role)}
                 >
                   {hiddenRoles.has(role) ? (
@@ -105,37 +110,41 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                     <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
                   )}
                   <div className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full ${ROLE_COLORS[role].bg}`} />
+                    <span className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-red-500' : index === 1 ? 'bg-purple-500' : 'bg-orange-500'}`} />
                     <span>{role}</span>
                   </div>
                 </div>
                 
                 <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-                  <div className="border-b border-r border-gray-100 h-40 relative">
+                  <div className="border-b border-r border-gray-200 h-40 relative" onDoubleClick={() => handleAddClick(date, role)}>
                     {roleShifts.map((shift) => {
                       const { startPercent, widthPercent } = calculateShiftPosition(shift);
                       return (
                         <div
                           key={shift.id}
-                          className={`absolute top-1 h-[calc(100%-8px)] rounded-md border cursor-pointer hover:brightness-95 ${ROLE_COLORS[role].bg} ${ROLE_COLORS[role].border}`}
+                          className="absolute top-1 h-[calc(100%-8px)] rounded-md border border-gray-200 bg-gray-100 cursor-pointer hover:bg-gray-200"
                           style={{
                             left: `${startPercent}%`,
                             width: `${widthPercent}%`,
                           }}
                           onClick={() => handleShiftClick(shift)}
                         >
-                          <div className="p-2 text-xs">
-                            <div className="font-medium truncate">
-                              {format(parseISO(shift.start_time), 'HH:mm')} - 
-                              {format(parseISO(shift.end_time), 'HH:mm')}
+                          <div className="p-3 text-sm">
+                            <div className="font-medium">
+                              {format(parseISO(shift.start_time), 'ha')} – 
+                              {format(parseISO(shift.end_time), 'ha')}
                             </div>
-                            <div className="truncate">
-                              {shift.profiles.first_name} {shift.profiles.last_name}
+                            <div className="text-gray-700">
+                              {shift.profiles.first_name}
                             </div>
                           </div>
                         </div>
                       );
                     })}
+                    <Plus 
+                      className="h-5 w-5 text-gray-400 absolute bottom-2 right-2 cursor-pointer hover:text-gray-600"
+                      onClick={() => handleAddClick(date, role)}
+                    />
                   </div>
                 </div>
               </div>
@@ -160,6 +169,23 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                 }}
                 editMode
                 shiftId={selectedShift.id}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            {newShiftParams && (
+              <ShiftForm
+                isOpen={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+                defaultValues={{
+                  start_time: `${format(newShiftParams.date, 'yyyy-MM-dd')}T09:00`,
+                  end_time: `${format(newShiftParams.date, 'yyyy-MM-dd')}T17:00`,
+                  shift_type: roleToShiftType[newShiftParams.role] || 'day'
+                }}
               />
             )}
           </DialogContent>

@@ -13,48 +13,51 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
     queryFn: async () => {
       if (!user) return [];
       
+      // Sample profiles with first names matching the screenshot
+      const profileTemplates: Omit<Profile, 'id'> & { id: string }[] = [
+        { id: 'maki1', first_name: 'Maki', last_name: 'Zenin', role: 'Doctor', experience_level: 5, department: 'Emergency' },
+        { id: 'felix1', first_name: 'Felix', last_name: 'Leiter', role: 'Doctor', experience_level: 4, department: 'Surgery' },
+        { id: 'peter1', first_name: 'Peter', last_name: 'Parker', role: 'Nurse', experience_level: 3, department: 'Emergency' },
+        { id: 'scarl1', first_name: 'Scarlette', last_name: 'Johansson', role: 'Nurse', experience_level: 4, department: 'Pediatrics' },
+        { id: 'max1', first_name: 'Max', last_name: 'Payne', role: 'Assistant', experience_level: 2, department: 'Emergency' },
+      ];
+
+      // Create shift templates using the profiles
       const shiftTemplates: Omit<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }, 'start_time' | 'end_time'>[] = [
         {
           id: 'doc1',
-          employee_id: 'doc1',
+          employee_id: 'maki1',
           shift_type: 'day',
           department: 'Emergency',
-          profiles: { first_name: 'Tommy', last_name: 'Hanks', experience_level: 5 }
+          profiles: { first_name: 'Maki', last_name: 'Zenin', experience_level: 5 }
         },
         {
           id: 'doc2',
-          employee_id: 'doc2',
+          employee_id: 'felix1',
           shift_type: 'day',
           department: 'Surgery',
-          profiles: { first_name: 'Brad', last_name: 'Pitt', experience_level: 4 }
+          profiles: { first_name: 'Felix', last_name: 'Leiter', experience_level: 4 }
         },
         {
           id: 'nurse1',
-          employee_id: 'nurse1',
+          employee_id: 'peter1',
           shift_type: 'evening',
           department: 'Emergency',
-          profiles: { first_name: 'Leonardo', last_name: 'DiCaprio', experience_level: 3 }
+          profiles: { first_name: 'Peter', last_name: 'Parker', experience_level: 3 }
         },
         {
           id: 'nurse2',
-          employee_id: 'nurse2',
+          employee_id: 'scarl1',
           shift_type: 'evening',
           department: 'Pediatrics',
-          profiles: { first_name: 'Sandra', last_name: 'Bullock', experience_level: 4 }
+          profiles: { first_name: 'Scarlette', last_name: 'Johansson', experience_level: 4 }
         },
         {
           id: 'asst1',
-          employee_id: 'asst1',
+          employee_id: 'max1',
           shift_type: 'night',
           department: 'Emergency',
-          profiles: { first_name: 'Robert', last_name: 'Downey', experience_level: 2 }
-        },
-        {
-          id: 'asst2',
-          employee_id: 'asst2',
-          shift_type: 'night',
-          department: 'Surgery',
-          profiles: { first_name: 'Julia', last_name: 'Roberts', experience_level: 3 }
+          profiles: { first_name: 'Max', last_name: 'Payne', experience_level: 2 }
         }
       ];
 
@@ -62,14 +65,11 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       
-      // For day and week views, we'll still generate a full month's worth of data
-      // but filter it when rendering
-      
       // Map roles to employee IDs
       const roleEmployeeMap: Record<string, string[]> = {
-        'Läkare': ['doc1', 'doc2'],
-        'Sjuksköterska': ['nurse1', 'nurse2'],
-        'Undersköterska': ['asst1', 'asst2']
+        'Läkare': ['maki1', 'felix1'],
+        'Sjuksköterska': ['peter1', 'scarl1'],
+        'Undersköterska': ['max1']
       };
       
       // Role to shift type mapping (for filtering)
@@ -103,36 +103,16 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
             const shouldWork = (isWeekendStaff && isWeekend) || (!isWeekendStaff && !isWeekend);
             
             if (shouldWork && Math.random() > 0.3) { // 70% chance of scheduled shift on eligible days
-              // Create shift times based on role
-              let startHour: number;
-              let shiftDuration: number;
-              
-              switch (template.shift_type) {
-                case 'day':
-                  startHour = 8; // Day shifts usually start at 8:00
-                  shiftDuration = 8; // 8-hour shifts
-                  break;
-                case 'evening':
-                  startHour = 16; // Evening shifts start at 16:00
-                  shiftDuration = 8; // 8-hour shifts
-                  break;
-                case 'night':
-                  startHour = 22; // Night shifts start at 22:00
-                  shiftDuration = 10; // 10-hour shifts
-                  break;
-                default:
-                  startHour = 8;
-                  shiftDuration = 8;
-              }
-              
-              // Add some variation to start times
-              startHour = startHour + (Math.random() > 0.5 ? 0 : 1); // 50% chance of starting an hour later
+              // Always make shifts 9-4 to match the screenshot
+              const startHour = 9;
+              const endHour = 16; // 4 PM in 24-hour time
               
               // Create the shift
               const startTime = new Date(currentDay);
               startTime.setHours(startHour, 0, 0);
               
-              const endTime = addMinutes(startTime, shiftDuration * 60);
+              const endTime = new Date(currentDay);
+              endTime.setHours(endHour, 0, 0);
               
               // Create unique ID for each shift
               const shiftId = `${template.id}-${format(currentDay, 'yyyyMMdd')}`;

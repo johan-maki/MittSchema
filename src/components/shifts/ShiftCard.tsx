@@ -19,16 +19,16 @@ export const ShiftCard = ({ shift, profile, roleColors, onClick }: ShiftCardProp
 
   return (
     <div
-      className={`p-2 rounded-md border cursor-pointer hover:brightness-95 ${roleColors.bg} ${roleColors.border}`}
+      className="p-3 rounded-md border border-gray-200 bg-gray-100 cursor-pointer hover:bg-gray-200"
       onClick={() => onClick(shift)}
     >
-      <div className="text-xs">
+      <div className="text-sm">
         <div className="font-medium">
-          {format(parseISO(shift.start_time), 'HH:mm')} - 
-          {format(parseISO(shift.end_time), 'HH:mm')}
+          {format(parseISO(shift.start_time), 'ha')} – 
+          {format(parseISO(shift.end_time), 'ha')}
         </div>
-        <div className="truncate">
-          {profile.first_name} {profile.last_name}
+        <div className="text-gray-700">
+          {profile.first_name}
         </div>
       </div>
     </div>

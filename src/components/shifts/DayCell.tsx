@@ -1,5 +1,4 @@
 
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
@@ -33,8 +32,11 @@ export const DayCell = ({
   dayShifts,
 }: DayCellProps) => {
   return (
-    <div className="border-b border-r border-gray-200 p-1 min-h-[180px] relative">
-      <div className="space-y-1 mb-8">
+    <div 
+      className="border-b border-r border-gray-200 p-1 min-h-[180px] relative bg-white"
+      onDoubleClick={() => onAddClick(day, role)}
+    >
+      <div className="space-y-2 mb-8">
         {dayShifts.map((shift) => (
           <ShiftCard
             key={shift.id}
@@ -45,14 +47,10 @@ export const DayCell = ({
           />
         ))}
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute bottom-1 right-1 h-6 w-6 p-0"
+      <Plus 
+        className="h-5 w-5 text-gray-400 absolute bottom-2 right-2 cursor-pointer hover:text-gray-600"
         onClick={() => onAddClick(day, role)}
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
+      />
     </div>
   );
 };
