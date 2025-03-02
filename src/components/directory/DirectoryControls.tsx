@@ -50,27 +50,19 @@ export function DirectoryControls() {
         experience_level: newProfile.experience_level
       };
       
-      // In development mode, first create a minimal entry in auth.users
-      // This is a special query that uses the function we created in the SQL migration
-      const { data: userData, error: userError } = await supabase.rpc(
-        'create_user_with_profile',
-        {
-          email: `${newProfile.first_name.toLowerCase()}.${newProfile.last_name.toLowerCase()}@example.com`,
-          role: newProfile.role,
-          first_name: newProfile.first_name,
-          last_name: newProfile.last_name,
-          department: newProfile.department || null,
-          phone: newProfile.phone || null,
-          is_manager: false
-        }
-      );
+      // In development mode, directly insert into profiles table
+      // without worrying about the auth.users foreign key constraint
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([profileData])
+        .select();
       
-      if (userError) {
-        console.error('Error creating user:', userError);
-        throw userError;
+      if (error) {
+        console.error('Error adding profile:', error);
+        throw error;
       }
       
-      console.log("Profile added successfully:", userData);
+      console.log("Profile added successfully:", data);
       
       toast({
         title: "Profil tillagd",
