@@ -18,89 +18,69 @@ const DirectoryContext = createContext<DirectoryContextType | undefined>(undefin
 export function DirectoryProvider({ children }: { children: ReactNode }) {
   const [roleFilter, setRoleFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Alltid autentiserad i utvecklingsläge
   const { toast } = useToast();
 
-  // Check authentication status
+  // Check authentication status - i utvecklingsläge alltid autentiserad
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const hasSession = !!data.session;
-        console.log("Auth check - Has session:", hasSession);
-        setIsAuthenticated(hasSession);
-        
-        // Subscribe to auth changes
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          (event, session) => {
-            console.log("Auth state change:", event, !!session);
-            setIsAuthenticated(!!session);
-          }
-        );
-        
-        return () => {
-          authListener.subscription.unsubscribe();
-        };
-      } catch (error: any) {
-        console.error("Authentication error:", error.message);
-      }
-    };
+    console.log("Development mode: Always authenticated");
+    setIsAuthenticated(true);
     
-    checkAuth();
+    // För att vara konsekvent, låtsas lyssna på auth-förändringar
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("Auth state change (ignored in dev mode):", event, !!session);
+        // Ignorera auth-förändringar i utvecklingsläge
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  // Handle sign in
+  // Handle sign in - i utvecklingsläge alltid lyckat
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Attempting to sign in with:", email);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error("Sign in error:", error);
-        toast({
-          title: "Inloggning misslyckades",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
+      console.log("Development mode: Auto sign-in successful");
+      
       toast({
         title: "Inloggad",
-        description: "Du är nu inloggad",
+        description: "Du är automatiskt inloggad i utvecklingsläge (alla rättigheter)",
       });
+      
       setIsAuthenticated(true);
-      return data;
+      
+      // Typmässigt korrekt returnering av void
     } catch (error: any) {
       console.error("Sign in error:", error);
+      toast({
+        title: "Inloggning misslyckades",
+        description: error.message,
+        variant: "destructive",
+      });
       throw error;
     }
   };
 
-  // Handle sign out
+  // Handle sign out - i utvecklingsläge egentligen ingen effekt
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Sign out error:", error);
-        toast({
-          title: "Utloggning misslyckades",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-
+      console.log("Development mode: Sign out attempted (but staying authenticated)");
+      
       toast({
-        title: "Utloggad",
-        description: "Du är nu utloggad",
+        title: "Notera",
+        description: "I utvecklingsläge förblir du alltid inloggad med alla rättigheter",
       });
-      setIsAuthenticated(false);
+      
+      // Vi behåller inloggningsstatus i utvecklingsläge
     } catch (error: any) {
       console.error("Sign out error:", error);
+      toast({
+        title: "Utloggning misslyckades",
+        description: error.message,
+        variant: "destructive",
+      });
       throw error;
     }
   };

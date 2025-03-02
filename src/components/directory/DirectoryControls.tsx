@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -35,15 +34,8 @@ export function DirectoryControls() {
     e.preventDefault();
     
     try {
-      if (!isAuthenticated) {
-        toast({
-          title: "Inte inloggad",
-          description: "Du måste logga in för att lägga till personal",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      // Ta bort autentiseringskontroll i utvecklingsläge
+      
       // Generate a UUID for the new profile
       const newId = crypto.randomUUID();
       
@@ -148,96 +140,38 @@ export function DirectoryControls() {
       </div>
       
       <div className="flex gap-2 w-full sm:w-auto">
-        {isAuthenticated ? (
-          <>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto dark:bg-[#7C3AED] dark:hover:bg-[#6D28D9]">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Lägg till personal
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogTitle>Lägg till ny personal</DialogTitle>
-                <DialogDescription>Lägg till information om den nya medarbetaren nedan.</DialogDescription>
-                <AddProfileDialog 
-                  isOpen={isDialogOpen}
-                  setIsOpen={setIsDialogOpen}
-                  newProfile={newProfile}
-                  setNewProfile={setNewProfile}
-                  onSubmit={handleSubmit}
-                />
-              </DialogContent>
-            </Dialog>
-            
-            <Button 
-              variant="outline"
-              onClick={handleLogout}
-              className="w-full sm:w-auto dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logga ut
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto dark:bg-[#7C3AED] dark:hover:bg-[#6D28D9]">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Lägg till personal
             </Button>
-          </>
-        ) : (
-          <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto dark:bg-[#7C3AED] dark:hover:bg-[#6D28D9]">
-                <LogIn className="w-4 h-4 mr-2" />
-                Logga in
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogTitle>Logga in</DialogTitle>
-              <DialogDescription>Logga in för att hantera personalkatalogen.</DialogDescription>
-              
-              <form onSubmit={handleLogin} className="space-y-4 pt-4">
-                <div className="grid w-full items-center gap-1.5">
-                  <label htmlFor="email" className="text-sm font-medium">E-post</label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
-                  />
-                </div>
-                
-                <div className="grid w-full items-center gap-1.5">
-                  <label htmlFor="password" className="text-sm font-medium">Lösenord</label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
-                  />
-                </div>
-                
-                <DialogFooter className="mt-6">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsLoginDialogOpen(false)}
-                    className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
-                    disabled={isLoggingIn}
-                  >
-                    Avbryt
-                  </Button>
-                  <Button 
-                    type="submit"
-                    className="bg-[#9b87f5] hover:bg-[#7E69AB] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED]"
-                    disabled={isLoggingIn}
-                  >
-                    {isLoggingIn ? "Loggar in..." : "Logga in"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+          </DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Lägg till ny personal</DialogTitle>
+            <DialogDescription>Lägg till information om den nya medarbetaren nedan.</DialogDescription>
+            <AddProfileDialog 
+              isOpen={isDialogOpen}
+              setIsOpen={setIsDialogOpen}
+              newProfile={newProfile}
+              setNewProfile={setNewProfile}
+              onSubmit={handleSubmit}
+            />
+          </DialogContent>
+        </Dialog>
+        
+        <Button 
+          variant="outline"
+          onClick={() => {
+            toast({
+              title: "Utvecklingsläge",
+              description: "Du är alltid inloggad med fulla rättigheter i utvecklingsläge",
+            });
+          }}
+          className="w-full sm:w-auto dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+        >
+          Alltid admin
+        </Button>
       </div>
     </div>
   );

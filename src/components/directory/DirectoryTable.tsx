@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -65,7 +64,7 @@ export function DirectoryTable() {
         return [];
       }
     },
-    enabled: isAuthenticated // Only fetch when authenticated
+    enabled: true // Alltid hämta data i utvecklingsläge
   });
 
   // Filter profiles based on search query and role filter
@@ -83,15 +82,7 @@ export function DirectoryTable() {
   });
 
   const handleEditProfile = (profile: Profile) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Inte inloggad",
-        description: "Du måste logga in för att redigera personal",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    // I utvecklingsläge, alltid tillåt redigering
     setEditingProfile({
       id: profile.id,
       first_name: profile.first_name,
@@ -105,15 +96,7 @@ export function DirectoryTable() {
   };
 
   const handleDeleteProfile = (profile: Profile) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Inte inloggad",
-        description: "Du måste logga in för att ta bort personal",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    // I utvecklingsläge, alltid tillåt borttagning
     console.log("Setting profile to delete:", profile);
     setProfileToDelete(profile);
     setIsDeleteDialogOpen(true);
@@ -211,18 +194,6 @@ export function DirectoryTable() {
       setIsProcessing(false);
     }
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="p-8 text-center flex flex-col items-center justify-center">
-        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-        <h3 className="text-lg font-medium">Inloggning krävs</h3>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Du måste logga in för att visa och hantera personalkatalogen.
-        </p>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return <div className="p-8 text-center">Laddar personal...</div>;
