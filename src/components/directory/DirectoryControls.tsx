@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -9,6 +10,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { InsertProfile } from "@/types/profile";
 
 export function DirectoryControls() {
   const { roleFilter, setRoleFilter, searchQuery, setSearchQuery } = useDirectory();
@@ -29,16 +31,22 @@ export function DirectoryControls() {
     e.preventDefault();
     
     try {
+      // Generate a UUID for the new profile
+      const newId = crypto.randomUUID();
+      
+      const profileData: InsertProfile = {
+        id: newId,
+        first_name: newProfile.first_name,
+        last_name: newProfile.last_name,
+        role: newProfile.role,
+        department: newProfile.department || null,
+        phone: newProfile.phone || null,
+        experience_level: newProfile.experience_level
+      };
+      
       const { error } = await supabase
         .from('profiles')
-        .insert({
-          first_name: newProfile.first_name,
-          last_name: newProfile.last_name,
-          role: newProfile.role,
-          department: newProfile.department || null,
-          phone: newProfile.phone || null,
-          experience_level: newProfile.experience_level
-        });
+        .insert(profileData);
       
       if (error) throw error;
       
