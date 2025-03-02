@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -59,6 +60,7 @@ export function DirectoryControls() {
       };
       
       // Special development mode workaround - use RPC to bypass RLS
+      // @ts-ignore - Ignore the TypeScript error for the RPC function that isn't in the types
       const { data, error } = await supabase
         .rpc('dev_add_profile', {
           profile_id: newId,

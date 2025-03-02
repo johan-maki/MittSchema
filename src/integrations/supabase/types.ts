@@ -213,6 +213,30 @@ export type Database = {
         }
         Returns: string
       }
+      dev_add_profile: {
+        Args: {
+          profile_id: string
+          first_name: string
+          last_name: string
+          role_val: string
+          department_val: string
+          phone_val: string
+          experience_level_val: number
+        }
+        Returns: {
+          created_at: string
+          department: string | null
+          experience_level: number
+          first_name: string
+          id: string
+          is_manager: boolean
+          last_name: string
+          phone: string | null
+          role: string
+          updated_at: string
+          work_preferences: Json | null
+        }[]
+      }
       postgres_fdw_disconnect: {
         Args: {
           "": string
