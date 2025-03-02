@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -32,14 +31,14 @@ export function DirectoryControls() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .insert([{
+        .insert({
           first_name: newProfile.first_name,
           last_name: newProfile.last_name,
           role: newProfile.role,
           department: newProfile.department || null,
           phone: newProfile.phone || null,
           experience_level: newProfile.experience_level
-        }]);
+        });
       
       if (error) throw error;
       
@@ -48,7 +47,6 @@ export function DirectoryControls() {
         description: "Den nya personalen har lagts till",
       });
       
-      // Reset form
       setNewProfile({
         id: '',
         first_name: '',
@@ -59,7 +57,6 @@ export function DirectoryControls() {
         experience_level: 1
       });
       
-      // Refresh the profiles data
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       setIsDialogOpen(false);
     } catch (error: any) {
