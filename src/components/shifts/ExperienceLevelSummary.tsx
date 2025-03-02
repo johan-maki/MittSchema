@@ -11,7 +11,7 @@ interface ExperienceLevelSummaryProps {
 
 export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLevelSummaryProps) => {
   const calculateExperienceForDay = (day: Date) => {
-    // First, get unique employee shifts for the specific day to avoid counting duplicate shifts
+    // Get all shifts for the specific day
     const dayShifts = shifts.filter(shift => {
       const shiftDate = new Date(shift.start_time);
       return shiftDate.getDate() === day.getDate() &&
@@ -19,56 +19,107 @@ export const ExperienceLevelSummary = ({ shifts, profiles, date }: ExperienceLev
              shiftDate.getFullYear() === day.getFullYear();
     });
 
-    // Create a Map to track unique employees and their highest experience level for each shift type
-    const employeeExperienceByShiftType = new Map<string, Map<string, number>>();
+    // Group shifts by type to calculate experience levels per shift type
+    const shiftTypeExperience = new Map<string, number>();
+    const shiftTypeCounts = new Map<string, number>();
+    
+    // Track unique employees per shift type
+    const employeesByShiftType = new Map<string, Set<string>>();
     
     dayShifts.forEach(shift => {
       if (!shift.profiles?.experience_level) return;
       
-      const employeeId = shift.employee_id;
       const shiftType = shift.shift_type;
+      const employeeId = shift.employee_id;
       
-      if (!employeeId || !shiftType) return;
+      if (!shiftType || !employeeId) return;
       
-      // Initialize nested map for this employee if it doesn't exist
-      if (!employeeExperienceByShiftType.has(employeeId)) {
-        employeeExperienceByShiftType.set(employeeId, new Map<string, number>());
+      // Initialize tracking for this shift type if needed
+      if (!shiftTypeExperience.has(shiftType)) {
+        shiftTypeExperience.set(shiftType, 0);
+        shiftTypeCounts.set(shiftType, 0);
+        employeesByShiftType.set(shiftType, new Set<string>());
       }
       
-      const employeeShiftTypes = employeeExperienceByShiftType.get(employeeId)!;
+      const employees = employeesByShiftType.get(shiftType)!;
       
-      // Only store the highest experience level if this employee has multiple shifts of the same type
-      const currentExp = employeeShiftTypes.get(shiftType) || 0;
-      if (shift.profiles.experience_level > currentExp) {
-        employeeShiftTypes.set(shiftType, shift.profiles.experience_level);
+      // Only count each employee once per shift type
+      if (!employees.has(employeeId)) {
+        employees.add(employeeId);
+        shiftTypeExperience.set(
+          shiftType, 
+          shiftTypeExperience.get(shiftType)! + shift.profiles.experience_level
+        );
+        shiftTypeCounts.set(
+          shiftType,
+          shiftTypeCounts.get(shiftType)! + 1
+        );
       }
     });
     
-    // Sum up the experience levels, counting each employee only once per shift type
+    // Calculate total experience and check if we meet requirements
     let totalExperience = 0;
-    employeeExperienceByShiftType.forEach(shiftTypes => {
-      shiftTypes.forEach(expLevel => {
-        totalExperience += expLevel;
-      });
+    let allTypesHaveMinimumStaff = true;
+    
+    shiftTypeExperience.forEach((experience, shiftType) => {
+      totalExperience += experience;
+      
+      // Check if this shift type has enough staff
+      const staffCount = shiftTypeCounts.get(shiftType) || 0;
+      const minStaff = getMinimumStaffForShiftType(shiftType);
+      
+      if (staffCount < minStaff) {
+        allTypesHaveMinimumStaff = false;
+      }
     });
 
-    return totalExperience;
+    return {
+      totalExperience,
+      allTypesHaveMinimumStaff,
+      dayShifts
+    };
+  };
+  
+  // Helper to get minimum staff requirement by shift type
+  const getMinimumStaffForShiftType = (shiftType: string): number => {
+    switch (shiftType) {
+      case 'day':
+        return 3; // Morning shift minimum
+      case 'evening':
+        return 3; // Afternoon shift minimum
+      case 'night':
+        return 2; // Night shift minimum
+      default:
+        return 3;
+    }
   };
 
-  const experiencePoints = calculateExperienceForDay(date);
-  const isSufficient = experiencePoints >= MINIMUM_EXPERIENCE_POINTS;
+  const { totalExperience, allTypesHaveMinimumStaff, dayShifts } = calculateExperienceForDay(date);
+  const hasAnyShifts = dayShifts.length > 0;
+  
+  // Experience is sufficient if we have enough total experience and enough staff in each shift type
+  const isSufficient = hasAnyShifts && 
+                      totalExperience >= MINIMUM_EXPERIENCE_POINTS && 
+                      allTypesHaveMinimumStaff;
 
   return (
-    <div className="flex items-center justify-center p-2">
+    <div className="flex flex-col items-center justify-center p-2">
       <div
         className={`px-2 py-0.5 rounded text-sm ${
-          isSufficient
-            ? "text-green-600"
-            : "text-red-600"
+          !hasAnyShifts 
+            ? "text-gray-400"
+            : isSufficient
+              ? "text-green-600"
+              : "text-red-600"
         }`}
       >
-        {experiencePoints}
+        {hasAnyShifts ? totalExperience : "-"}
       </div>
+      {hasAnyShifts && !allTypesHaveMinimumStaff && (
+        <div className="text-xs text-red-600 mt-1">
+          Min. staff
+        </div>
+      )}
     </div>
   );
 };

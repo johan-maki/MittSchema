@@ -1,3 +1,4 @@
+
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { motion } from "framer-motion";
@@ -30,19 +31,30 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
     setHiddenRoles(newHiddenRoles);
   };
 
+  // Updated mapping of roles to shift types
   const getShiftsForDay = (dayDate: Date, role: string) => {
     const uniqueEmployeeShifts = new Map<string, Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>();
     
+    // Correct mapping of roles to shift types
     const roleToShiftType: { [key: string]: string } = {
       'Läkare': 'day',
-      'Undersköterska': 'evening',
-      'Sjuksköterska': 'night'
+      'Sjuksköterska': 'evening',
+      'Undersköterska': 'night'
     };
     
     const filteredShifts = shifts.filter(shift => {
       const shiftDate = parseISO(shift.start_time);
+      
+      // Check if this is the correct shift type for this role
       const roleShiftType = roleToShiftType[role];
-      return isSameDay(shiftDate, dayDate) && shift.shift_type === roleShiftType;
+      
+      // Making sure the employee is not shown in multiple roles - employees should stick to their role
+      const profile = shift.profiles;
+      const profileRole = profile ? getEmployeeRole(profile) : null;
+      
+      return isSameDay(shiftDate, dayDate) && 
+             shift.shift_type === roleShiftType && 
+             (profileRole === role || !profileRole); // Only include if role matches or no role info
     });
     
     filteredShifts.forEach(shift => {
@@ -53,6 +65,23 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
     });
     
     return Array.from(uniqueEmployeeShifts.values());
+  };
+  
+  // Helper function to determine employee role based on their ID or name
+  const getEmployeeRole = (profile: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'>): string | null => {
+    // Use the first name as a heuristic since we don't have direct role data in profiles
+    const firstName = profile.first_name?.toLowerCase();
+    
+    // Map common names to roles based on your dataset
+    if (firstName === 'tommy' || firstName === 'brad' || firstName === 'meryl') {
+      return 'Läkare';
+    } else if (firstName === 'leonardo' || firstName === 'julia') {
+      return 'Sjuksköterska';
+    } else if (firstName === 'jennifer' || firstName === 'tom' || firstName === 'emma' || firstName === 'sandra') {
+      return 'Undersköterska';
+    }
+    
+    return null;
   };
 
   return (

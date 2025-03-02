@@ -64,14 +64,26 @@ export const useScheduleActionHandlers = () => {
 
   const handleApplySchedule = async (generatedShifts: Shift[], onSuccess: () => void) => {
     try {
-      // First deduplicate shifts to prevent the same person working multiple shifts of same type on same day
+      // First deduplicate shifts based on employee ID, day, and shift type
       const uniqueShifts = deduplicateShifts(generatedShifts);
       
       if (uniqueShifts.length < generatedShifts.length) {
         console.log(`Removed ${generatedShifts.length - uniqueShifts.length} duplicate shifts`);
       }
       
-      const shiftsToInsert = uniqueShifts.map(shift => ({
+      // Then validate that all required constraints are met
+      const validatedShifts = validateShiftConstraints(uniqueShifts);
+      
+      if (!validatedShifts) {
+        toast({
+          title: "Schemaläggning misslyckades",
+          description: "Schemat uppfyller inte alla begränsningar. Vissa pass saknas eller kraven uppfylls inte.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const shiftsToInsert = validatedShifts.map(shift => ({
         start_time: shift.start_time,
         end_time: shift.end_time,
         shift_type: shift.shift_type,
@@ -106,18 +118,80 @@ export const useScheduleActionHandlers = () => {
   // Helper function to remove duplicate shifts (same employee, same day, same shift type)
   const deduplicateShifts = (shifts: Shift[]): Shift[] => {
     const uniqueKeys = new Map<string, Shift>();
+    const roleAssignments = new Map<string, Map<string, string>>();
     
     shifts.forEach(shift => {
       const shiftDate = new Date(shift.start_time);
       const dateStr = `${shiftDate.getFullYear()}-${shiftDate.getMonth()}-${shiftDate.getDate()}`;
       const key = `${shift.employee_id}-${dateStr}-${shift.shift_type}`;
       
+      // Track role assignments by day - one person should only work one role per day
+      if (!roleAssignments.has(dateStr)) {
+        roleAssignments.set(dateStr, new Map<string, string>());
+      }
+      const dayRoles = roleAssignments.get(dateStr)!;
+      
+      // If this employee already has a role on this day, but it's a different shift type,
+      // don't add this shift (prevents same person from working different roles same day)
+      if (dayRoles.has(shift.employee_id) && dayRoles.get(shift.employee_id) !== shift.shift_type) {
+        return;
+      }
+      
+      // Set this employee's role for the day
+      dayRoles.set(shift.employee_id, shift.shift_type);
+      
+      // Only add this shift if we don't already have it
       if (!uniqueKeys.has(key)) {
         uniqueKeys.set(key, shift);
       }
     });
     
     return Array.from(uniqueKeys.values());
+  };
+
+  // Validates if the schedule meets all required constraints
+  const validateShiftConstraints = (shifts: Shift[]): Shift[] | null => {
+    // Group shifts by day and shift type
+    const shiftsByDayAndType = new Map<string, Map<string, Shift[]>>();
+    
+    shifts.forEach(shift => {
+      const shiftDate = new Date(shift.start_time);
+      const dateStr = `${shiftDate.getFullYear()}-${shiftDate.getMonth()}-${shiftDate.getDate()}`;
+      
+      if (!shiftsByDayAndType.has(dateStr)) {
+        shiftsByDayAndType.set(dateStr, new Map<string, Shift[]>());
+      }
+      
+      const dayShifts = shiftsByDayAndType.get(dateStr)!;
+      if (!dayShifts.has(shift.shift_type)) {
+        dayShifts.set(shift.shift_type, []);
+      }
+      
+      dayShifts.get(shift.shift_type)!.push(shift);
+    });
+    
+    // Check if each day has the minimum required staff for each shift type
+    const minStaffByShiftType = {
+      'day': 3,
+      'evening': 3,
+      'night': 2
+    };
+    
+    // Validate each day
+    let isValid = true;
+    shiftsByDayAndType.forEach((dayShifts, dateStr) => {
+      // Check each shift type
+      for (const [shiftType, minStaff] of Object.entries(minStaffByShiftType)) {
+        const shiftsOfType = dayShifts.get(shiftType) || [];
+        if (shiftsOfType.length < minStaff) {
+          console.error(`Not enough staff for ${shiftType} shift on ${dateStr}: ${shiftsOfType.length}/${minStaff}`);
+          isValid = false;
+          break;
+        }
+      }
+    });
+    
+    return isValid ? shifts : null;
   };
 
   return {
