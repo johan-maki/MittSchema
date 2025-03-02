@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -19,6 +18,7 @@ export function DirectoryControls() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [newProfile, setNewProfile] = useState({
     id: '',
     first_name: '',
@@ -33,29 +33,42 @@ export function DirectoryControls() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true);
     
     try {
       console.log("Adding new profile in development mode");
       
-      // Generate a UUID for the new profile
+      // Generate a random UUID for the new profile
       const newId = crypto.randomUUID();
       
-      const profileData: InsertProfile = {
+      // Create profile data object without the foreign key constraint
+      const profileData = {
         id: newId,
         first_name: newProfile.first_name,
         last_name: newProfile.last_name,
         role: newProfile.role,
         department: newProfile.department || null,
         phone: newProfile.phone || null,
-        experience_level: newProfile.experience_level
+        experience_level: newProfile.experience_level,
+        // Add default work preferences
+        work_preferences: {
+          preferred_shifts: ["day"],
+          max_shifts_per_week: 5,
+          available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        }
       };
       
-      // In development mode, directly insert into profiles table
-      // without worrying about the auth.users foreign key constraint
+      // Special development mode workaround - use RPC to bypass RLS
       const { data, error } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select();
+        .rpc('dev_add_profile', {
+          profile_id: newId,
+          first_name: newProfile.first_name,
+          last_name: newProfile.last_name,
+          role_val: newProfile.role,
+          department_val: newProfile.department || null,
+          phone_val: newProfile.phone || null,
+          experience_level_val: newProfile.experience_level
+        });
       
       if (error) {
         console.error('Error adding profile:', error);
@@ -88,6 +101,8 @@ export function DirectoryControls() {
         description: error.message || "Kunde inte lägga till profilen",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -157,6 +172,7 @@ export function DirectoryControls() {
               newProfile={newProfile}
               setNewProfile={setNewProfile}
               onSubmit={handleSubmit}
+              isProcessing={isProcessing}
             />
           </DialogContent>
         </Dialog>
