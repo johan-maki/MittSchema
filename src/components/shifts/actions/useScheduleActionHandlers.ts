@@ -88,6 +88,7 @@ export const useScheduleActionHandlers = () => {
       // Process shifts in smaller batches to avoid timeouts
       const BATCH_SIZE = 10; // Reducing to even smaller batch size for better reliability
       const shiftsToInsert = uniqueShifts.map(shift => ({
+        id: shift.id || `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate an ID if not present
         start_time: shift.start_time,
         end_time: shift.end_time,
         shift_type: shift.shift_type,

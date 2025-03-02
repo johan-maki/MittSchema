@@ -113,7 +113,7 @@ export const ScheduleGenerationPreview = ({
         )}
         
         {hasStaffingIssues && (
-          <Alert variant="warning" className="my-2 bg-amber-50 border-amber-300">
+          <Alert className="my-2 bg-amber-50 border-amber-300">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Bemanningsproblem detekterade</AlertTitle>
             <AlertDescription className="text-amber-700">

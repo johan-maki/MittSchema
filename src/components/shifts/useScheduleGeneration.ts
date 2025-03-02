@@ -183,7 +183,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           toast({
             title: "Bemanningsvarning",
             description: `Schemat uppfyller inte alla bemanningskrav (${issues.length} problem detekterade).`,
-            variant: "warning",
+            variant: "destructive",
           });
         }
         
