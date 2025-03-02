@@ -1,6 +1,6 @@
 
 import { NavLink } from "react-router-dom";
-import { Calendar, Users, User, CalendarDays } from "lucide-react";
+import { Calendar, Users, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -19,19 +19,6 @@ export function Sidebar() {
       >
         <Calendar className="h-4 w-4" />
         Schema
-      </NavLink>
-      <NavLink
-        to="/basic-calendar"
-        className={({ isActive }) =>
-          cn(
-            buttonVariants({ variant: "ghost" }),
-            "justify-start gap-2",
-            isActive && "bg-muted"
-          )
-        }
-      >
-        <CalendarDays className="h-4 w-4" />
-        Basic Calendar
       </NavLink>
       <NavLink
         to="/directory"

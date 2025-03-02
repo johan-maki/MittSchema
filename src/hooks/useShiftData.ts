@@ -19,21 +19,21 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
           employee_id: 'doc1',
           shift_type: 'day',
           department: 'Emergency',
-          profiles: { first_name: 'Tommy', last_name: 'Hanks', experience_level: 5 }
+          profiles: { first_name: 'Meryl', last_name: 'Streep', experience_level: 5 }
         },
         {
           id: 'doc2',
           employee_id: 'doc2',
-          shift_type: 'day',
+          shift_type: 'evening',
           department: 'Surgery',
-          profiles: { first_name: 'Brad', last_name: 'Pitt', experience_level: 4 }
+          profiles: { first_name: 'Morgan', last_name: 'Freeman', experience_level: 4 }
         },
         {
           id: 'nurse1',
           employee_id: 'nurse1',
-          shift_type: 'evening',
+          shift_type: 'day',
           department: 'Emergency',
-          profiles: { first_name: 'Leonardo', last_name: 'DiCaprio', experience_level: 3 }
+          profiles: { first_name: 'Emma', last_name: 'Thompson', experience_level: 3 }
         },
         {
           id: 'nurse2',
@@ -47,16 +47,23 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
           employee_id: 'asst1',
           shift_type: 'night',
           department: 'Emergency',
-          profiles: { first_name: 'Jennifer', last_name: 'Lawrence', experience_level: 2 }
+          profiles: { first_name: 'Tom', last_name: 'Hanks', experience_level: 2 }
         },
         {
           id: 'asst2',
           employee_id: 'asst2',
-          shift_type: 'night',
+          shift_type: 'evening',
           department: 'Surgery',
           profiles: { first_name: 'Julia', last_name: 'Roberts', experience_level: 3 }
         }
       ];
+
+      // Map roles to shift types for proper filtering
+      const roleShiftTypes: Record<string, ShiftType> = {
+        'Läkare': 'day',
+        'Sjuksköterska': 'evening',
+        'Undersköterska': 'night'
+      };
 
       // Generate shifts for current view with more variety
       const allShifts = shiftTemplates.flatMap(template => {
@@ -107,13 +114,30 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
             
             const endTime = addMinutes(startTime, shiftDuration * 60);
             
-            const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
-              ...template,
-              start_time: startTime.toISOString(),
-              end_time: endTime.toISOString()
-            };
-            
-            shifts.push(shift);
+            // Only create the shift if it matches the role-shift type mapping
+            // Add more variety to shift types for Undersköterska
+            if (template.employee_id.startsWith('asst')) {
+              // For Undersköterska, create both evening and night shifts
+              const shiftTypes: ShiftType[] = ['evening', 'night'];
+              const selectedType = shiftTypes[Math.floor(Math.random() * shiftTypes.length)];
+              
+              const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
+                ...template,
+                shift_type: selectedType,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString()
+              };
+              
+              shifts.push(shift);
+            } else {
+              const shift: Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> } = {
+                ...template,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString()
+              };
+              
+              shifts.push(shift);
+            }
           }
         }
         
