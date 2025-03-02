@@ -2,14 +2,14 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { UserPlus } from "lucide-react";
 import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { InsertProfile } from "@/types/profile";
 
 export function DirectoryControls() {
@@ -44,11 +44,16 @@ export function DirectoryControls() {
         experience_level: newProfile.experience_level
       };
       
+      console.log("Adding new profile:", profileData);
+      
       const { error } = await supabase
         .from('profiles')
         .insert(profileData);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding profile:', error);
+        throw error;
+      }
       
       toast({
         title: "Profil tillagd",
@@ -65,7 +70,7 @@ export function DirectoryControls() {
         experience_level: 1
       });
       
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       setIsDialogOpen(false);
     } catch (error: any) {
       console.error('Error adding profile:', error);
@@ -109,6 +114,8 @@ export function DirectoryControls() {
           </Button>
         </DialogTrigger>
         <DialogContent>
+          <DialogTitle>Lägg till ny personal</DialogTitle>
+          <DialogDescription>Lägg till information om den nya medarbetaren nedan.</DialogDescription>
           <AddProfileDialog 
             isOpen={isDialogOpen}
             setIsOpen={setIsDialogOpen}

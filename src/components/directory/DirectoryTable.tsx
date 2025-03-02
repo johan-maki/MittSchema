@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -48,7 +47,12 @@ export function DirectoryTable() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*');
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        throw error;
+      }
+      
       // Convert the raw database profiles to our internal Profile type
       return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
     }
@@ -91,6 +95,7 @@ export function DirectoryTable() {
     
     try {
       console.log("Deleting profile with ID:", profileToDelete.id);
+      
       const { error } = await supabase
         .from('profiles')
         .delete()
@@ -108,6 +113,8 @@ export function DirectoryTable() {
       
       // Refresh the profiles data
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      
+      // Close the dialog and reset state
       setIsDeleteDialogOpen(false);
       setProfileToDelete(null);
     } catch (error: any) {
@@ -144,7 +151,7 @@ export function DirectoryTable() {
       });
       
       // Refresh the profiles data
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       setIsEditDialogOpen(false);
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -185,7 +192,7 @@ export function DirectoryTable() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog - Using AlertDialog instead of regular Dialog */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -210,7 +217,6 @@ export function DirectoryTable() {
   );
 }
 
-// Extracted component for the profiles table
 function ProfilesTable({ 
   profiles, 
   onEdit, 
@@ -232,7 +238,6 @@ function ProfilesTable({
   );
 }
 
-// Extracted component for the table header
 function ProfilesTableHeader() {
   return (
     <thead>
@@ -260,7 +265,6 @@ function ProfilesTableHeader() {
   );
 }
 
-// Extracted component for the table body
 function ProfilesTableBody({ 
   profiles, 
   onEdit, 
@@ -284,7 +288,6 @@ function ProfilesTableBody({
   );
 }
 
-// Extracted component for a single row
 function ProfileTableRow({ 
   profile, 
   onEdit, 
@@ -331,7 +334,6 @@ function ProfileTableRow({
   );
 }
 
-// Extracted component for row actions
 function ProfileActions({ 
   profile, 
   onEdit, 
