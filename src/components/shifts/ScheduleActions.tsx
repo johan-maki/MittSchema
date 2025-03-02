@@ -31,7 +31,8 @@ export const ScheduleActions = ({
     generatedShifts,
     setGeneratedShifts,
     generateSchedule,
-    profiles
+    profiles,
+    staffingIssues
   } = useScheduleGeneration(currentDate, currentView);
 
   const {
@@ -59,6 +60,7 @@ export const ScheduleActions = ({
         onOpenChange={setShowPreview}
         generatedShifts={generatedShifts}
         profiles={profiles}
+        staffingIssues={staffingIssues}
         onApply={() => handleApplySchedule(generatedShifts, () => {
           setShowPreview(false);
           setGeneratedShifts([]);

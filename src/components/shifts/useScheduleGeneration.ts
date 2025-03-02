@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,12 +6,22 @@ import { useToast } from "@/components/ui/use-toast";
 import type { Shift, ShiftType } from "@/types/shift";
 import { convertDatabaseProfile } from "@/types/profile";
 import type { DatabaseProfile, Profile } from "@/types/profile";
+import { addMonths, format } from "date-fns";
+
+// Define a type for staffing issues
+export type StaffingIssue = {
+  date: string;
+  shiftType: string;
+  current: number;
+  required: number;
+};
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
+  const [staffingIssues, setStaffingIssues] = useState<StaffingIssue[]>([]);
 
   const { data: settings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['schedule-settings'],
@@ -105,6 +116,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
   const generateSchedule = async () => {
     console.log('Starting schedule generation');
+    setStaffingIssues([]); // Reset staffing issues
     
     if (isLoadingSettings) {
       console.log('Settings are still loading');
@@ -123,19 +135,26 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
+      // Use today's date instead of the selected date
+      const today = new Date();
+      // We'll generate schedule for a month starting from today
+      const endDate = addMonths(today, 1);
+      
       console.log('Calling generate-schedule function with:', {
         settings,
         profiles,
-        currentDate: currentDate.toISOString(),
-        view: currentView
+        currentDate: today.toISOString(),
+        endDate: endDate.toISOString(),
+        view: 'month' // Force month view for generation
       });
 
       const { data, error } = await supabase.functions.invoke('generate-schedule', {
         body: {
           settings,
           profiles,
-          currentDate: currentDate.toISOString(),
-          view: currentView
+          currentDate: today.toISOString(),
+          endDate: endDate.toISOString(),
+          view: 'month' // Always generate a month
         }
       });
 
@@ -144,6 +163,10 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       console.log('Generate schedule response:', data);
 
       if (data?.shifts?.length > 0) {
+        // Check staffing against requirements and identify issues
+        const issues = checkStaffingRequirements(data.shifts, settings);
+        setStaffingIssues(issues);
+        
         const processedShifts = ensureMinimumStaffing(data.shifts, profiles);
         
         const uniqueShifts = removeDuplicateShifts(processedShifts);
@@ -154,6 +177,16 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         
         setGeneratedShifts(uniqueShifts);
         setShowPreview(true);
+        
+        // Show toast with staffing information
+        if (issues.length > 0) {
+          toast({
+            title: "Bemanningsvarning",
+            description: `Schemat uppfyller inte alla bemanningskrav (${issues.length} problem detekterade).`,
+            variant: "warning",
+          });
+        }
+        
         return true;
       } else {
         console.log('No shifts generated');
@@ -162,6 +195,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           description: "Det gick inte att hitta en giltig schemaläggning med nuvarande begränsningar.",
           variant: "destructive",
         });
+        
+        setShowPreview(false);
       }
     } catch (error) {
       console.error('Error generating schedule:', error);
@@ -174,6 +209,57 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       setIsGenerating(false);
     }
     return false;
+  };
+
+  // New function to check staffing requirements and identify issues
+  const checkStaffingRequirements = (shifts: Shift[], settings: any): StaffingIssue[] => {
+    if (!settings) return [];
+    
+    const issues: StaffingIssue[] = [];
+    const shiftsByDay = new Map<string, Map<ShiftType, Shift[]>>();
+    
+    const shiftTypeToSettingsKey = {
+      'day': 'morning_shift',
+      'evening': 'afternoon_shift',
+      'night': 'night_shift'
+    };
+    
+    // Group shifts by date and type
+    shifts.forEach(shift => {
+      const date = format(new Date(shift.start_time), 'yyyy-MM-dd');
+      
+      if (!shiftsByDay.has(date)) {
+        shiftsByDay.set(date, new Map<ShiftType, Shift[]>());
+      }
+      
+      const dayShifts = shiftsByDay.get(date)!;
+      if (!dayShifts.has(shift.shift_type)) {
+        dayShifts.set(shift.shift_type, []);
+      }
+      
+      dayShifts.get(shift.shift_type)!.push(shift);
+    });
+    
+    // Check each day for staffing issues
+    shiftsByDay.forEach((dayShifts, date) => {
+      for (const shiftType of ['day', 'evening', 'night'] as ShiftType[]) {
+        const settingsKey = shiftTypeToSettingsKey[shiftType];
+        const requiredStaff = settings[settingsKey]?.min_staff || 3; // Default to 3 if not found
+        
+        const shiftsOfType = dayShifts.get(shiftType) || [];
+        
+        if (shiftsOfType.length < requiredStaff) {
+          issues.push({
+            date,
+            shiftType,
+            current: shiftsOfType.length,
+            required: requiredStaff
+          });
+        }
+      }
+    });
+    
+    return issues;
   };
 
   const ensureMinimumStaffing = (shifts: Shift[], availableProfiles: Profile[]): Shift[] => {
@@ -321,6 +407,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     generatedShifts,
     setGeneratedShifts,
     generateSchedule,
-    profiles
+    profiles,
+    staffingIssues
   };
 };

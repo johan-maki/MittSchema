@@ -1,8 +1,10 @@
+
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Shift } from "@/types/shift";
+import { format } from "date-fns";
 
 export const useScheduleActionHandlers = () => {
   const { toast } = useToast();
@@ -64,6 +66,15 @@ export const useScheduleActionHandlers = () => {
   const handleApplySchedule = async (generatedShifts: Shift[], onSuccess: () => void) => {
     console.log("Starting handleApplySchedule with", generatedShifts.length, "shifts");
     
+    if (generatedShifts.length === 0) {
+      toast({
+        title: "Tomt schema",
+        description: "Det finns inga pass att applicera.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // First deduplicate shifts based on employee ID, day, and shift type
       const uniqueShifts = deduplicateShifts(generatedShifts);
@@ -72,12 +83,10 @@ export const useScheduleActionHandlers = () => {
         console.log(`Removed ${generatedShifts.length - uniqueShifts.length} duplicate shifts`);
       }
       
-      // We'll skip the validation step that was causing issues
-      // and just proceed with the shifts we have
       console.log("Preparing to insert", uniqueShifts.length, "shifts");
       
       // Process shifts in smaller batches to avoid timeouts
-      const BATCH_SIZE = 25;
+      const BATCH_SIZE = 10; // Reducing to even smaller batch size for better reliability
       const shiftsToInsert = uniqueShifts.map(shift => ({
         start_time: shift.start_time,
         end_time: shift.end_time,
@@ -87,10 +96,13 @@ export const useScheduleActionHandlers = () => {
         is_published: false
       }));
       
+      // Validate the shifts (but don't block insertion)
+      validateShiftConstraints(shiftsToInsert);
+      
       // Insert shifts in batches
       for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {
         const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
-        console.log(`Inserting batch ${i/BATCH_SIZE + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
+        console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
         
         const { data, error: insertError } = await supabase
           .from('shifts')
@@ -99,10 +111,10 @@ export const useScheduleActionHandlers = () => {
           
         if (insertError) {
           console.error("Error inserting batch:", insertError);
-          throw insertError;
+          throw new Error(`Kunde inte spara batchen: ${insertError.message}`);
         }
         
-        console.log(`Successfully inserted batch ${i/BATCH_SIZE + 1}, received:`, data);
+        console.log(`Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, data);
       }
 
       toast({
@@ -131,7 +143,7 @@ export const useScheduleActionHandlers = () => {
     
     shifts.forEach(shift => {
       const shiftDate = new Date(shift.start_time);
-      const dateStr = `${shiftDate.getFullYear()}-${shiftDate.getMonth() + 1}-${shiftDate.getDate()}`;
+      const dateStr = format(shiftDate, 'yyyy-MM-dd');
       const key = `${shift.employee_id}-${dateStr}-${shift.shift_type}`;
       
       // Track assignments by day - one person should only work one role per day
@@ -161,22 +173,21 @@ export const useScheduleActionHandlers = () => {
     return result;
   };
 
-  // We'll keep the validation function but not use it to block insertion
-  // This can help with debugging but won't prevent schedule application
+  // Validation function for logging purposes but we won't stop the application
   const validateShiftConstraints = (shifts: Shift[]): boolean => {
     console.log("Running validation on shifts");
     // Group shifts by day and shift type
-    const shiftsByDayAndType = new Map<string, Map<string, Shift[]>>();
+    const shiftsByDay = new Map<string, Map<string, Shift[]>>();
     
     shifts.forEach(shift => {
       const shiftDate = new Date(shift.start_time);
-      const dateStr = `${shiftDate.getFullYear()}-${shiftDate.getMonth() + 1}-${shiftDate.getDate()}`;
+      const dateStr = format(shiftDate, 'yyyy-MM-dd');
       
-      if (!shiftsByDayAndType.has(dateStr)) {
-        shiftsByDayAndType.set(dateStr, new Map<string, Shift[]>());
+      if (!shiftsByDay.has(dateStr)) {
+        shiftsByDay.set(dateStr, new Map<string, Shift[]>());
       }
       
-      const dayShifts = shiftsByDayAndType.get(dateStr)!;
+      const dayShifts = shiftsByDay.get(dateStr)!;
       if (!dayShifts.has(shift.shift_type)) {
         dayShifts.set(shift.shift_type, []);
       }
@@ -193,7 +204,7 @@ export const useScheduleActionHandlers = () => {
     
     // Validate each day
     let isValid = true;
-    shiftsByDayAndType.forEach((dayShifts, dateStr) => {
+    shiftsByDay.forEach((dayShifts, dateStr) => {
       // Check each shift type
       for (const [shiftType, minStaff] of Object.entries(minStaffByShiftType)) {
         const shiftsOfType = dayShifts.get(shiftType) || [];
@@ -203,6 +214,10 @@ export const useScheduleActionHandlers = () => {
         }
       }
     });
+    
+    if (!isValid) {
+      console.log("Some shifts do not meet minimum staffing requirements");
+    }
     
     return isValid;
   };
