@@ -32,7 +32,7 @@ export const DayCell = ({
 }: DayCellProps) => {
   return (
     <div 
-      className="border-b border-r border-gray-200 p-1 min-h-[180px] relative bg-white"
+      className="border-b border-r border-gray-200 p-1 min-h-[180px] relative bg-white hover:bg-gray-50 transition-colors cursor-pointer"
       onDoubleClick={() => onAddClick(day, role)}
     >
       <div className="space-y-2 mb-8">

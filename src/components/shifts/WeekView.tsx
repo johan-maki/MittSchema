@@ -99,7 +99,7 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
                   return (
                     <div 
                       key={dayDate.toISOString()} 
-                      className="border-b border-r border-gray-100 p-1 min-h-[160px] relative"
+                      className="border-b border-r border-gray-100 p-1 min-h-[160px] relative hover:bg-gray-50 transition-colors cursor-pointer"
                       onDoubleClick={() => handleAddShift(dayDate, role)}
                     >
                       <div className="space-y-1 mb-8">
