@@ -2,7 +2,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import type { Shift } from "@/types/shift";
-import { useScheduleGeneration } from "./useScheduleGeneration";
+import { useScheduleGeneration } from "./hooks/useScheduleGeneration";
 import { ScheduleGenerationPreview } from "./ScheduleGenerationPreview";
 import { useScheduleActionHandlers } from "./actions/useScheduleActionHandlers";
 import { ScheduleActionsMenu } from "./actions/ScheduleActionsMenu";
