@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Shift, ShiftType } from "@/types/shift";
@@ -14,12 +13,12 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       if (!user) return [];
       
       // Sample profiles with first names matching the screenshot
-      const profileTemplates: Omit<Profile, 'id'> & { id: string }[] = [
-        { id: 'maki1', first_name: 'Maki', last_name: 'Zenin', role: 'Doctor', experience_level: 5, department: 'Emergency' },
-        { id: 'felix1', first_name: 'Felix', last_name: 'Leiter', role: 'Doctor', experience_level: 4, department: 'Surgery' },
-        { id: 'peter1', first_name: 'Peter', last_name: 'Parker', role: 'Nurse', experience_level: 3, department: 'Emergency' },
-        { id: 'scarl1', first_name: 'Scarlette', last_name: 'Johansson', role: 'Nurse', experience_level: 4, department: 'Pediatrics' },
-        { id: 'max1', first_name: 'Max', last_name: 'Payne', role: 'Assistant', experience_level: 2, department: 'Emergency' },
+      const profileTemplates: Profile[] = [
+        { id: 'maki1', first_name: 'Maki', last_name: 'Zenin', role: 'Doctor', experience_level: 5, department: 'Emergency', created_at: '', updated_at: '', phone: null },
+        { id: 'felix1', first_name: 'Felix', last_name: 'Leiter', role: 'Doctor', experience_level: 4, department: 'Surgery', created_at: '', updated_at: '', phone: null },
+        { id: 'peter1', first_name: 'Peter', last_name: 'Parker', role: 'Nurse', experience_level: 3, department: 'Emergency', created_at: '', updated_at: '', phone: null },
+        { id: 'scarl1', first_name: 'Scarlette', last_name: 'Johansson', role: 'Nurse', experience_level: 4, department: 'Pediatrics', created_at: '', updated_at: '', phone: null },
+        { id: 'max1', first_name: 'Max', last_name: 'Payne', role: 'Assistant', experience_level: 2, department: 'Emergency', created_at: '', updated_at: '', phone: null },
       ];
 
       // Create shift templates using the profiles

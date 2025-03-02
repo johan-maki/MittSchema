@@ -1,9 +1,8 @@
-
-import { Shift } from "@/types/shift";
+import { Shift, ShiftType } from "@/types/shift";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "./ShiftForm";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { format, isSameDay, parseISO } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,7 +12,6 @@ interface DayViewProps {
   shifts: Shift[];
 }
 
-// Create array of hours from 1 AM to 11 PM
 const HOURS = Array.from({ length: 23 }, (_, i) => i + 1);
 
 const DayView = ({ date, shifts }: DayViewProps) => {
@@ -23,7 +21,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newShiftParams, setNewShiftParams] = useState<{date: Date, role: string} | null>(null);
 
-  // Add profiles property to shifts if missing
   const shiftsWithProfiles = shifts.map(shift => ({
     ...shift,
     profiles: shift.profiles || { first_name: '', last_name: '' }
@@ -39,8 +36,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     setHiddenRoles(newHiddenRoles);
   };
 
-  // Map role names to shift types
-  const roleToShiftType: { [key: string]: string } = {
+  const roleToShiftType: { [key: string]: ShiftType } = {
     'Läkare': 'day',
     'Undersköterska': 'evening',
     'Sjuksköterska': 'night'
@@ -60,7 +56,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
     const startHour = startTime.getHours() + startTime.getMinutes() / 60;
     const endHour = endTime.getHours() + endTime.getMinutes() / 60;
     
-    // Calculate position and width based on 24-hour format
     const startPercent = (startHour / 24) * 100;
     const widthPercent = ((endHour - startHour) / 24) * 100;
     
@@ -80,7 +75,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   return (
     <ScrollArea className="h-[calc(100vh-180px)]">
       <div className="min-w-[1200px] max-w-full">
-        {/* Time header */}
         <div className="grid grid-cols-[200px,1fr] bg-white sticky top-0 z-10">
           <div className="border-b border-r border-gray-200 p-3 font-medium text-gray-500 text-sm">
             Roll
@@ -94,7 +88,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           </div>
         </div>
 
-        {/* Role rows */}
         <div className="grid grid-cols-[200px,1fr]">
           {ROLES.map((role, index) => {
             const roleShifts = getShiftsForRole(role);
@@ -152,7 +145,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           })}
         </div>
 
-        {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             {selectedShift && (
@@ -174,7 +166,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           </DialogContent>
         </Dialog>
 
-        {/* Create Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent>
             {newShiftParams && (

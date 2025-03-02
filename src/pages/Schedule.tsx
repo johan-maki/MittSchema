@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
@@ -51,6 +50,33 @@ const Schedule = () => {
     setNewShiftParams({ day, role });
     setIsCreateDialogOpen(true);
   };
+
+  function renderView() {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    switch (currentView) {
+      case 'day':
+        return <DayView date={currentDate} shifts={shifts} />;
+      case 'week':
+        return <WeekView date={currentDate} shifts={shifts} />;
+      case 'month':
+        return (
+          <MonthlySchedule 
+            date={currentDate} 
+            shifts={shifts} 
+            profiles={profiles} 
+          />
+        );
+      default:
+        return null;
+    }
+  }
 
   return (
     <AppLayout>
@@ -127,35 +153,6 @@ const Schedule = () => {
       </div>
     </AppLayout>
   );
-
-  function renderView() {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      );
-    }
-
-    switch (currentView) {
-      case 'day':
-        return <DayView date={currentDate} shifts={shifts} />;
-      case 'week':
-        return <WeekView date={currentDate} shifts={shifts} />;
-      case 'month':
-        return (
-          <MonthlySchedule 
-            date={currentDate} 
-            shifts={shifts} 
-            profiles={profiles} 
-            onShiftClick={handleShiftClick}
-            onAddShift={handleAddShift}
-          />
-        );
-      default:
-        return null;
-    }
-  }
 };
 
 export default Schedule;
