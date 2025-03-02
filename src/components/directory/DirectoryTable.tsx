@@ -1,15 +1,15 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Profile, DatabaseProfile, convertDatabaseProfile } from "@/types/profile";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { AddProfileDialog } from "./AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 function getInitials(profile: Profile) {
   return `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`;
@@ -29,6 +29,8 @@ export function DirectoryTable() {
     experience_level: 1
   });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ['profiles'],
@@ -66,6 +68,40 @@ export function DirectoryTable() {
       experience_level: profile.experience_level
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteProfile = (profile: Profile) => {
+    setProfileToDelete(profile);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!profileToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', profileToDelete.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Medarbetare borttagen",
+        description: `${profileToDelete.first_name} ${profileToDelete.last_name} har tagits bort`,
+      });
+      
+      // Refresh the profiles data
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      setIsDeleteDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error deleting profile:', error);
+      toast({
+        title: "Fel",
+        description: error.message || "Kunde inte ta bort medarbetaren",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +165,7 @@ export function DirectoryTable() {
               Telefon
             </th>
             <th scope="col" className="relative py-3.5 pl-3 pr-6">
-              <span className="sr-only">Redigera</span>
+              <span className="sr-only">Åtgärder</span>
             </th>
           </tr>
         </thead>
@@ -161,28 +197,68 @@ export function DirectoryTable() {
                 {profile.phone}
               </td>
               <td className="py-4 pl-3 pr-6 text-right text-sm font-medium">
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => handleEditProfile(profile)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <AddProfileDialog
-                      isOpen={isEditDialogOpen}
-                      setIsOpen={setIsEditDialogOpen}
-                      newProfile={editingProfile}
-                      setNewProfile={setEditingProfile}
-                      onSubmit={handleSubmit}
-                      isEditing={true}
-                    />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditProfile(profile)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteProfile(profile)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redigera personal</DialogTitle>
+          </DialogHeader>
+          <AddProfileDialog
+            isOpen={isEditDialogOpen}
+            setIsOpen={setIsEditDialogOpen}
+            newProfile={editingProfile}
+            setNewProfile={setEditingProfile}
+            onSubmit={handleSubmit}
+            isEditing={true}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ta bort medarbetare</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700 dark:text-gray-300">
+              Är du säker på att du vill ta bort {profileToDelete?.first_name} {profileToDelete?.last_name}? 
+              Denna åtgärd kan inte ångras.
+            </p>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:border-gray-600"
+            >
+              Avbryt
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={confirmDelete}
+            >
+              Ta bort
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
