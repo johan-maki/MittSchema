@@ -1,4 +1,5 @@
-import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
+
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
 import { Shift, Role } from "@/types/shift";
@@ -31,32 +32,23 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const { toast } = useToast();
 
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
-    if (!shifts || !profiles) return [];
+    if (!shifts) return [];
 
-    const uniqueEmployeeShifts = new Map<string, Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>();
-
-    const relevantShifts = shifts.filter(shift => {
-      if (!isSameDay(new Date(shift.start_time), day)) return false;
-
-      const employee = profiles.find(p => p.id === shift.employee_id);
-
-      if (!employee) return false;
-      
-      if (role === 'Undersköterska') {
-        return employee.role === 'Undersköterska';
-      }
-      
-      return employee.role === role;
+    // Updated mapping of roles to shift types
+    const roleToShiftType: { [key: string]: string } = {
+      'Läkare': 'day',
+      'Sjuksköterska': 'evening',
+      'Undersköterska': 'night'
+    };
+    
+    // Filter shifts for the given day and role
+    const dayShifts = shifts.filter(shift => {
+      const shiftDate = parseISO(shift.start_time);
+      return isSameDay(shiftDate, day) && 
+             shift.shift_type === roleToShiftType[role];
     });
-
-    relevantShifts.forEach(shift => {
-      const key = `${shift.employee_id}-${role}`;
-      if (!uniqueEmployeeShifts.has(key)) {
-        uniqueEmployeeShifts.set(key, shift);
-      }
-    });
-
-    return Array.from(uniqueEmployeeShifts.values());
+    
+    return dayShifts;
   };
 
   const handleAddClick = (day: Date, role: Role) => {
@@ -80,7 +72,7 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
     setHiddenRoles(newHiddenRoles);
   };
 
-  if (!shifts || !profiles) {
+  if (!shifts) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -162,14 +154,18 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
 
         <Dialog open={isAddShiftDialogOpen} onOpenChange={setIsAddShiftDialogOpen}>
           <DialogContent>
-            <ShiftForm
-              isOpen={isAddShiftDialogOpen}
-              onOpenChange={setIsAddShiftDialogOpen}
-              defaultValues={{
-                start_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : "",
-                end_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : "",
-              }}
-            />
+            {selectedDate && (
+              <ShiftForm
+                isOpen={isAddShiftDialogOpen}
+                onOpenChange={setIsAddShiftDialogOpen}
+                defaultValues={{
+                  start_time: selectedDate ? `${selectedDate.toISOString().slice(0, 10)}T09:00` : "",
+                  end_time: selectedDate ? `${selectedDate.toISOString().slice(0, 10)}T16:00` : "",
+                  shift_type: selectedRole === 'Läkare' ? 'day' : 
+                             selectedRole === 'Sjuksköterska' ? 'evening' : 'night'
+                }}
+              />
+            )}
           </DialogContent>
         </Dialog>
 
