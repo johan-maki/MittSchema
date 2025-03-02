@@ -1,9 +1,9 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Profile, DatabaseProfile, convertDatabaseProfile } from "@/types/profile";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { AddProfileDialog } from "./AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +26,7 @@ function getInitials(profile: Profile) {
 }
 
 export function DirectoryTable() {
-  const { roleFilter, searchQuery } = useDirectory();
+  const { roleFilter, searchQuery, isAuthenticated } = useDirectory();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingProfile, setEditingProfile] = useState({
@@ -41,24 +41,31 @@ export function DirectoryTable() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const { data: profiles = [], isLoading, refetch } = useQuery({
+  const { data: profiles = [], isLoading, error } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
       console.log("Fetching profiles from database...");
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      if (error) {
-        console.error('Error fetching profiles:', error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*');
+        
+        if (error) {
+          console.error('Error fetching profiles:', error);
+          throw error;
+        }
+        
+        console.log("Profiles fetched:", data);
+        // Convert the raw database profiles to our internal Profile type
+        return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
+      } catch (err) {
+        console.error("Failed to fetch profiles:", err);
+        return [];
       }
-      
-      console.log("Profiles fetched:", data);
-      // Convert the raw database profiles to our internal Profile type
-      return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
-    }
+    },
+    enabled: isAuthenticated // Only fetch when authenticated
   });
 
   // Filter profiles based on search query and role filter
@@ -76,6 +83,15 @@ export function DirectoryTable() {
   });
 
   const handleEditProfile = (profile: Profile) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Inte inloggad",
+        description: "Du måste logga in för att redigera personal",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setEditingProfile({
       id: profile.id,
       first_name: profile.first_name,
@@ -89,6 +105,15 @@ export function DirectoryTable() {
   };
 
   const handleDeleteProfile = (profile: Profile) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Inte inloggad",
+        description: "Du måste logga in för att ta bort personal",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Setting profile to delete:", profile);
     setProfileToDelete(profile);
     setIsDeleteDialogOpen(true);
@@ -100,14 +125,15 @@ export function DirectoryTable() {
       return;
     }
     
+    setIsProcessing(true);
+    
     try {
       console.log("Deleting profile with ID:", profileToDelete.id);
       
       const { data, error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', profileToDelete.id)
-        .select();
+        .eq('id', profileToDelete.id);
       
       if (error) {
         console.error('Error details:', error);
@@ -122,7 +148,6 @@ export function DirectoryTable() {
       });
       
       // Refresh the profiles data
-      await refetch();
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       
       // Close the dialog and reset state
@@ -135,11 +160,14 @@ export function DirectoryTable() {
         description: error.message || "Kunde inte ta bort medarbetaren",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true);
     
     try {
       console.log("Updating profile with ID:", editingProfile.id);
@@ -170,7 +198,6 @@ export function DirectoryTable() {
       });
       
       // Refresh the profiles data
-      await refetch();
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       setIsEditDialogOpen(false);
     } catch (error: any) {
@@ -180,11 +207,33 @@ export function DirectoryTable() {
         description: error.message || "Kunde inte uppdatera profilen",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="p-8 text-center flex flex-col items-center justify-center">
+        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+        <h3 className="text-lg font-medium">Inloggning krävs</h3>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">
+          Du måste logga in för att visa och hantera personalkatalogen.
+        </p>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return <div className="p-8 text-center">Laddar personal...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center text-red-500">
+        Ett fel uppstod: {(error as Error).message}
+      </div>
+    );
   }
 
   return (
@@ -208,6 +257,7 @@ export function DirectoryTable() {
             setNewProfile={setEditingProfile}
             onSubmit={handleSubmit}
             isEditing={true}
+            isProcessing={isProcessing}
           />
         </DialogContent>
       </Dialog>
@@ -223,12 +273,13 @@ export function DirectoryTable() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogCancel disabled={isProcessing}>Avbryt</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isProcessing}
             >
-              Ta bort
+              {isProcessing ? "Tar bort..." : "Ta bort"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -343,13 +394,13 @@ function ProfileTableRow({
         {profile.role}
       </td>
       <td className="px-6 py-4 text-sm text-gray-500 hidden sm:table-cell dark:text-gray-400">
-        {profile.department}
+        {profile.department || "-"}
       </td>
       <td className="px-6 py-4 text-sm text-gray-500 hidden sm:table-cell dark:text-gray-400">
         {profile.experience_level} år
       </td>
       <td className="px-6 py-4 text-sm text-gray-500 hidden sm:table-cell dark:text-gray-400">
-        {profile.phone}
+        {profile.phone || "-"}
       </td>
       <td className="py-4 pl-3 pr-6 text-right text-sm font-medium">
         <ProfileActions 

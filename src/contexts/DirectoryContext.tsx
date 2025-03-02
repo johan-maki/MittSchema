@@ -9,6 +9,8 @@ interface DirectoryContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   isAuthenticated: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const DirectoryContext = createContext<DirectoryContextType | undefined>(undefined);
@@ -24,11 +26,14 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        setIsAuthenticated(!!data.session);
+        const hasSession = !!data.session;
+        console.log("Auth check - Has session:", hasSession);
+        setIsAuthenticated(hasSession);
         
         // Subscribe to auth changes
         const { data: authListener } = supabase.auth.onAuthStateChange(
           (event, session) => {
+            console.log("Auth state change:", event, !!session);
             setIsAuthenticated(!!session);
           }
         );
@@ -44,6 +49,62 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
+  // Handle sign in
+  const signIn = async (email: string, password: string) => {
+    try {
+      console.log("Attempting to sign in with:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Sign in error:", error);
+        toast({
+          title: "Inloggning misslyckades",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      toast({
+        title: "Inloggad",
+        description: "Du är nu inloggad",
+      });
+      setIsAuthenticated(true);
+      return data;
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      throw error;
+    }
+  };
+
+  // Handle sign out
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error);
+        toast({
+          title: "Utloggning misslyckades",
+          description: error.message,
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      toast({
+        title: "Utloggad",
+        description: "Du är nu utloggad",
+      });
+      setIsAuthenticated(false);
+    } catch (error: any) {
+      console.error("Sign out error:", error);
+      throw error;
+    }
+  };
+
   return (
     <DirectoryContext.Provider
       value={{
@@ -51,7 +112,9 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
         setRoleFilter,
         searchQuery,
         setSearchQuery,
-        isAuthenticated
+        isAuthenticated,
+        signIn,
+        signOut
       }}
     >
       {children}

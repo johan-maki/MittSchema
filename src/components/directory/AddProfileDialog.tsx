@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NewProfile } from "@/types/profile";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction } from "react";
 
 interface AddProfileDialogProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface AddProfileDialogProps {
   setNewProfile: Dispatch<SetStateAction<NewProfile>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   isEditing?: boolean;
+  isProcessing?: boolean;
 }
 
 // Define form field components for reusability
@@ -22,7 +23,8 @@ const FormField = ({
   required = false, 
   type = "text", 
   min, 
-  max 
+  max,
+  disabled = false
 }: { 
   label: string;
   value: string | number;
@@ -31,6 +33,7 @@ const FormField = ({
   type?: string;
   min?: string;
   max?: string;
+  disabled?: boolean;
 }) => (
   <div>
     <label className="text-sm font-medium text-[#1A1F2C] dark:text-gray-300">{label}</label>
@@ -42,6 +45,7 @@ const FormField = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
+      disabled={disabled}
     />
   </div>
 );
@@ -52,19 +56,17 @@ export const AddProfileDialog = ({
   newProfile,
   setNewProfile,
   onSubmit,
-  isEditing = false
+  isEditing = false,
+  isProcessing = false
 }: AddProfileDialogProps) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (isProcessing) return;
+    
     try {
       await onSubmit(e);
     } catch (error) {
       console.error("Form submission error:", error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -90,6 +92,7 @@ export const AddProfileDialog = ({
         value={newProfile.first_name} 
         onChange={(value) => updateProfile('first_name', value)} 
         required 
+        disabled={isProcessing}
       />
       
       <FormField 
@@ -97,6 +100,7 @@ export const AddProfileDialog = ({
         value={newProfile.last_name} 
         onChange={(value) => updateProfile('last_name', value)} 
         required 
+        disabled={isProcessing}
       />
       
       <FormField 
@@ -104,18 +108,21 @@ export const AddProfileDialog = ({
         value={newProfile.role} 
         onChange={(value) => updateProfile('role', value)} 
         required 
+        disabled={isProcessing}
       />
       
       <FormField 
         label="Avdelning" 
         value={newProfile.department || ''} 
         onChange={(value) => updateProfile('department', value)} 
+        disabled={isProcessing}
       />
       
       <FormField 
         label="Telefonnummer" 
         value={newProfile.phone || ''} 
         onChange={(value) => updateProfile('phone', value)} 
+        disabled={isProcessing}
       />
       
       <FormField 
@@ -125,6 +132,7 @@ export const AddProfileDialog = ({
         type="number" 
         min="0" 
         max="50" 
+        disabled={isProcessing}
       />
 
       <DialogFooter className="mt-6">
@@ -133,16 +141,20 @@ export const AddProfileDialog = ({
           variant="outline" 
           onClick={() => setIsOpen(false)} 
           className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:border-gray-600"
-          disabled={isSubmitting}
+          disabled={isProcessing}
         >
           Avbryt
         </Button>
         <Button 
           type="submit" 
           className="bg-[#9b87f5] hover:bg-[#7E69AB] dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED]"
-          disabled={isSubmitting}
+          disabled={isProcessing}
         >
-          {isSubmitting ? "Bearbetar..." : isEditing ? "Spara ändringar" : "Lägg till"}
+          {isProcessing 
+            ? "Bearbetar..." 
+            : isEditing 
+              ? "Spara ändringar" 
+              : "Lägg till"}
         </Button>
       </DialogFooter>
     </form>
