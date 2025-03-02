@@ -18,31 +18,7 @@ const Schedule = () => {
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const { data: shifts = [], isLoading } = useQuery({
-    queryKey: ['shifts', currentDate, currentView],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shifts')
-        .select(`
-          *,
-          profiles:employee_id (
-            first_name,
-            last_name,
-            role,
-            experience_level
-          )
-        `)
-        .gte('start_time', new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString())
-        .lte('start_time', new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString());
-
-      if (error) {
-        console.error('Error fetching shifts:', error);
-        return [];
-      }
-
-      return data || [];
-    }
-  });
+  const { data: shifts = [], isLoading } = useShiftData(currentDate, currentView);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['profiles'],
@@ -63,7 +39,7 @@ const Schedule = () => {
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
-        <header className="p-4 bg-white/30 backdrop-blur-sm border-b">
+        <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CalendarHeader
               currentDate={currentDate}
@@ -87,9 +63,9 @@ const Schedule = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="flex-1 p-2 sm:p-4 overflow-auto"
+            className="flex-1 p-2 sm:p-4 overflow-hidden"
           >
-            <div className="max-w-[100vw] overflow-x-auto">
+            <div className="h-full">
               {renderView()}
             </div>
           </motion.div>

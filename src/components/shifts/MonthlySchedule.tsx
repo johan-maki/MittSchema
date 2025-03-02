@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { ExperienceLevelSummary } from "./ExperienceLevelSummary";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MonthlyScheduleProps {
   date: Date;
@@ -88,109 +89,111 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   }
 
   return (
-    <div className="min-w-[1000px]">
-      <div className="grid grid-cols-[200px,1fr] bg-white">
-        <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm self-start">
-          Roll
-        </div>
-        <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
-          {daysInMonth.map((day) => (
-            <div key={day.toISOString()} className="border-b border-r border-gray-100">
-              <div className="p-2 font-medium text-gray-400 text-center text-sm">
-                {format(day, 'd EEE', { locale: sv })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-[200px,1fr]">
-        {ROLES.map((role, index) => (
-          <div key={role} className="grid grid-cols-subgrid col-span-2">
-            <div 
-              className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50`}
-              onClick={() => toggleRole(role)}
-            >
-              {hiddenRoles.has(role) ? (
-                <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
-              )}
-              <span className={ROLE_COLORS[role].text}>{role}</span>
-            </div>
-            <div className={`grid grid-cols-[repeat(31,minmax(100px,1fr))] ${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-              {daysInMonth.map((day) => {
-                const dayShifts = getShiftsForRoleAndDay(role, day);
-                return (
-                  <DayCell
-                    key={`${role}-${day.toISOString()}`}
-                    day={day}
-                    role={role}
-                    isLastRole={index === ROLES.length - 1}
-                    shifts={shifts}
-                    profiles={profiles}
-                    roleColors={ROLE_COLORS[role]}
-                    onAddClick={handleAddClick}
-                    onShiftClick={handleShiftClick}
-                    dayShifts={dayShifts}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        ))}
-
-        <div className="grid grid-cols-subgrid col-span-2">
-          <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
-            Experience Level
+    <ScrollArea className="h-[calc(100vh-180px)]">
+      <div className="min-w-[1000px]">
+        <div className="grid grid-cols-[200px,1fr] bg-white sticky top-0 z-10">
+          <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm self-start">
+            Roll
           </div>
           <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
             {daysInMonth.map((day) => (
-              <div key={`summary-${day.toISOString()}`} className="border-b border-r border-gray-100">
-                <ExperienceLevelSummary
-                  date={day}
-                  shifts={shifts}
-                  profiles={profiles}
-                />
+              <div key={day.toISOString()} className="border-b border-r border-gray-100">
+                <div className="p-2 font-medium text-gray-400 text-center text-sm">
+                  {format(day, 'd EEE', { locale: sv })}
+                </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      <Dialog open={isAddShiftDialogOpen} onOpenChange={setIsAddShiftDialogOpen}>
-        <DialogContent>
-          <ShiftForm
-            isOpen={isAddShiftDialogOpen}
-            onOpenChange={setIsAddShiftDialogOpen}
-            defaultValues={{
-              start_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : "",
-              end_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : "",
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+        <div className="grid grid-cols-[200px,1fr]">
+          {ROLES.map((role, index) => (
+            <div key={role} className="grid grid-cols-subgrid col-span-2">
+              <div 
+                className={`border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50 sticky left-0 bg-white`}
+                onClick={() => toggleRole(role)}
+              >
+                {hiddenRoles.has(role) ? (
+                  <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
+                )}
+                <span className={ROLE_COLORS[role].text}>{role}</span>
+              </div>
+              <div className={`grid grid-cols-[repeat(31,minmax(100px,1fr))] ${hiddenRoles.has(role) ? 'hidden' : ''}`}>
+                {daysInMonth.map((day) => {
+                  const dayShifts = getShiftsForRoleAndDay(role, day);
+                  return (
+                    <DayCell
+                      key={`${role}-${day.toISOString()}`}
+                      day={day}
+                      role={role}
+                      isLastRole={index === ROLES.length - 1}
+                      shifts={shifts}
+                      profiles={profiles}
+                      roleColors={ROLE_COLORS[role]}
+                      onAddClick={handleAddClick}
+                      onShiftClick={handleShiftClick}
+                      dayShifts={dayShifts}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
-      <Dialog open={isEditShiftDialogOpen} onOpenChange={setIsEditShiftDialogOpen}>
-        <DialogContent>
-          {selectedShift && (
+          <div className="grid grid-cols-subgrid col-span-2">
+            <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm sticky left-0 bg-white">
+              Experience Level
+            </div>
+            <div className="grid grid-cols-[repeat(31,minmax(100px,1fr))]">
+              {daysInMonth.map((day) => (
+                <div key={`summary-${day.toISOString()}`} className="border-b border-r border-gray-100">
+                  <ExperienceLevelSummary
+                    date={day}
+                    shifts={shifts}
+                    profiles={profiles}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <Dialog open={isAddShiftDialogOpen} onOpenChange={setIsAddShiftDialogOpen}>
+          <DialogContent>
             <ShiftForm
-              isOpen={isEditShiftDialogOpen}
-              onOpenChange={setIsEditShiftDialogOpen}
+              isOpen={isAddShiftDialogOpen}
+              onOpenChange={setIsAddShiftDialogOpen}
               defaultValues={{
-                start_time: selectedShift.start_time.slice(0, 16),
-                end_time: selectedShift.end_time.slice(0, 16),
-                department: selectedShift.department || "",
-                notes: selectedShift.notes || "",
-                employee_id: selectedShift.employee_id,
-                shift_type: selectedShift.shift_type
+                start_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : "",
+                end_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : "",
               }}
-              editMode
-              shiftId={selectedShift.id}
             />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditShiftDialogOpen} onOpenChange={setIsEditShiftDialogOpen}>
+          <DialogContent>
+            {selectedShift && (
+              <ShiftForm
+                isOpen={isEditShiftDialogOpen}
+                onOpenChange={setIsEditShiftDialogOpen}
+                defaultValues={{
+                  start_time: selectedShift.start_time.slice(0, 16),
+                  end_time: selectedShift.end_time.slice(0, 16),
+                  department: selectedShift.department || "",
+                  notes: selectedShift.notes || "",
+                  employee_id: selectedShift.employee_id,
+                  shift_type: selectedShift.shift_type
+                }}
+                editMode
+                shiftId={selectedShift.id}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </ScrollArea>
   );
 };

@@ -33,7 +33,7 @@ export const DayCell = ({
   dayShifts,
 }: DayCellProps) => {
   return (
-    <div className="border-b border-r border-gray-200 p-1 min-h-[120px] relative">
+    <div className="border-b border-r border-gray-200 p-1 min-h-[180px] relative">
       <div className="space-y-1 mb-8">
         {dayShifts.map((shift) => (
           <ShiftCard

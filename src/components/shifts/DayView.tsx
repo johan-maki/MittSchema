@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { ROLES, ROLE_COLORS } from "./schedule.constants";
 import { format, isSameDay, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DayViewProps {
   date: Date;
@@ -72,10 +73,10 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <ScrollArea className="h-[calc(100vh-180px)]">
       <div className="min-w-[1200px] max-w-full">
         {/* Time header */}
-        <div className="grid grid-cols-[200px,1fr] bg-white">
+        <div className="grid grid-cols-[200px,1fr] bg-white sticky top-0 z-10">
           <div className="border-b border-r border-gray-100 p-2 font-medium text-gray-400 text-sm">
             Roll
           </div>
@@ -95,7 +96,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
             return (
               <div key={role} className="grid grid-cols-subgrid col-span-2">
                 <div 
-                  className="border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50"
+                  className="border-b border-r border-gray-100 p-2 font-medium text-sm flex items-start gap-2 cursor-pointer hover:bg-gray-50 sticky left-0 bg-white"
                   onClick={() => toggleRole(role)}
                 >
                   {hiddenRoles.has(role) ? (
@@ -110,7 +111,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                 </div>
                 
                 <div className={`${hiddenRoles.has(role) ? 'hidden' : ''}`}>
-                  <div className="border-b border-r border-gray-100 h-24 relative">
+                  <div className="border-b border-r border-gray-100 h-40 relative">
                     {roleShifts.map((shift) => {
                       const { startPercent, widthPercent } = calculateShiftPosition(shift);
                       return (
@@ -164,7 +165,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </ScrollArea>
   );
 };
 
