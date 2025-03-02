@@ -1,4 +1,3 @@
-
 import { Shift } from "@/types/shift";
 import { Profile } from "@/types/profile";
 import { motion } from "framer-motion";
@@ -32,17 +31,28 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
   };
 
   const getShiftsForDay = (dayDate: Date, role: string) => {
+    const uniqueEmployeeShifts = new Map<string, Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>();
+    
     const roleToShiftType: { [key: string]: string } = {
       'Läkare': 'day',
       'Undersköterska': 'evening',
       'Sjuksköterska': 'night'
     };
-
-    return shifts.filter(shift => {
+    
+    const filteredShifts = shifts.filter(shift => {
       const shiftDate = parseISO(shift.start_time);
       const roleShiftType = roleToShiftType[role];
       return isSameDay(shiftDate, dayDate) && shift.shift_type === roleShiftType;
     });
+    
+    filteredShifts.forEach(shift => {
+      const key = `${shift.employee_id}-${shift.shift_type}`;
+      if (!uniqueEmployeeShifts.has(key)) {
+        uniqueEmployeeShifts.set(key, shift);
+      }
+    });
+    
+    return Array.from(uniqueEmployeeShifts.values());
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,7 +144,14 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       console.log('Generate schedule response:', data);
 
       if (data?.shifts?.length > 0) {
-        setGeneratedShifts(data.shifts);
+        // Validate the generated shifts to prevent duplicates
+        const uniqueShifts = removeDuplicateShifts(data.shifts);
+        
+        if (uniqueShifts.length < data.shifts.length) {
+          console.log(`Removed ${data.shifts.length - uniqueShifts.length} duplicate shifts`);
+        }
+        
+        setGeneratedShifts(uniqueShifts);
         setShowPreview(true);
         return true;
       } else {
@@ -167,6 +173,25 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       setIsGenerating(false);
     }
     return false;
+  };
+
+  // Helper function to remove duplicate shifts (same employee on same day with same shift type)
+  const removeDuplicateShifts = (shifts: Shift[]): Shift[] => {
+    const uniqueShiftMap = new Map<string, Shift>();
+    
+    shifts.forEach(shift => {
+      const shiftDate = new Date(shift.start_time);
+      const dateKey = `${shiftDate.getFullYear()}-${shiftDate.getMonth()}-${shiftDate.getDate()}`;
+      const uniqueKey = `${shift.employee_id}-${dateKey}-${shift.shift_type}`;
+      
+      // If this unique combination doesn't exist yet, or we want to keep the current shift
+      // (can implement priority logic here if needed)
+      if (!uniqueShiftMap.has(uniqueKey)) {
+        uniqueShiftMap.set(uniqueKey, shift);
+      }
+    });
+    
+    return Array.from(uniqueShiftMap.values());
   };
 
   return {

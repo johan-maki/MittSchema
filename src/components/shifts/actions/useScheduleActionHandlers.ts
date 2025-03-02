@@ -64,7 +64,14 @@ export const useScheduleActionHandlers = () => {
 
   const handleApplySchedule = async (generatedShifts: Shift[], onSuccess: () => void) => {
     try {
-      const shiftsToInsert = generatedShifts.map(shift => ({
+      // First deduplicate shifts to prevent the same person working multiple shifts of same type on same day
+      const uniqueShifts = deduplicateShifts(generatedShifts);
+      
+      if (uniqueShifts.length < generatedShifts.length) {
+        console.log(`Removed ${generatedShifts.length - uniqueShifts.length} duplicate shifts`);
+      }
+      
+      const shiftsToInsert = uniqueShifts.map(shift => ({
         start_time: shift.start_time,
         end_time: shift.end_time,
         shift_type: shift.shift_type,
@@ -94,6 +101,23 @@ export const useScheduleActionHandlers = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Helper function to remove duplicate shifts (same employee, same day, same shift type)
+  const deduplicateShifts = (shifts: Shift[]): Shift[] => {
+    const uniqueKeys = new Map<string, Shift>();
+    
+    shifts.forEach(shift => {
+      const shiftDate = new Date(shift.start_time);
+      const dateStr = `${shiftDate.getFullYear()}-${shiftDate.getMonth()}-${shiftDate.getDate()}`;
+      const key = `${shift.employee_id}-${dateStr}-${shift.shift_type}`;
+      
+      if (!uniqueKeys.has(key)) {
+        uniqueKeys.set(key, shift);
+      }
+    });
+    
+    return Array.from(uniqueKeys.values());
   };
 
   return {

@@ -1,4 +1,3 @@
-
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
@@ -33,23 +32,30 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
   const getShiftsForRoleAndDay = (role: Role, day: Date) => {
     if (!shifts || !profiles) return [];
 
-    return shifts.filter(shift => {
+    const uniqueEmployeeShifts = new Map<string, Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }>();
+
+    const relevantShifts = shifts.filter(shift => {
       if (!isSameDay(new Date(shift.start_time), day)) return false;
 
-      // Find the employee for this shift
       const employee = profiles.find(p => p.id === shift.employee_id);
 
-      // If no employee found, skip this shift
       if (!employee) return false;
       
-      // For Undersköterska, accept both evening and night shifts
       if (role === 'Undersköterska') {
         return employee.role === 'Undersköterska';
       }
       
-      // For other roles, match exactly
       return employee.role === role;
     });
+
+    relevantShifts.forEach(shift => {
+      const key = `${shift.employee_id}-${role}`;
+      if (!uniqueEmployeeShifts.has(key)) {
+        uniqueEmployeeShifts.set(key, shift);
+      }
+    });
+
+    return Array.from(uniqueEmployeeShifts.values());
   };
 
   const handleAddClick = (day: Date, role: Role) => {
