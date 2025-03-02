@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -41,9 +42,10 @@ export function DirectoryTable() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
 
-  const { data: profiles = [], isLoading } = useQuery({
+  const { data: profiles = [], isLoading, refetch } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
+      console.log("Fetching profiles from database...");
       const { data, error } = await supabase
         .from('profiles')
         .select('*');
@@ -53,6 +55,7 @@ export function DirectoryTable() {
         throw error;
       }
       
+      console.log("Profiles fetched:", data);
       // Convert the raw database profiles to our internal Profile type
       return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
     }
@@ -86,25 +89,32 @@ export function DirectoryTable() {
   };
 
   const handleDeleteProfile = (profile: Profile) => {
+    console.log("Setting profile to delete:", profile);
     setProfileToDelete(profile);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!profileToDelete) return;
+    if (!profileToDelete) {
+      console.error("No profile to delete!");
+      return;
+    }
     
     try {
       console.log("Deleting profile with ID:", profileToDelete.id);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', profileToDelete.id);
+        .eq('id', profileToDelete.id)
+        .select();
       
       if (error) {
         console.error('Error details:', error);
         throw error;
       }
+      
+      console.log("Delete response:", data);
       
       toast({
         title: "Medarbetare borttagen",
@@ -112,6 +122,7 @@ export function DirectoryTable() {
       });
       
       // Refresh the profiles data
+      await refetch();
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       
       // Close the dialog and reset state
@@ -131,7 +142,9 @@ export function DirectoryTable() {
     e.preventDefault();
     
     try {
-      const { error } = await supabase
+      console.log("Updating profile with ID:", editingProfile.id);
+      
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           first_name: editingProfile.first_name,
@@ -141,9 +154,15 @@ export function DirectoryTable() {
           phone: editingProfile.phone || null,
           experience_level: editingProfile.experience_level
         })
-        .eq('id', editingProfile.id);
+        .eq('id', editingProfile.id)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error details:', error);
+        throw error;
+      }
+      
+      console.log("Update response:", data);
       
       toast({
         title: "Profil uppdaterad",
@@ -151,6 +170,7 @@ export function DirectoryTable() {
       });
       
       // Refresh the profiles data
+      await refetch();
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       setIsEditDialogOpen(false);
     } catch (error: any) {
@@ -276,14 +296,22 @@ function ProfilesTableBody({
 }) {
   return (
     <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-800 dark:divide-gray-700">
-      {profiles.map((profile) => (
-        <ProfileTableRow 
-          key={profile.id} 
-          profile={profile} 
-          onEdit={onEdit} 
-          onDelete={onDelete} 
-        />
-      ))}
+      {profiles.length === 0 ? (
+        <tr>
+          <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+            Inga medarbetare hittades
+          </td>
+        </tr>
+      ) : (
+        profiles.map((profile) => (
+          <ProfileTableRow 
+            key={profile.id} 
+            profile={profile} 
+            onEdit={onEdit} 
+            onDelete={onDelete} 
+          />
+        ))
+      )}
     </tbody>
   );
 }
@@ -349,6 +377,7 @@ function ProfileActions({
         variant="ghost" 
         size="sm" 
         onClick={() => onEdit(profile)}
+        aria-label={`Redigera ${profile.first_name} ${profile.last_name}`}
       >
         <Pencil className="h-4 w-4" />
       </Button>
@@ -357,6 +386,7 @@ function ProfileActions({
         size="sm" 
         onClick={() => onDelete(profile)} 
         className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+        aria-label={`Ta bort ${profile.first_name} ${profile.last_name}`}
       >
         <Trash2 className="h-4 w-4" />
       </Button>

@@ -46,14 +46,17 @@ export function DirectoryControls() {
       
       console.log("Adding new profile:", profileData);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .insert(profileData);
+        .insert(profileData)
+        .select();
       
       if (error) {
-        console.error('Error adding profile:', error);
+        console.error('Error details:', error);
         throw error;
       }
+      
+      console.log("Profile added successfully:", data);
       
       toast({
         title: "Profil tillagd",
