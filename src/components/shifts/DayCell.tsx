@@ -43,7 +43,7 @@ export const DayCell = ({
             shift={shift}
             profile={shift.profiles}
             roleColors={roleColors}
-            onClick={onShiftClick}
+            onClick={() => onShiftClick(shift)}
           />
         ))}
       </div>

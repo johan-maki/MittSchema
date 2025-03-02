@@ -1,3 +1,4 @@
+
 import { Shift, ShiftType } from "@/types/shift";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -38,8 +39,8 @@ const DayView = ({ date, shifts }: DayViewProps) => {
 
   const roleToShiftType: { [key: string]: ShiftType } = {
     'Läkare': 'day',
-    'Undersköterska': 'evening',
-    'Sjuksköterska': 'night'
+    'Sjuksköterska': 'evening',
+    'Undersköterska': 'night'
   };
 
   const getShiftsForRole = (role: string) => {
