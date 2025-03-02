@@ -2,25 +2,21 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { UserPlus, LogIn, LogOut } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { UserPlus } from "lucide-react";
 import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { InsertProfile } from "@/types/profile";
+import { addProfile } from "@/services/profileService";
 
 export function DirectoryControls() {
-  const { roleFilter, setRoleFilter, searchQuery, setSearchQuery, isAuthenticated, signIn, signOut } = useDirectory();
+  const { roleFilter, setRoleFilter, searchQuery, setSearchQuery } = useDirectory();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [newProfile, setNewProfile] = useState({
+  const [newProfile, setNewProfile] = useState<InsertProfile>({
     id: '',
     first_name: '',
     last_name: '',
@@ -39,45 +35,20 @@ export function DirectoryControls() {
     try {
       console.log("Adding new profile in development mode");
       
-      // Generate a random UUID for the new profile
-      const newId = crypto.randomUUID();
-      
-      // Create profile data object without the foreign key constraint
+      // Create profile data object without the ID (will be generated in the service)
       const profileData = {
-        id: newId,
         first_name: newProfile.first_name,
         last_name: newProfile.last_name,
         role: newProfile.role,
         department: newProfile.department || null,
         phone: newProfile.phone || null,
-        experience_level: newProfile.experience_level,
-        // Add default work preferences
-        work_preferences: {
-          preferred_shifts: ["day"],
-          max_shifts_per_week: 5,
-          available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
-        }
+        experience_level: newProfile.experience_level
       };
       
-      // Special development mode workaround - use RPC to bypass RLS
-      // @ts-ignore - Ignore the TypeScript error for the RPC function that isn't in the types
-      const { data, error } = await supabase
-        .rpc('dev_add_profile', {
-          profile_id: newId,
-          first_name: newProfile.first_name,
-          last_name: newProfile.last_name,
-          role_val: newProfile.role,
-          department_val: newProfile.department || null,
-          phone_val: newProfile.phone || null,
-          experience_level_val: newProfile.experience_level
-        });
+      // Use the profile service to add the profile
+      const addedProfile = await addProfile(profileData);
       
-      if (error) {
-        console.error('Error adding profile:', error);
-        throw error;
-      }
-      
-      console.log("Profile added successfully:", data);
+      console.log("Profile added successfully:", addedProfile);
       
       toast({
         title: "Profil tillagd",
@@ -105,30 +76,6 @@ export function DirectoryControls() {
       });
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoggingIn(true);
-    
-    try {
-      await signIn(email, password);
-      setIsLoginDialogOpen(false);
-      setEmail('');
-      setPassword('');
-    } catch (error) {
-      console.error("Login failed:", error);
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Logout failed:", error);
     }
   };
 

@@ -1,15 +1,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NewProfile } from "@/types/profile";
+import { InsertProfile } from "@/types/profile";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Dispatch, SetStateAction } from "react";
 
 interface AddProfileDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  newProfile: NewProfile;
-  setNewProfile: Dispatch<SetStateAction<NewProfile>>;
+  newProfile: InsertProfile;
+  setNewProfile: Dispatch<SetStateAction<InsertProfile>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   isEditing?: boolean;
   isProcessing?: boolean;
@@ -35,8 +35,8 @@ const FormField = ({
   max?: string;
   disabled?: boolean;
 }) => (
-  <div>
-    <label className="text-sm font-medium text-[#1A1F2C] dark:text-gray-300">{label}</label>
+  <div className="mb-4">
+    <label className="text-sm font-medium text-[#1A1F2C] dark:text-gray-300 block mb-1">{label}</label>
     <Input
       required={required}
       type={type}
@@ -70,7 +70,7 @@ export const AddProfileDialog = ({
     }
   };
 
-  const updateProfile = (field: keyof NewProfile, value: string) => {
+  const updateProfile = (field: keyof InsertProfile, value: string) => {
     setNewProfile(prev => {
       if (field === 'experience_level') {
         return { ...prev, [field]: parseInt(value) || 1 };
@@ -86,7 +86,7 @@ export const AddProfileDialog = ({
   };
 
   return (
-    <form onSubmit={handleFormSubmit} className="space-y-4">
+    <form onSubmit={handleFormSubmit} className="space-y-4 mt-4">
       <FormField 
         label="Förnamn" 
         value={newProfile.first_name} 
