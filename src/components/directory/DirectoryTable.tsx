@@ -79,12 +79,16 @@ export function DirectoryTable() {
     if (!profileToDelete) return;
     
     try {
+      console.log("Deleting profile with ID:", profileToDelete.id);
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', profileToDelete.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error details:', error);
+        throw error;
+      }
       
       toast({
         title: "Medarbetare borttagen",
@@ -240,7 +244,7 @@ export function DirectoryTable() {
               Denna åtgärd kan inte ångras.
             </p>
           </div>
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter className="sm:justify-start gap-2">
             <Button 
               type="button" 
               variant="outline" 
