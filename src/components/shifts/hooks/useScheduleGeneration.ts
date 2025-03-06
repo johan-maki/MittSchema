@@ -8,7 +8,7 @@ import { validateConstraints } from "../utils/schedulingConstraints";
 import { checkStaffingRequirements, type StaffingIssue } from "../utils/staffingUtils";
 import { ensureMinimumStaffing, removeDuplicateShifts } from "../utils/staffingAdjustment";
 import { supabase } from "@/integrations/supabase/client";
-import { addMonths } from "date-fns";
+import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
@@ -33,6 +33,16 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       return false;
     }
 
+    if (!profiles || profiles.length === 0) {
+      console.log('No employee profiles found');
+      toast({
+        title: "Inga medarbetare",
+        description: "Det finns inga medarbetare i systemet. Lägg till några först.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     console.log('About to validate constraints');
     if (!validateConstraints(settings, isLoadingSettings)) {
       console.log('Constraint validation failed');
@@ -41,16 +51,15 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
-      // Use today's date instead of the selected date
-      const today = new Date();
-      // We'll generate schedule for a month starting from today
-      const endDate = addMonths(today, 1);
+      // Use the current date as the starting point
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
       
       console.log('Calling generate-schedule function with:', {
         settings,
         profiles,
-        currentDate: today.toISOString(),
-        endDate: endDate.toISOString(),
+        currentDate: monthStart.toISOString(),
+        endDate: monthEnd.toISOString(),
         view: 'month' // Force month view for generation
       });
 
@@ -58,13 +67,16 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         body: {
           settings,
           profiles,
-          currentDate: today.toISOString(),
-          endDate: endDate.toISOString(),
+          currentDate: monthStart.toISOString(),
+          endDate: monthEnd.toISOString(),
           view: 'month' // Always generate a month
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from function call:', error);
+        throw error;
+      }
 
       console.log('Generate schedule response:', data);
 
@@ -90,6 +102,11 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
             title: "Bemanningsvarning",
             description: `Schemat uppfyller inte alla bemanningskrav (${issues.length} problem detekterade).`,
             variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Schema genererat",
+            description: `Genererade ${uniqueShifts.length} arbetspass för ${profiles.length} medarbetare.`,
           });
         }
         
