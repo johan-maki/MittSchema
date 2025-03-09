@@ -3,7 +3,9 @@ from supabase import create_client
 from ortools.sat.python import cp_model
 import os
 from dotenv import load_dotenv
+import uvicorn
 
+# Load environment variables
 load_dotenv()
 
 app = FastAPI()
@@ -43,3 +45,8 @@ def optimize():
         return {"optimized_schedule": results}
     else:
         return {"error": "Optimization failed or no optimal solution found"}
+
+# Ensure Cloud Run picks up the correct port dynamically
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8080))  # Default to 8080 if PORT is not set
+    uvicorn.run(app, host="0.0.0.0", port=port)
