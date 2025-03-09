@@ -7,7 +7,7 @@ import { useProfileData } from "./useProfileData";
 import { validateConstraints } from "../utils/schedulingConstraints";
 import { checkStaffingRequirements, type StaffingIssue } from "../utils/staffingUtils";
 import { ensureMinimumStaffing, removeDuplicateShifts } from "../utils/staffingAdjustment";
-import { supabase } from "@/integrations/supabase/client";
+import { generateOptimizedSchedule } from "@/api/scheduleApi";
 import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
@@ -55,37 +55,28 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       
-      console.log('Calling generate-schedule function with:', {
+      console.log('Calling optimized schedule generator with:', {
         settings,
         profiles,
         currentDate: monthStart.toISOString(),
-        endDate: monthEnd.toISOString(),
-        view: 'month' // Force month view for generation
+        endDate: monthEnd.toISOString()
       });
 
-      const { data, error } = await supabase.functions.invoke('generate-schedule', {
-        body: {
-          settings,
-          profiles,
-          currentDate: monthStart.toISOString(),
-          endDate: monthEnd.toISOString(),
-          view: 'month' // Always generate a month
-        }
+      const response = await generateOptimizedSchedule({
+        settings,
+        profiles,
+        currentDate: monthStart.toISOString(),
+        endDate: monthEnd.toISOString()
       });
 
-      if (error) {
-        console.error('Error from function call:', error);
-        throw error;
-      }
+      console.log('Optimized schedule response:', response);
 
-      console.log('Generate schedule response:', data);
-
-      if (data?.shifts?.length > 0) {
+      if (response?.shifts?.length > 0) {
         // Check staffing against requirements and identify issues
-        const issues = checkStaffingRequirements(data.shifts, settings);
+        const issues = checkStaffingRequirements(response.shifts, settings);
         setStaffingIssues(issues);
         
-        const processedShifts = ensureMinimumStaffing(data.shifts, profiles);
+        const processedShifts = ensureMinimumStaffing(response.shifts, profiles);
         
         const uniqueShifts = removeDuplicateShifts(processedShifts);
         
@@ -96,7 +87,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         setGeneratedShifts(uniqueShifts);
         setShowPreview(true);
         
-        // Show toast with staffing information
+        // Show toast with staffing information and optimization score if available
         if (issues.length > 0) {
           toast({
             title: "Bemanningsvarning",
@@ -104,9 +95,10 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
             variant: "destructive",
           });
         } else {
+          const scoreInfo = response.metadata?.score ? ` Optimeringsscore: ${response.metadata.score}%` : '';
           toast({
-            title: "Schema genererat",
-            description: `Genererade ${uniqueShifts.length} arbetspass för ${profiles.length} medarbetare.`,
+            title: "Schema optimerat",
+            description: `Genererade ${uniqueShifts.length} arbetspass för ${profiles.length} medarbetare.${scoreInfo}`,
           });
         }
         
