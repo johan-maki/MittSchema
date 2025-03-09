@@ -1,62 +1,69 @@
+# Welcome to your Lovable project
 
-# Lovable Schedule Optimizer
+## Project info
 
-This project demonstrates the integration of Google OR-Tools for optimizing employee schedules with a React frontend and Supabase backend.
+**URL**: https://lovable.dev/projects/78ac2d2a-1a83-481b-b1fc-31e7d8c7ea83
 
-## Project Structure
+## How can I edit this code?
 
+There are several ways of editing your application.
+
+**Use Lovable**
+
+Simply visit the [Lovable Project](https://lovable.dev/projects/78ac2d2a-1a83-481b-b1fc-31e7d8c7ea83) and start prompting.
+
+Changes made via Lovable will be committed automatically to this repo.
+
+**Use your preferred IDE**
+
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
-lovable-dev/
-├── public/                     # Static assets
-├── src/                        # React frontend
-│   ├── api/                    # API integration
-│   │   └── scheduleApi.ts      # Schedule optimization API client
-│   ├── components/             # React components
-│   ├── pages/                  # Page components
-│   └── ...
-├── supabase/                   # Supabase configuration
-│   ├── functions/              # Edge Functions
-│   │   └── optimize-schedule/  # Schedule optimizer edge function
-│   │       ├── index.ts        # Edge function implementation
-│   │       └── README.md       # Documentation for OR-Tools integration
-│   └── ...
-```
 
-## Technology Stack
+**Edit a file directly in GitHub**
 
-- **Frontend**: React with TypeScript
-- **Backend**: Supabase Edge Functions
-- **Optimization**: Google OR-Tools (planned integration)
-- **Database**: PostgreSQL (via Supabase)
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## Optimization Strategy
+**Use GitHub Codespaces**
 
-The current implementation provides a placeholder for Google OR-Tools integration. To fully implement OR-Tools:
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-1. Create a separate Python service using OR-Tools CP-SAT solver
-2. Deploy this service where it can be accessed by the Edge Function
-3. Update the Edge Function to call the Python service API
+## What technologies are used for this project?
 
-## Getting Started
+This project is built with .
 
-1. Set up the frontend:
-   ```
-   npm install
-   npm run dev
-   ```
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-2. Deploy the Edge Function:
-   ```
-   npx supabase functions deploy optimize-schedule
-   ```
+## How can I deploy this project?
 
-## Future Work
+Simply open [Lovable](https://lovable.dev/projects/78ac2d2a-1a83-481b-b1fc-31e7d8c7ea83) and click on Share -> Publish.
 
-- Implement a Python service with OR-Tools CP-SAT solver
-- Create constraints based on hospital scheduling requirements
-- Develop objective functions for optimal scheduling
-- Add visualization of optimization results
+## I want to use a custom domain - is that possible?
 
-## License
-
-MIT
+We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)

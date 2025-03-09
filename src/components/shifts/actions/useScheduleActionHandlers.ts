@@ -28,7 +28,7 @@ export const useScheduleActionHandlers = () => {
     try {
       await handleApplySchedule(generatedShifts, onSuccess);
       toast({
-        title: "Optimerat schema applicerat",
+        title: "Schema applicerat",
         description: `${generatedShifts.length} arbetspass har lagts till i schemat.`,
       });
     } catch (error) {
