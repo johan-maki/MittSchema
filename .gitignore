@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+scheduler-api/.env
+scheduler-api/.venv/
