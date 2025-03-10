@@ -60,7 +60,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         endDate: monthEnd.toISOString()
       });
 
-      // Call the scheduler API
       const data = await schedulerApi.generateSchedule(
         monthStart.toISOString(),
         monthEnd.toISOString(),
@@ -70,49 +69,26 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       console.log('Schedule optimization response:', data);
 
       if (data?.schedule?.length > 0) {
-        // Map the API response to our Shift type format
-        const apiShifts = data.schedule.map((apiShift: any) => ({
-          id: apiShift.id || `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          employee_id: apiShift.employee_id,
-          start_time: apiShift.start_time,
-          end_time: apiShift.end_time,
-          shift_type: apiShift.shift_type,
-          department: apiShift.department || 'General',
-          is_published: false
-        }));
-
-        // Check staffing against requirements and identify issues
-        const issues = checkStaffingRequirements(apiShifts, settings);
+        const issues = checkStaffingRequirements(data.schedule, settings);
         setStaffingIssues(issues);
         
-        const processedShifts = ensureMinimumStaffing(apiShifts, profiles);
-        
+        const processedShifts = ensureMinimumStaffing(data.schedule, profiles);
         const uniqueShifts = removeDuplicateShifts(processedShifts);
-        
-        if (uniqueShifts.length < processedShifts.length) {
-          console.log(`Removed ${processedShifts.length - uniqueShifts.length} duplicate shifts after staffing adjustment`);
-        }
         
         setGeneratedShifts(uniqueShifts);
         setShowPreview(true);
         
-        // Show toast with staffing information
         if (issues.length > 0) {
           toast({
             title: "Bemanningsvarning",
             description: `Schemat uppfyller inte alla bemanningskrav (${issues.length} problem detekterade).`,
             variant: "destructive",
           });
-        } else {
-          toast({
-            title: "Schema genererat",
-            description: `Genererade ${uniqueShifts.length} arbetspass för ${profiles.length} medarbetare.`,
-          });
         }
         
         return true;
       } else {
-        console.log('No shifts generated from API');
+        console.log('No shifts generated');
         toast({
           title: "Kunde inte generera schema",
           description: "Det gick inte att hitta en giltig schemaläggning med nuvarande begränsningar.",

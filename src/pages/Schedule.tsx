@@ -29,7 +29,7 @@ const Schedule = () => {
     queryKey: ['profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .select('*');
 
       if (error) {
@@ -41,7 +41,7 @@ const Schedule = () => {
     }
   });
 
-  const { data: employees, error: employeeError } = useQuery({
+  const { data: employees = [], error: employeeError } = useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
       const { data, error } = await supabase
