@@ -28,6 +28,8 @@ export const schedulerApi = {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error (${response.status}):`, errorText);
         throw new Error(`API responded with status: ${response.status}`);
       }
 
@@ -48,6 +50,7 @@ export const schedulerApi = {
       });
       
       if (supabaseError) {
+        console.error('Supabase edge function error:', supabaseError);
         throw supabaseError;
       }
       
