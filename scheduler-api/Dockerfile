@@ -1,20 +1,18 @@
-# Use official Python slim image
+# Use Python 3.11 slim image
 FROM python:3.11-slim
 
-# Set working directory
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy dependencies
+# Copy dependency file and install packages
 COPY requirements.txt .
-
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application files
 COPY . .
 
-# Ensure correct port is used (Cloud Run assigns it dynamically)
+# Expose the correct Cloud Run port
 EXPOSE 8080
 
-# Start FastAPI with Uvicorn and ensure Cloud Run can access it
+# Start FastAPI with Uvicorn
 CMD ["uvicorn", "scheduler:app", "--host", "0.0.0.0", "--port", "8080"]
