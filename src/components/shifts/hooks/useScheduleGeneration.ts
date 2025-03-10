@@ -17,6 +17,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
   const [staffingIssues, setStaffingIssues] = useState<StaffingIssue[]>([]);
   
+  // Fix: Directly destructure what we need from the hooks without trying to access `.data`
   const { settings, isLoadingSettings } = useScheduleSettings();
   const { profiles } = useProfileData();
 
