@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Shift } from "@/types/shift";
@@ -17,7 +16,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
   const [staffingIssues, setStaffingIssues] = useState<StaffingIssue[]>([]);
   
-  // Fix: Directly destructure what we need from the hooks without trying to access `.data`
   const { settings, isLoadingSettings } = useScheduleSettings();
   const { profiles } = useProfileData();
 
@@ -52,7 +50,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
-      // Use the current date as the starting point
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       
