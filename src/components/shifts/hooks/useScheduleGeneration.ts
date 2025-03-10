@@ -7,8 +7,8 @@ import { useProfileData } from "./useProfileData";
 import { validateConstraints } from "../utils/schedulingConstraints";
 import { checkStaffingRequirements, type StaffingIssue } from "../utils/staffingUtils";
 import { ensureMinimumStaffing, removeDuplicateShifts } from "../utils/staffingAdjustment";
-import { supabase } from "@/integrations/supabase/client";
 import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
+import { schedulerApi } from "@/api/schedulerApi";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
@@ -55,37 +55,37 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
       
-      console.log('Calling generate-schedule function with:', {
-        settings,
-        profiles,
-        currentDate: monthStart.toISOString(),
-        endDate: monthEnd.toISOString(),
-        view: 'month' // Force month view for generation
+      console.log('Calling optimization API with dates:', {
+        startDate: monthStart.toISOString(),
+        endDate: monthEnd.toISOString()
       });
 
-      const { data, error } = await supabase.functions.invoke('generate-schedule', {
-        body: {
-          settings,
-          profiles,
-          currentDate: monthStart.toISOString(),
-          endDate: monthEnd.toISOString(),
-          view: 'month' // Always generate a month
-        }
-      });
+      // Call the scheduler API
+      const data = await schedulerApi.generateSchedule(
+        monthStart.toISOString(),
+        monthEnd.toISOString(),
+        settings?.department || 'General'
+      );
 
-      if (error) {
-        console.error('Error from function call:', error);
-        throw error;
-      }
+      console.log('Schedule optimization response:', data);
 
-      console.log('Generate schedule response:', data);
+      if (data?.schedule?.length > 0) {
+        // Map the API response to our Shift type format
+        const apiShifts = data.schedule.map((apiShift: any) => ({
+          id: apiShift.id || `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          employee_id: apiShift.employee_id,
+          start_time: apiShift.start_time,
+          end_time: apiShift.end_time,
+          shift_type: apiShift.shift_type,
+          department: apiShift.department || 'General',
+          is_published: false
+        }));
 
-      if (data?.shifts?.length > 0) {
         // Check staffing against requirements and identify issues
-        const issues = checkStaffingRequirements(data.shifts, settings);
+        const issues = checkStaffingRequirements(apiShifts, settings);
         setStaffingIssues(issues);
         
-        const processedShifts = ensureMinimumStaffing(data.shifts, profiles);
+        const processedShifts = ensureMinimumStaffing(apiShifts, profiles);
         
         const uniqueShifts = removeDuplicateShifts(processedShifts);
         
@@ -112,7 +112,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         
         return true;
       } else {
-        console.log('No shifts generated');
+        console.log('No shifts generated from API');
         toast({
           title: "Kunde inte generera schema",
           description: "Det gick inte att hitta en giltig schemaläggning med nuvarande begränsningar.",
