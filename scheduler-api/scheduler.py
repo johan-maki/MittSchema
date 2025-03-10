@@ -72,6 +72,10 @@ def optimize():
         print(f"Error in optimization: {e}")
         return {"error": str(e)}
 
+import os
+
 if __name__ == "__main__":
-    print(f"Starting FastAPI on port {PORT}...")
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    port = int(os.getenv("PORT", 8080))  # Ensure PORT is an integer
+    print(f"Starting FastAPI on port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
