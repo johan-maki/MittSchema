@@ -9,92 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      leave_requests: {
-        Row: {
-          created_at: string
-          employee_id: string
-          end_date: string
-          id: string
-          leave_type: string
-          reason: string | null
-          start_date: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          employee_id: string
-          end_date: string
-          id?: string
-          leave_type: string
-          reason?: string | null
-          start_date: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          employee_id?: string
-          end_date?: string
-          id?: string
-          leave_type?: string
-          reason?: string | null
-          start_date?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "leave_requests_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          is_read: boolean
-          link: string | null
-          recipient_id: string | null
-          recipient_type: string | null
-          title: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          recipient_id?: string | null
-          recipient_type?: string | null
-          title: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          recipient_id?: string | null
-          recipient_type?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
+      employees: {
         Row: {
           created_at: string
           department: string | null
@@ -135,6 +50,91 @@ export type Database = {
           work_preferences?: Json | null
         }
         Relationships: []
+      }
+      leave_requests: {
+        Row: {
+          created_at: string
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type: string
+          reason: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type: string
+          reason?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          reason?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          recipient_id: string | null
+          recipient_type: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          recipient_id?: string | null
+          recipient_type?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          recipient_id?: string | null
+          recipient_type?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedule_settings: {
         Row: {
@@ -229,7 +229,7 @@ export type Database = {
             foreignKeyName: "shifts_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -279,7 +279,7 @@ export type Database = {
             foreignKeyName: "shifts_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
