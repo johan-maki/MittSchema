@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
@@ -26,7 +25,7 @@ const Schedule = () => {
 
   const { data: shifts = [], isLoading } = useShiftData(currentDate, currentView);
 
-  const { data: profiles = [] } = useQuery({
+  const { data: profiles = [], error: profileError } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,6 +38,23 @@ const Schedule = () => {
       }
 
       return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
+    }
+  });
+
+  const { data: employees, error: employeeError } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, first_name, last_name, role')
+        .order('first_name');
+
+      if (error) {
+        console.error('Error fetching employees:', error);
+        return [];
+      }
+
+      return data;
     }
   });
 

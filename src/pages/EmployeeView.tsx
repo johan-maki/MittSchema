@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { Globe } from "@/components/ui/globe";
+import { Profile } from "@/types/profile";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -24,12 +25,12 @@ const EmployeeView = () => {
     queryKey: ['all-employees'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .select('id, first_name, last_name, role, department')
         .order('first_name');
 
       if (error) throw error;
-      return data;
+      return data as Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department'>[];
     }
   });
 
@@ -39,13 +40,13 @@ const EmployeeView = () => {
     queryFn: async () => {
       if (!selectedEmployeeId) return null;
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .select('*')
         .eq('id', selectedEmployeeId)
         .single();
 
       if (error) throw error;
-      return data;
+      return data as Profile;
     },
     enabled: !!selectedEmployeeId
   });

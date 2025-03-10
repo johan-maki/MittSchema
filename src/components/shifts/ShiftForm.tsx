@@ -12,6 +12,7 @@ import { Trash2 } from "lucide-react";
 import { ShiftDateTime } from "./form/ShiftDateTime";
 import { ShiftEmployee } from "./form/ShiftEmployee";
 import { ShiftDetails } from "./form/ShiftDetails";
+import { Profile } from "@/types/profile";
 
 interface ShiftFormProps {
   isOpen: boolean;
@@ -44,16 +45,16 @@ export const ShiftForm = ({ isOpen, onOpenChange, defaultValues, editMode, shift
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: employees } = useQuery({
+  const { data: employees = [] } = useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .select('id, first_name, last_name')
         .order('first_name');
 
       if (error) throw error;
-      return data;
+      return data as Pick<Profile, 'id' | 'first_name' | 'last_name'>[];
     }
   });
 

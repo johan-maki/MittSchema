@@ -46,7 +46,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     queryKey: ['work-preferences', employeeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .select('work_preferences')
         .eq('id', employeeId)
         .single();
@@ -65,7 +65,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const handleSave = async () => {
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('employees')
         .update({
           work_preferences: toJsonObject(preferences)
         })

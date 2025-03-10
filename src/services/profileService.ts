@@ -51,7 +51,7 @@ export const fetchProfiles = async (): Promise<Profile[]> => {
   try {
     console.log("Fetching profiles from database...");
     const { data, error } = await supabase
-      .from('profiles')
+      .from('employees')
       .select('*');
     
     if (error) throw error;

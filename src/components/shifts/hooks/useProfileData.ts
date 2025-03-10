@@ -9,7 +9,7 @@ export const useProfileData = () => {
     queryKey: ['profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .select('*');
 
       if (error) {

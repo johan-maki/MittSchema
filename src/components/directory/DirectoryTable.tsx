@@ -48,7 +48,7 @@ export function DirectoryTable() {
       console.log("Fetching profiles from database...");
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('employees')
           .select('*');
         
         if (error) {
@@ -114,7 +114,7 @@ export function DirectoryTable() {
       console.log("Deleting profile with ID:", profileToDelete.id);
       
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .delete()
         .eq('id', profileToDelete.id);
       
@@ -156,7 +156,7 @@ export function DirectoryTable() {
       console.log("Updating profile with ID:", editingProfile.id);
       
       const { data, error } = await supabase
-        .from('profiles')
+        .from('employees')
         .update({
           first_name: editingProfile.first_name,
           last_name: editingProfile.last_name,
@@ -415,3 +415,4 @@ function ProfileActions({
     </div>
   );
 }
+
