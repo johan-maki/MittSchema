@@ -1,38 +1,64 @@
 
-import { startOfWeek, endOfWeek, eachDayOfInterval, addDays, startOfMonth, endOfMonth, format } from 'date-fns';
+import { addDays, format, getDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 
+/**
+ * Get an array of dates for a week starting from a given date
+ */
 export const getWeekDays = (date: Date) => {
-  const start = startOfWeek(date, { weekStartsOn: 1 }); // Monday
+  const start = startOfWeek(date, { weekStartsOn: 1 }); // Start on Monday
   const end = endOfWeek(date, { weekStartsOn: 1 });
-  return eachDayOfInterval({ start, end });
+  
+  const days = [];
+  let day = start;
+  
+  while (day <= end) {
+    days.push(day);
+    day = addDays(day, 1);
+  }
+  
+  return days;
 };
 
-export const formatDateForDisplay = (date: Date): string => {
-  return date.toLocaleDateString('sv-SE', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+/**
+ * Get an array of dates for a month arranged in weeks
+ */
+export const getCalendarDays = (date: Date): Date[][] => {
+  const monthStart = startOfMonth(date);
+  const monthEnd = endOfMonth(date);
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  
+  const weeks: Date[][] = [];
+  let currentWeek: Date[] = [];
+  let day = startDate;
+  
+  while (day <= endDate) {
+    if (getDay(day) === 1 && currentWeek.length > 0) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+    
+    currentWeek.push(day);
+    day = addDays(day, 1);
+  }
+  
+  if (currentWeek.length > 0) {
+    weeks.push(currentWeek);
+  }
+  
+  return weeks;
 };
 
-export const generateDaysInMonth = (date: Date) => {
-  const start = startOfMonth(date);
-  const end = endOfMonth(date);
-  
-  // Get the first day of the month
-  const firstDayOfMonth = start.getDay();
-  // If it's Sunday (0), make it 7 to align with European calendar (Monday = 1)
-  const firstDayIndex = firstDayOfMonth === 0 ? 7 : firstDayOfMonth;
-  
-  // Calculate how many days we need to show from the previous month
-  const daysFromPrevMonth = firstDayIndex - 1;
-  
-  // Start from the first day to show (might be from previous month)
-  const calendarStart = addDays(start, -daysFromPrevMonth);
-  
-  // We need to show 6 weeks (42 days) total
-  const calendarEnd = addDays(calendarStart, 41);
-  
-  return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+/**
+ * Format date for display
+ */
+export const formatDate = (date: Date, formatStr: string = 'yyyy-MM-dd'): string => {
+  return format(date, formatStr);
+};
+
+/**
+ * Check if date is in the current month
+ */
+export const isCurrentMonth = (date: Date, currentDate: Date): boolean => {
+  return isSameMonth(date, currentDate);
 };

@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { Globe } from "@/components/ui/globe";
-import { Profile } from "@/types/profile";
+import { Profile, convertDatabaseProfile } from "@/types/profile";
+import type { DatabaseProfile } from "@/types/profile";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -46,7 +47,7 @@ const EmployeeView = () => {
         .single();
 
       if (error) throw error;
-      return data as Profile;
+      return convertDatabaseProfile(data as DatabaseProfile);
     },
     enabled: !!selectedEmployeeId
   });
