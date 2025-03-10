@@ -1,18 +1,18 @@
-# Use Python 3.11 slim image
+# Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Set working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy dependency file and install packages
+# Copy requirement files and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY . .
 
-# Expose the correct Cloud Run port
+# Expose the port FastAPI will run on
 EXPOSE 8080
 
-# Start FastAPI with Uvicorn
+# Run the FastAPI application with Uvicorn
 CMD ["uvicorn", "scheduler:app", "--host", "0.0.0.0", "--port", "8080"]
