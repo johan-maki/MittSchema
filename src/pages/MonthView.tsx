@@ -8,11 +8,24 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCalendarDays } from '@/utils/calendarUtils';
 
+// Define a proper type for the calendar day
+interface CalendarDay {
+  date: Date;
+  day: number;
+  month: number;
+  isCurrentMonth: boolean;
+}
+
 export const MonthView = () => {
   const [month, setMonth] = useState<Date>(new Date(2025, 0, 1));
 
   // Get days for the current month view
-  const days = getCalendarDays(month);
+  const days: CalendarDay[] = getCalendarDays(month).map(date => ({
+    date,
+    day: date.getDate(),
+    month: date.getMonth(),
+    isCurrentMonth: date.getMonth() === month.getMonth()
+  }));
 
   return (
     <div className="p-4">
@@ -50,22 +63,21 @@ export const MonthView = () => {
         ))}
 
         {/* Calendar days */}
-        {days.map((day, i) => {
-          const isCurrentMonth = day.month === month.getMonth();
+        {days.map((calendarDay, i) => {
           return (
             <div
               key={i}
               className={cn(
                 'h-24 border p-1 overflow-hidden',
-                isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'
+                calendarDay.isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'
               )}
             >
-              <div className="text-right text-sm">{day.day}</div>
+              <div className="text-right text-sm">{calendarDay.day}</div>
               <div className="mt-1 space-y-1">
                 {/* Shift indicators would go here */}
-                {isCurrentMonth && day.day % 3 === 0 && (
+                {calendarDay.isCurrentMonth && calendarDay.day % 3 === 0 && (
                   <div className="text-xs bg-blue-100 rounded px-1 py-0.5 truncate">
-                    {day.day % 2 === 0 ? 'Dagpass' : 'Kvällspass'}
+                    {calendarDay.day % 2 === 0 ? 'Dagpass' : 'Kvällspass'}
                   </div>
                 )}
               </div>
