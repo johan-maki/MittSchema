@@ -10,12 +10,13 @@ export const useScheduleSettings = () => {
     queryKey: ['schedule-settings'],
     queryFn: async () => {
       try {
+        // The issue is with .execute() - in the current Supabase JS client version 
+        // we should not include .execute() after .single()
         const { data, error } = await supabase
           .from('schedule_settings')
           .select('*')
           .eq('department', 'General')
-          .single()
-          .execute();
+          .single();
 
         if (error) {
           console.error('Error fetching settings:', error);
