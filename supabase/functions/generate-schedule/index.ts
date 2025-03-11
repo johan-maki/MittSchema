@@ -34,7 +34,8 @@ interface Shift {
   department?: string;
 }
 
-const roleToShiftType = {
+// Map role to shift type for consistent assignment
+const roleToShiftType: Record<string, 'day' | 'evening' | 'night'> = {
   'Läkare': 'day',
   'Sjuksköterska': 'evening',
   'Undersköterska': 'night'
@@ -119,7 +120,7 @@ serve(async (req) => {
       );
     }
 
-    // Create mock profiles for testing if none provided
+    // Create mock profiles for testing
     const mockProfiles = [
       {
         id: "1",
@@ -141,6 +142,28 @@ serve(async (req) => {
         last_name: "Carlsson",
         role: "Undersköterska",
         experience_level: 2
+      },
+      // Add more mock profiles to better distribute the workload
+      {
+        id: "4",
+        first_name: "David",
+        last_name: "Davidsson",
+        role: "Läkare",
+        experience_level: 5
+      },
+      {
+        id: "5",
+        first_name: "Emma",
+        last_name: "Eriksson",
+        role: "Sjuksköterska",
+        experience_level: 4
+      },
+      {
+        id: "6",
+        first_name: "Fredrik",
+        last_name: "Fredriksson",
+        role: "Undersköterska",
+        experience_level: 3
       }
     ];
 
@@ -181,21 +204,21 @@ serve(async (req) => {
           return b.experience_level - a.experience_level;
         });
         
-        // Determine how many employees to schedule (at least 1)
+        // Determine how many employees to schedule (at least 2)
         const employeesToSchedule = Math.min(
           sortedEmployees.length, 
-          Math.max(1, 2) // Default to 2 staff per shift
+          Math.max(2, 3) // Try to schedule 3 employees for each shift type
         );
         
         // Schedule shifts for selected employees
         for (let i = 0; i < employeesToSchedule; i++) {
           const employee = sortedEmployees[i];
-          const { start, end } = getShiftTimes(currentDay, shiftType as 'day' | 'evening' | 'night');
+          const { start, end } = getShiftTimes(currentDay, shiftType);
           
           shifts.push({
             id: generateId(),
             employee_id: employee.id,
-            shift_type: shiftType as 'day' | 'evening' | 'night',
+            shift_type: shiftType,
             start_time: start,
             end_time: end,
             department: department || 'General'
@@ -225,7 +248,7 @@ serve(async (req) => {
     console.error("Error generating schedule:", error);
     
     return new Response(
-      JSON.stringify({ error: 'Failed to generate schedule: ' + error.message }),
+      JSON.stringify({ error: 'Failed to generate schedule: ' + (error as Error).message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500

@@ -7,7 +7,7 @@ import { useProfileData } from "./useProfileData";
 import { validateConstraints } from "../utils/schedulingConstraints";
 import { checkStaffingRequirements, type StaffingIssue } from "../utils/staffingUtils";
 import { ensureMinimumStaffing, removeDuplicateShifts } from "../utils/staffingAdjustment";
-import { format, addMonths, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
@@ -17,6 +17,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
   const [staffingIssues, setStaffingIssues] = useState<StaffingIssue[]>([]);
   
+  // Fix the TypeScript errors by using the correct property names
   const { settings, isLoadingSettings } = useScheduleSettings();
   const { profiles } = useProfileData();
 
