@@ -89,7 +89,7 @@ export const ScheduleGenerationPreview = ({
             </TabsList>
             
             <div className="flex-1 overflow-hidden">
-              <TabsContent value="calendar" className="mt-0 h-full flex-1 flex flex-col" style={{ display: 'flex' }}>
+              <TabsContent value="calendar" className="mt-0 h-full flex-1 flex flex-col" style={{ display: viewMode === 'calendar' ? 'flex' : 'none' }}>
                 <ScrollArea className="flex-1">
                   {generatedShifts.length > 0 ? (
                     <div className="pb-4">
@@ -108,7 +108,7 @@ export const ScheduleGenerationPreview = ({
                 </ScrollArea>
               </TabsContent>
               
-              <TabsContent value="list" className="mt-0 h-full flex-1 flex flex-col" style={{ display: 'flex' }}>
+              <TabsContent value="list" className="mt-0 h-full flex-1 flex flex-col" style={{ display: viewMode === 'list' ? 'flex' : 'none' }}>
                 <ScrollArea className="flex-1">
                   {Object.entries(shiftsByDate).length > 0 ? (
                     <div className="space-y-4 p-1 pb-6">

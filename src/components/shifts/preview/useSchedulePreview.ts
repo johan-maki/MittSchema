@@ -18,12 +18,16 @@ export const useSchedulePreview = (open: boolean, generatedShifts: Shift[], onAp
   // Ensure all shifts have valid UUIDs
   useEffect(() => {
     if (generatedShifts.length > 0) {
-      generatedShifts.forEach(shift => {
+      // Create a copy of the shifts to modify them
+      for (let i = 0; i < generatedShifts.length; i++) {
+        const shift = generatedShifts[i];
         // Ensure each shift has a valid UUID
         if (!shift.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shift.id)) {
+          // Directly update the shift's ID
           shift.id = uuidv4();
+          console.log("Added UUID to shift:", shift.id);
         }
-      });
+      }
     }
   }, [generatedShifts]);
   

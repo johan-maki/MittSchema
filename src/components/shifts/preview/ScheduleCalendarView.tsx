@@ -3,16 +3,15 @@ import { format, parseISO, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Sun, Moon, Clock, User } from "lucide-react";
+import { AlertTriangle, Sun, Moon, Clock } from "lucide-react";
 import { eachDayOfInterval, startOfMonth, endOfMonth, isWeekend } from "date-fns";
 import type { Shift } from "@/types/shift";
 import type { Profile } from "@/types/profile";
-import type { StaffingIssue } from "../utils/staffingUtils";
 
 interface ScheduleCalendarViewProps {
   shifts: Shift[];
   profiles: Profile[];
-  staffingIssues: StaffingIssue[];
+  staffingIssues: { date: string; shiftType: string; current: number; required: number }[];
   currentDate: Date;
 }
 
@@ -22,6 +21,12 @@ export const ScheduleCalendarView = ({
   staffingIssues,
   currentDate
 }: ScheduleCalendarViewProps) => {
+  console.log("ScheduleCalendarView rendering with:", {
+    shiftsCount: shifts.length,
+    profilesCount: profiles.length,
+    currentDate
+  });
+  
   // Get all days in the current month
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -38,7 +43,7 @@ export const ScheduleCalendarView = ({
   });
   
   // Group staffing issues by date for easier display
-  const issuesByDate: Record<string, StaffingIssue[]> = {};
+  const issuesByDate: Record<string, any[]> = {};
   staffingIssues.forEach(issue => {
     if (!issuesByDate[issue.date]) {
       issuesByDate[issue.date] = [];
