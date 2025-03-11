@@ -49,8 +49,8 @@ export const ScheduleGenerationPreview = ({
       if (isApplying && !newOpen) return;
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
-        <div className="p-6 pb-2">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 pb-2 flex-shrink-0">
           <DialogHeader className="pb-2">
             <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
             <DialogDescription>
@@ -59,7 +59,7 @@ export const ScheduleGenerationPreview = ({
           </DialogHeader>
         </div>
         
-        <div className="px-6">
+        <div className="px-6 flex-shrink-0">
           {error && (
             <Alert variant="destructive" className="my-2">
               <AlertTriangle className="h-4 w-4" />
@@ -75,9 +75,9 @@ export const ScheduleGenerationPreview = ({
           )}
         </div>
         
-        <div className="px-6 flex-1 flex flex-col min-h-0 overflow-hidden">
-          <Tabs defaultValue="calendar" className="w-full flex-1 flex flex-col">
-            <TabsList className="grid grid-cols-2 mb-4">
+        <div className="px-6 flex-1 overflow-hidden flex flex-col">
+          <Tabs defaultValue="calendar" className="flex-1 flex flex-col">
+            <TabsList className="grid grid-cols-2 mb-4 flex-shrink-0">
               <TabsTrigger value="calendar" onClick={() => setViewMode('calendar')}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Kalendervy
@@ -88,26 +88,30 @@ export const ScheduleGenerationPreview = ({
               </TabsTrigger>
             </TabsList>
             
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <ScrollArea className="h-full pr-2">
-                <TabsContent value="calendar" className="mt-0 h-[50vh]">
+            <div className="flex-1 overflow-hidden">
+              <TabsContent value="calendar" className="mt-0 h-full data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1">
                   {generatedShifts.length > 0 ? (
-                    <ScheduleCalendarView 
-                      shifts={generatedShifts}
-                      profiles={profiles}
-                      staffingIssues={staffingIssues}
-                      currentDate={generatedShifts.length > 0 ? new Date(generatedShifts[0].start_time) : new Date()}
-                    />
+                    <div className="h-full pb-4">
+                      <ScheduleCalendarView 
+                        shifts={generatedShifts}
+                        profiles={profiles}
+                        staffingIssues={staffingIssues}
+                        currentDate={generatedShifts.length > 0 ? new Date(generatedShifts[0].start_time) : new Date()}
+                      />
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
                     </div>
                   )}
-                </TabsContent>
-                
-                <TabsContent value="list" className="mt-0 h-[50vh]">
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="list" className="mt-0 h-full data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1">
                   {Object.entries(shiftsByDate).length > 0 ? (
-                    <div className="space-y-4 p-1 pb-4">
+                    <div className="space-y-4 p-1 pb-6">
                       {Object.entries(shiftsByDate).map(([date, shifts]) => (
                         <DateShiftGroup 
                           key={date}
@@ -123,13 +127,13 @@ export const ScheduleGenerationPreview = ({
                       Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
                     </div>
                   )}
-                </TabsContent>
-              </ScrollArea>
+                </ScrollArea>
+              </TabsContent>
             </div>
           </Tabs>
         </div>
 
-        <DialogFooter className="sm:justify-between border-t p-6 bg-background">
+        <DialogFooter className="sm:justify-between border-t p-6 bg-background flex-shrink-0">
           <Button variant="outline" onClick={onCancel} disabled={isApplying}>
             <X className="mr-2 h-4 w-4" />
             Avbryt

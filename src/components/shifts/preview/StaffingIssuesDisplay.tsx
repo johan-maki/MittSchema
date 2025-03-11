@@ -35,7 +35,7 @@ export const StaffingIssuesDisplay = ({ dateIssues, showAlert = false }: Staffin
           <Info className="h-4 w-4 mr-1" />
           <span className="text-sm font-medium">Bemanningsproblem:</span>
         </div>
-        <ul className="text-sm text-amber-700 pl-5 list-disc">
+        <ul className="text-sm text-amber-700 pl-5 list-disc max-h-32 overflow-y-auto">
           {dateIssues.map((issue, idx) => (
             <li key={idx}>
               {getShiftTypeInSwedish(issue.shiftType)}: {issue.current} anställda (minimum: {issue.required})
