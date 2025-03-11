@@ -49,15 +49,17 @@ export const ScheduleGenerationPreview = ({
       if (isApplying && !newOpen) return;
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-4xl flex flex-col h-[85vh] overflow-hidden">
-        <DialogHeader className="pb-2 flex-shrink-0">
-          <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
-          <DialogDescription>
-            Granska det genererade schemat innan du applicerar det.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl flex flex-col h-[85vh] overflow-hidden p-0">
+        <div className="p-6 pb-2 flex-shrink-0">
+          <DialogHeader className="pb-2">
+            <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
+            <DialogDescription>
+              Granska det genererade schemat innan du applicerar det.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
         
-        <div className="flex-shrink-0">
+        <div className="px-6 flex-shrink-0">
           {error && (
             <Alert variant="destructive" className="my-2">
               <AlertTriangle className="h-4 w-4" />
@@ -73,7 +75,7 @@ export const ScheduleGenerationPreview = ({
           )}
         </div>
         
-        <Tabs defaultValue="calendar" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Tabs defaultValue="calendar" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden px-6">
           <TabsList className="grid grid-cols-2 mb-4 flex-shrink-0">
             <TabsTrigger value="calendar" onClick={() => setViewMode('calendar')}>
               <Calendar className="h-4 w-4 mr-2" />
@@ -85,8 +87,8 @@ export const ScheduleGenerationPreview = ({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="calendar" className="mt-0 flex-1 overflow-hidden">
-            <ScrollArea className="h-full pr-2">
+          <ScrollArea className="flex-1 pr-2">
+            <TabsContent value="calendar" className="mt-0 h-full data-[state=active]:flex flex-col">
               {generatedShifts.length > 0 ? (
                 <ScheduleCalendarView 
                   shifts={generatedShifts}
@@ -99,11 +101,9 @@ export const ScheduleGenerationPreview = ({
                   Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
                 </div>
               )}
-            </ScrollArea>
-          </TabsContent>
-          
-          <TabsContent value="list" className="mt-0 flex-1 overflow-hidden">
-            <ScrollArea className="h-full pr-2">
+            </TabsContent>
+            
+            <TabsContent value="list" className="mt-0 data-[state=active]:block">
               {Object.entries(shiftsByDate).length > 0 ? (
                 <div className="space-y-4 p-1">
                   {Object.entries(shiftsByDate).map(([date, shifts]) => (
@@ -121,11 +121,11 @@ export const ScheduleGenerationPreview = ({
                   Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
                 </div>
               )}
-            </ScrollArea>
-          </TabsContent>
+            </TabsContent>
+          </ScrollArea>
         </Tabs>
 
-        <DialogFooter className="sm:justify-between mt-4 border-t pt-4 flex-shrink-0">
+        <DialogFooter className="sm:justify-between mt-4 border-t p-6 flex-shrink-0">
           <Button variant="outline" onClick={onCancel} disabled={isApplying}>
             <X className="mr-2 h-4 w-4" />
             Avbryt

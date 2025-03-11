@@ -81,7 +81,9 @@ export const ensureMinimumStaffing = (shifts: Shift[], availableProfiles: Profil
           if (isAlreadyAssigned) continue;
           
           // Add this employee to the shift
-          const shiftDate = new Date(dateStr.split('-').map(Number));
+          // Parse the date string properly
+          const dateParts = dateStr.split('-').map(Number);
+          const shiftDate = new Date(dateParts[0], dateParts[1], dateParts[2]);
           
           let startHour = 0, endHour = 0;
           
@@ -135,7 +137,9 @@ export const ensureMinimumStaffing = (shifts: Shift[], availableProfiles: Profil
             if (isAlreadyAssigned) continue;
             
             // Add this employee to the shift
-            const shiftDate = new Date(dateStr.split('-').map(Number));
+            // Parse the date string properly
+            const dateParts = dateStr.split('-').map(Number);
+            const shiftDate = new Date(dateParts[0], dateParts[1], dateParts[2]);
             
             let startHour = 0, endHour = 0;
             
