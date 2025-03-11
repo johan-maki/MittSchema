@@ -11,14 +11,15 @@ export const generateBasicSchedule = async (
   endDate: Date, 
   availableProfiles: Profile[],
   scheduleSettings: any
-) => {
+): Promise<{ schedule: Shift[], staffingIssues: { date: string; shiftType: string; current: number; required: number }[] }> => {
   console.log('Generating a basic schedule locally as fallback');
   
   if (!availableProfiles || availableProfiles.length === 0) {
-    return { schedule: [] };
+    return { schedule: [], staffingIssues: [] };
   }
 
   const shifts: Shift[] = [];
+  const staffingIssues: { date: string; shiftType: string; current: number; required: number }[] = [];
   const currentDay = new Date(startDate);
   const shiftTypes = ['day', 'evening', 'night'] as const;
   const roleToShiftType: Record<string, typeof shiftTypes[number]> = {
@@ -48,6 +49,16 @@ export const generateBasicSchedule = async (
       // Determine how many staff we need for this shift
       const shiftSetting = scheduleSettings?.[`${shiftType}_shift`] || { min_staff: 1 };
       const staffNeeded = shiftSetting.min_staff || 1;
+      
+      // Check if we have enough staff and record issues
+      if (profiles.length < staffNeeded) {
+        staffingIssues.push({
+          date: dateStr,
+          shiftType,
+          current: profiles.length,
+          required: staffNeeded
+        });
+      }
       
       // Schedule up to staffNeeded employees
       for (let i = 0; i < Math.min(staffNeeded, profiles.length); i++) {
@@ -88,6 +99,6 @@ export const generateBasicSchedule = async (
     currentDay.setDate(currentDay.getDate() + 1);
   }
   
-  console.log(`Generated ${shifts.length} shifts locally`);
-  return { schedule: shifts };
+  console.log(`Generated ${shifts.length} shifts locally with ${staffingIssues.length} staffing issues`);
+  return { schedule: shifts, staffingIssues };
 };

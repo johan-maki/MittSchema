@@ -38,11 +38,8 @@ export const generateScheduleForMonth = async (
     
     // Fallback to local generation if the API fails
     console.log('Falling back to local schedule generation');
-    const localSchedule = generateBasicSchedule(monthStart, monthEnd, profiles, settings);
+    const localSchedule = await generateBasicSchedule(monthStart, monthEnd, profiles, settings);
     
-    return {
-      schedule: localSchedule,
-      staffingIssues: []
-    };
+    return localSchedule;
   }
 };
