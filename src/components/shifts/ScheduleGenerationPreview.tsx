@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X, Loader2, AlertTriangle, List, Calendar } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSchedulePreview } from "./preview/useSchedulePreview";
 import { DateShiftGroup } from "./preview/DateShiftGroup";
 import { StaffingIssuesDisplay } from "./preview/StaffingIssuesDisplay";
@@ -48,8 +49,8 @@ export const ScheduleGenerationPreview = ({
       if (isApplying && !newOpen) return;
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
+        <DialogHeader className="pb-2">
           <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
           <DialogDescription>
             Granska det genererade schemat innan du applicerar det.
@@ -70,7 +71,7 @@ export const ScheduleGenerationPreview = ({
           />
         )}
         
-        <Tabs defaultValue="calendar" className="w-full">
+        <Tabs defaultValue="calendar" className="w-full flex-1 flex flex-col min-h-0">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="calendar" onClick={() => setViewMode('calendar')}>
               <Calendar className="h-4 w-4 mr-2" />
@@ -82,8 +83,8 @@ export const ScheduleGenerationPreview = ({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="calendar" className="mt-0">
-            <div className="max-h-[60vh] overflow-y-auto">
+          <TabsContent value="calendar" className="mt-0 flex-1 overflow-hidden">
+            <ScrollArea className="h-[calc(60vh-120px)]">
               {generatedShifts.length > 0 ? (
                 <ScheduleCalendarView 
                   shifts={generatedShifts}
@@ -96,31 +97,33 @@ export const ScheduleGenerationPreview = ({
                   Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
                 </div>
               )}
-            </div>
+            </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="list" className="mt-0">
-            <div className="max-h-[60vh] overflow-y-auto space-y-4">
+          <TabsContent value="list" className="mt-0 flex-1 overflow-hidden">
+            <ScrollArea className="h-[calc(60vh-120px)]">
               {Object.entries(shiftsByDate).length > 0 ? (
-                Object.entries(shiftsByDate).map(([date, shifts]) => (
-                  <DateShiftGroup 
-                    key={date}
-                    date={date}
-                    shifts={shifts}
-                    profiles={profiles}
-                    staffingIssues={staffingIssues}
-                  />
-                ))
+                <div className="space-y-4 p-1">
+                  {Object.entries(shiftsByDate).map(([date, shifts]) => (
+                    <DateShiftGroup 
+                      key={date}
+                      date={date}
+                      shifts={shifts}
+                      profiles={profiles}
+                      staffingIssues={staffingIssues}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
                 </div>
               )}
-            </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="sm:justify-between mt-4">
+        <DialogFooter className="sm:justify-between mt-4 border-t pt-4">
           <Button variant="outline" onClick={onCancel} disabled={isApplying}>
             <X className="mr-2 h-4 w-4" />
             Avbryt
