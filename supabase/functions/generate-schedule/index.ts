@@ -79,6 +79,29 @@ function getShiftTimes(date: Date, shiftType: 'day' | 'evening' | 'night'): { st
   }
 }
 
+// Track staffing issues during schedule generation
+function checkStaffingRequirements(shifts: Shift[], employees: Employee[], date: Date, shiftType: string, 
+  minStaff: number): { date: string, shiftType: string, current: number, required: number } | null {
+  
+  const shiftsForDateAndType = shifts.filter(shift => {
+    const shiftDate = new Date(shift.start_time);
+    return shiftDate.toDateString() === date.toDateString() && shift.shift_type === shiftType;
+  });
+  
+  const currentStaff = shiftsForDateAndType.length;
+  
+  if (currentStaff < minStaff) {
+    return {
+      date: date.toISOString().split('T')[0],
+      shiftType: shiftType,
+      current: currentStaff,
+      required: minStaff
+    };
+  }
+  
+  return null;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -167,12 +190,20 @@ serve(async (req) => {
       }
     ];
 
+    // Define minimum staffing requirements
+    const staffingRequirements = {
+      day: 3,
+      evening: 3,
+      night: 2
+    };
+
     // Generate schedule for the given date range
     const start = new Date(start_date);
     const end = new Date(end_date);
     
     // Simple scheduling algorithm
     const shifts: Shift[] = [];
+    const staffingIssues: { date: string; shiftType: string; current: number; required: number }[] = [];
     const currentDay = new Date(start);
     
     // Map to track employee shift counts
@@ -194,6 +225,16 @@ serve(async (req) => {
         
         if (employeesWithRole.length === 0) {
           console.log(`No employees found for role ${role} on ${currentDay.toDateString()}`);
+          
+          // Record staffing issue
+          const requiredStaff = staffingRequirements[shiftType] || 2;
+          staffingIssues.push({
+            date: currentDay.toISOString().split('T')[0],
+            shiftType: shiftType,
+            current: 0,
+            required: requiredStaff
+          });
+          
           return; // Skip this role if no employees
         }
         
@@ -204,10 +245,11 @@ serve(async (req) => {
           return b.experience_level - a.experience_level;
         });
         
-        // Determine how many employees to schedule (at least 2)
+        // Determine how many employees to schedule (with minimum requirements)
+        const requiredStaff = staffingRequirements[shiftType] || 2;
         const employeesToSchedule = Math.min(
           sortedEmployees.length, 
-          Math.max(2, 3) // Try to schedule 3 employees for each shift type
+          Math.max(requiredStaff, sortedEmployees.length >= 3 ? 3 : sortedEmployees.length)
         );
         
         // Schedule shifts for selected employees
@@ -229,6 +271,16 @@ serve(async (req) => {
           
           console.log(`Scheduled ${employee.first_name} (${employee.role}) for ${shiftType} shift on ${currentDay.toDateString()}`);
         }
+        
+        // Check if we met the staffing requirements
+        if (employeesToSchedule < requiredStaff) {
+          staffingIssues.push({
+            date: currentDay.toISOString().split('T')[0],
+            shiftType: shiftType,
+            current: employeesToSchedule,
+            required: requiredStaff
+          });
+        }
       });
       
       // Move to next day
@@ -236,9 +288,13 @@ serve(async (req) => {
     }
     
     console.log(`Generated ${shifts.length} shifts for ${mockProfiles.length} employees`);
+    console.log(`Found ${staffingIssues.length} staffing issues`);
     
     return new Response(
-      JSON.stringify({ schedule: shifts }),
+      JSON.stringify({ 
+        schedule: shifts,
+        staffingIssues: staffingIssues
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200

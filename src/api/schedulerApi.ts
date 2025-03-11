@@ -30,8 +30,14 @@ export const schedulerApi = {
       
       if (!response.ok) {
         console.error("Scheduler API error:", response.status, response.statusText);
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API request failed: ${response.statusText} - ${JSON.stringify(errorData)}`);
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(`API request failed: ${response.statusText} - ${JSON.stringify(errorData)}`);
+        } catch (e) {
+          // If we can't parse the error as JSON, just use the text
+          throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+        }
       }
       
       const data = await response.json();

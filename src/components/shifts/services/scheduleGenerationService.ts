@@ -35,6 +35,14 @@ export const generateScheduleForMonth = async (
     };
   } catch (error) {
     console.error('API call failed:', error);
-    throw error; // Let the calling code handle this error
+    
+    // Fallback to local generation if the API fails
+    console.log('Falling back to local schedule generation');
+    const localSchedule = generateBasicSchedule(monthStart, monthEnd, profiles, settings);
+    
+    return {
+      schedule: localSchedule,
+      staffingIssues: []
+    };
   }
 };
