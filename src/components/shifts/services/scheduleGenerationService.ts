@@ -9,7 +9,7 @@ export const generateScheduleForMonth = async (
   currentDate: Date,
   profiles: Profile[],
   settings: any
-): Promise<{ schedule: Shift[] }> => {
+): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
@@ -18,18 +18,23 @@ export const generateScheduleForMonth = async (
     endDate: monthEnd.toISOString()
   });
 
-  // First try the API, then fall back to local generation if it fails
   try {
-    const generatedSchedule = await schedulerApi.generateSchedule(
+    // Call the Scheduler API directly
+    const response = await schedulerApi.generateSchedule(
       monthStart.toISOString(),
       monthEnd.toISOString(),
       settings?.department || 'General'
     );
-    console.log('Schedule optimization response:', generatedSchedule);
-    return generatedSchedule;
-  } catch (apiError) {
-    console.error('Both API and edge function failed, falling back to local generation', apiError);
-    // Generate a basic schedule locally as a fallback
-    return await generateBasicSchedule(monthStart, monthEnd, profiles, settings);
+    
+    console.log('Schedule optimization response:', response);
+    
+    // Ensure the response includes staffing issues if available
+    return {
+      schedule: response.schedule || [],
+      staffingIssues: response.staffingIssues || []
+    };
+  } catch (error) {
+    console.error('API call failed:', error);
+    throw error; // Let the calling code handle this error
   }
 };

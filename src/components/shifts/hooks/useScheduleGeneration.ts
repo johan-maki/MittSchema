@@ -43,6 +43,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     }
 
     console.log('About to validate constraints');
+    // Note: We still validate frontend constraints, but the backend is the source of truth
     if (!validateConstraints(settings, isLoadingSettings)) {
       console.log('Constraint validation failed');
       return false;
@@ -50,16 +51,27 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
+      console.log("Calling generateScheduleForMonth");
       const generatedSchedule = await generateScheduleForMonth(currentDate, profiles, settings);
 
       if (generatedSchedule?.schedule?.length > 0) {
-        const processedShifts = processScheduleForStaffingIssues(
-          generatedSchedule.schedule, 
-          profiles, 
-          settings
-        );
+        console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts");
         
-        setGeneratedShifts(processedShifts);
+        // Use staffing issues from API if available, otherwise process them locally
+        if (generatedSchedule.staffingIssues && generatedSchedule.staffingIssues.length > 0) {
+          console.log("Using staffing issues from API:", generatedSchedule.staffingIssues);
+          setStaffingIssues(generatedSchedule.staffingIssues);
+          setGeneratedShifts(generatedSchedule.schedule);
+        } else {
+          console.log("Processing schedule locally for staffing issues");
+          const processedShifts = processScheduleForStaffingIssues(
+            generatedSchedule.schedule, 
+            profiles, 
+            settings
+          );
+          setGeneratedShifts(processedShifts);
+        }
+        
         setShowPreview(true);
         return true;
       } else {
