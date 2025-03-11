@@ -49,7 +49,7 @@ export const ScheduleGenerationPreview = ({
       if (isApplying && !newOpen) return;
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-4xl flex flex-col h-[85vh] overflow-hidden p-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <div className="p-6 pb-2 flex-shrink-0">
           <DialogHeader className="pb-2">
             <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
@@ -75,7 +75,7 @@ export const ScheduleGenerationPreview = ({
           )}
         </div>
         
-        <Tabs defaultValue="calendar" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden px-6">
+        <Tabs defaultValue="calendar" className="w-full flex-1 flex flex-col overflow-hidden px-6">
           <TabsList className="grid grid-cols-2 mb-4 flex-shrink-0">
             <TabsTrigger value="calendar" onClick={() => setViewMode('calendar')}>
               <Calendar className="h-4 w-4 mr-2" />
@@ -87,45 +87,47 @@ export const ScheduleGenerationPreview = ({
             </TabsTrigger>
           </TabsList>
           
-          <ScrollArea className="flex-1 pr-2">
-            <TabsContent value="calendar" className="mt-0 h-full data-[state=active]:flex flex-col">
-              {generatedShifts.length > 0 ? (
-                <ScheduleCalendarView 
-                  shifts={generatedShifts}
-                  profiles={profiles}
-                  staffingIssues={staffingIssues}
-                  currentDate={generatedShifts.length > 0 ? new Date(generatedShifts[0].start_time) : new Date()}
-                />
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="list" className="mt-0 data-[state=active]:block">
-              {Object.entries(shiftsByDate).length > 0 ? (
-                <div className="space-y-4 p-1">
-                  {Object.entries(shiftsByDate).map(([date, shifts]) => (
-                    <DateShiftGroup 
-                      key={date}
-                      date={date}
-                      shifts={shifts}
-                      profiles={profiles}
-                      staffingIssues={staffingIssues}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
-                </div>
-              )}
-            </TabsContent>
-          </ScrollArea>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full pr-2">
+              <TabsContent value="calendar" className="mt-0">
+                {generatedShifts.length > 0 ? (
+                  <ScheduleCalendarView 
+                    shifts={generatedShifts}
+                    profiles={profiles}
+                    staffingIssues={staffingIssues}
+                    currentDate={generatedShifts.length > 0 ? new Date(generatedShifts[0].start_time) : new Date()}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="list" className="mt-0">
+                {Object.entries(shiftsByDate).length > 0 ? (
+                  <div className="space-y-4 p-1 pb-4">
+                    {Object.entries(shiftsByDate).map(([date, shifts]) => (
+                      <DateShiftGroup 
+                        key={date}
+                        date={date}
+                        shifts={shifts}
+                        profiles={profiles}
+                        staffingIssues={staffingIssues}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Inget schema kunde genereras. Kontrollera bemanningsinställningarna och tillgängliga anställda.
+                  </div>
+                )}
+              </TabsContent>
+            </ScrollArea>
+          </div>
         </Tabs>
 
-        <DialogFooter className="sm:justify-between mt-4 border-t p-6 flex-shrink-0">
+        <DialogFooter className="sm:justify-between mt-auto border-t p-6 flex-shrink-0 bg-background">
           <Button variant="outline" onClick={onCancel} disabled={isApplying}>
             <X className="mr-2 h-4 w-4" />
             Avbryt
