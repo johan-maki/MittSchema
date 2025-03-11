@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { sortShifts, groupShiftsByDate } from "./previewUtils";
+import { v4 as uuidv4 } from "uuid";
 import type { Shift } from "@/types/shift";
 
 export const useSchedulePreview = (open: boolean, generatedShifts: Shift[], onApply: () => Promise<void>) => {
@@ -13,6 +14,18 @@ export const useSchedulePreview = (open: boolean, generatedShifts: Shift[], onAp
       setError(null);
     }
   }, [open]);
+  
+  // Ensure all shifts have valid UUIDs
+  useEffect(() => {
+    if (generatedShifts.length > 0) {
+      generatedShifts.forEach(shift => {
+        // Ensure each shift has a valid UUID
+        if (!shift.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shift.id)) {
+          shift.id = uuidv4();
+        }
+      });
+    }
+  }, [generatedShifts]);
   
   const handleApply = async () => {
     try {

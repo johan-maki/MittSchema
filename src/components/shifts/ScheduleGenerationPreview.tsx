@@ -49,7 +49,7 @@ export const ScheduleGenerationPreview = ({
       if (isApplying && !newOpen) return;
       onOpenChange(newOpen);
     }}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
         <div className="p-6 pb-2 flex-shrink-0">
           <DialogHeader className="pb-2">
             <DialogTitle>Förhandsgranska genererat schema</DialogTitle>
@@ -89,10 +89,10 @@ export const ScheduleGenerationPreview = ({
             </TabsList>
             
             <div className="flex-1 overflow-hidden">
-              <TabsContent value="calendar" className="mt-0 h-full data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col">
+              <TabsContent value="calendar" className="mt-0 h-full flex-1 flex flex-col" style={{ display: 'flex' }}>
                 <ScrollArea className="flex-1">
                   {generatedShifts.length > 0 ? (
-                    <div className="h-full pb-4">
+                    <div className="pb-4">
                       <ScheduleCalendarView 
                         shifts={generatedShifts}
                         profiles={profiles}
@@ -108,7 +108,7 @@ export const ScheduleGenerationPreview = ({
                 </ScrollArea>
               </TabsContent>
               
-              <TabsContent value="list" className="mt-0 h-full data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col">
+              <TabsContent value="list" className="mt-0 h-full flex-1 flex flex-col" style={{ display: 'flex' }}>
                 <ScrollArea className="flex-1">
                   {Object.entries(shiftsByDate).length > 0 ? (
                     <div className="space-y-4 p-1 pb-6">
