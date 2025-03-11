@@ -3,8 +3,8 @@ import { format, parseISO, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Sun, Moon, Clock } from "lucide-react";
-import { eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
+import { AlertTriangle, Sun, Moon, Clock, User } from "lucide-react";
+import { eachDayOfInterval, startOfMonth, endOfMonth, isWeekend } from "date-fns";
 import type { Shift } from "@/types/shift";
 import type { Profile } from "@/types/profile";
 import type { StaffingIssue } from "../utils/staffingUtils";
@@ -84,7 +84,7 @@ export const ScheduleCalendarView = ({
   
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">
+      <h3 className="text-lg font-medium text-center">
         {format(currentDate, 'MMMM yyyy', { locale: sv })}
       </h3>
       
@@ -110,21 +110,25 @@ export const ScheduleCalendarView = ({
           const dayShifts = shiftsByDate[dateStr] || [];
           const dayIssues = issuesByDate[dateStr] || [];
           const hasIssues = dayIssues.length > 0;
-          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+          const isWeekendDay = isWeekend(day);
           
           return (
             <Card 
               key={dateStr} 
-              className={`h-28 overflow-hidden transition-all duration-200 hover:shadow-md
+              className={`h-28 overflow-hidden transition-all duration-200 hover:shadow-md relative
                 ${hasIssues ? 'border-amber-500' : ''}
-                ${isWeekend ? 'bg-gray-50' : ''}`}
+                ${isWeekendDay ? 'bg-gray-50' : ''}`}
             >
-              <div className={`p-1 border-b flex justify-between items-center ${isWeekend ? 'bg-gray-100' : ''}`}>
-                <div className={`font-medium text-sm ${isWeekend ? 'text-blue-600' : ''}`}>
+              <div className={`p-1 border-b flex justify-between items-center sticky top-0
+                ${isWeekendDay ? 'bg-blue-50' : ''}
+                ${hasIssues ? 'bg-amber-50' : ''}`}
+              >
+                <div className={`font-medium text-sm rounded-full w-6 h-6 flex items-center justify-center
+                  ${isWeekendDay ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-700'}`}>
                   {format(day, 'd')}
                 </div>
                 {hasIssues && (
-                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1 px-1">
                     <AlertTriangle className="h-3 w-3" />
                     {dayIssues.length}
                   </Badge>
@@ -141,18 +145,25 @@ export const ScheduleCalendarView = ({
                     return (
                       <div 
                         key={`${shift.id}-${idx}`} 
-                        className={`flex items-center ${bgColor} rounded-sm px-1.5 py-0.5 border truncate`}
+                        className={`flex items-center ${bgColor} rounded-sm px-1.5 py-0.5 border truncate shadow-sm`}
                       >
                         <span className="mr-1">{icon}</span>
-                        <div className="truncate">
-                          {employee?.first_name || 'Unknown'} - {getShiftTypeInSwedish(shift.shift_type)}
+                        <div className="truncate flex gap-1 items-center">
+                          <span className="font-medium truncate">
+                            {employee?.first_name || 'Unknown'}
+                          </span>
+                          <span className="text-xs opacity-75 hidden sm:inline">
+                            {getShiftTypeInSwedish(shift.shift_type)}
+                          </span>
                         </div>
                       </div>
                     );
                   })
                 )}
                 {dayShifts.length > 3 && (
-                  <div className="text-gray-500 text-xs text-center">+{dayShifts.length - 3} fler</div>
+                  <div className="text-gray-500 text-xs text-center bg-gray-100 rounded-sm py-0.5">
+                    +{dayShifts.length - 3} fler
+                  </div>
                 )}
               </div>
             </Card>
