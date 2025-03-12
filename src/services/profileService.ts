@@ -131,11 +131,7 @@ export const addHollywoodCelebrities = async (): Promise<void> => {
   console.log("Successfully added all celebrities to database");
 }
 
-// Execute the function to add celebrities immediately
-// This will run when the app initializes, adding the celebrities to the database
-try {
-  console.log("Auto-executing addHollywoodCelebrities function");
-  addHollywoodCelebrities();
-} catch (error) {
-  console.error("Failed to add celebrities automatically:", error);
-}
+// Run the function directly to add celebrities (will be executed once when the app loads)
+addHollywoodCelebrities().catch(error => {
+  console.error("Failed to add celebrities:", error);
+});
