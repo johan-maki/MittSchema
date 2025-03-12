@@ -1,50 +1,52 @@
 
-import { useNavigate } from "react-router-dom";
-import { useSchedulePublishing } from "./useSchedulePublishing";
-import { useScheduleApplier } from "./useScheduleApplier";
 import { useToast } from "@/components/ui/use-toast";
-import type { Shift } from "@/types/shift";
+import { useNavigate } from "react-router-dom";
+import { useScheduleApplier } from "./useScheduleApplier";
+import { Shift } from "@/types/shift";
 
 export const useScheduleActionHandlers = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const { handlePublishSchedule, handleClearUnpublished } = useSchedulePublishing();
-  const { handleApplySchedule } = useScheduleApplier();
+  const navigate = useNavigate();
+  const { applySchedule } = useScheduleApplier();
 
   const handleSettingsClick = () => {
-    navigate('/schedule/settings');
+    navigate("/schedule-settings");
   };
 
-  const handleApplyGeneratedSchedule = async (generatedShifts: Shift[], onSuccess: () => void) => {
-    if (!generatedShifts || generatedShifts.length === 0) {
-      toast({
-        title: "Inget schema att applicera",
-        description: "Det finns inget genererat schema att applicera.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleApplySchedule = async (shifts: Shift[], onSuccess?: () => void) => {
     try {
-      await handleApplySchedule(generatedShifts, onSuccess);
-      toast({
-        title: "Schema applicerat",
-        description: `${generatedShifts.length} arbetspass har lagts till i schemat.`,
-      });
+      const result = await applySchedule(shifts);
+      if (result) {
+        toast({
+          title: "Schema uppdaterat",
+          description: `${shifts.length} arbetspass har schemalagts framgångsrikt.`,
+        });
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+        return true;
+      } else {
+        toast({
+          title: "Kunde inte tillämpa schemat",
+          description: "Ett fel uppstod när schemat skulle tillämpas. Försök igen.",
+          variant: "destructive",
+        });
+        return false;
+      }
     } catch (error) {
       console.error("Error applying schedule:", error);
       toast({
-        title: "Fel vid applicering",
-        description: "Det gick inte att applicera schemat. Försök igen.",
-        variant: "destructive"
+        title: "Ett fel uppstod",
+        description: "Kunde inte tillämpa schemat. Ett tekniskt fel har uppstått.",
+        variant: "destructive",
       });
+      return false;
     }
   };
 
   return {
     handleSettingsClick,
-    handlePublishSchedule,
-    handleClearUnpublished,
-    handleApplySchedule: handleApplyGeneratedSchedule,
+    handleApplySchedule,
   };
 };

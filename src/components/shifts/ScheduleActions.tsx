@@ -7,6 +7,7 @@ import { ScheduleGenerationPreview } from "./ScheduleGenerationPreview";
 import { useScheduleActionHandlers } from "./actions/useScheduleActionHandlers";
 import { ScheduleActionsMenu } from "./actions/ScheduleActionsMenu";
 import { GenerateButton } from "./actions/GenerateButton";
+import { useSchedulePublishing } from "./actions/useSchedulePublishing";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -37,14 +38,27 @@ export const ScheduleActions = ({
 
   const {
     handleSettingsClick,
-    handlePublishSchedule,
-    handleClearUnpublished,
-    handleApplySchedule,
   } = useScheduleActionHandlers();
+  
+  const {
+    handlePublishSchedule,
+    handleClearUnpublished
+  } = useSchedulePublishing();
 
   const handleCancelPreview = () => {
     setShowPreview(false);
     setGeneratedShifts([]);
+  };
+  
+  const handleApplySchedule = async (shifts: Shift[], onSuccess: () => void) => {
+    try {
+      const saveResult = await saveScheduleToSupabase(shifts);
+      if (saveResult) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error("Error applying schedule:", error);
+    }
   };
 
   return (

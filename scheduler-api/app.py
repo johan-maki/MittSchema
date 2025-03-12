@@ -18,7 +18,7 @@ setup_cors(app)
 
 @app.get("/")
 def home():
-    return {"status": "Scheduler API active", "version": "1.1.0"}
+    return {"status": "Scheduler API active", "version": "1.2.0"}
 
 @app.post("/optimize-schedule", response_model=ScheduleResponse)
 async def optimize_schedule_endpoint(request: ScheduleRequest):
@@ -47,8 +47,12 @@ async def optimize_schedule_endpoint(request: ScheduleRequest):
         # Try to fetch settings from Supabase
         settings = fetch_settings(supabase, request.department or "General")
         
+        # Use the random_seed if provided
+        random_seed = request.random_seed
+        logger.info(f"Using random seed: {random_seed}")
+        
         # Call the scheduler service to optimize the schedule
-        result = optimize_schedule(employees, start_date, end_date, request.department)
+        result = optimize_schedule(employees, start_date, end_date, department=request.department, random_seed=random_seed)
         
         return {
             "schedule": result["schedule"],

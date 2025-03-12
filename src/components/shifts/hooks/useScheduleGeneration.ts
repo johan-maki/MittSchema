@@ -53,8 +53,18 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
+      // Clear existing unpublished shifts first to avoid confusion
+      await clearUnpublishedShifts();
+      
       console.log("Calling generateScheduleForMonth");
-      const generatedSchedule = await generateScheduleForMonth(currentDate, profiles, settings);
+      // Add a timestamp parameter to avoid API caching
+      const timestamp = new Date().getTime();
+      const generatedSchedule = await generateScheduleForMonth(
+        currentDate, 
+        profiles, 
+        settings, 
+        timestamp // Pass timestamp to ensure we get different results each time
+      );
 
       if (generatedSchedule?.schedule?.length > 0) {
         console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts");
@@ -119,6 +129,23 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       setIsGenerating(false);
     }
     return false;
+  };
+  
+  // Helper function to clear unpublished shifts before generating new ones
+  const clearUnpublishedShifts = async () => {
+    try {
+      const { error } = await fetch("./api/shifts/clear-unpublished", {
+        method: "POST",
+      });
+      
+      if (error) {
+        console.error("Error clearing unpublished shifts:", error);
+      } else {
+        console.log("Successfully cleared unpublished shifts");
+      }
+    } catch (e) {
+      console.error("Failed to clear unpublished shifts:", e);
+    }
   };
 
   return {

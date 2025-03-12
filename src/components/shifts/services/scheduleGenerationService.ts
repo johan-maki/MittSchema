@@ -10,14 +10,16 @@ import { useToast } from "@/components/ui/use-toast";
 export const generateScheduleForMonth = async (
   currentDate: Date,
   profiles: Profile[],
-  settings: any
+  settings: any,
+  timestamp?: number // Optional timestamp to ensure different results each time
 ): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
   console.log('Calling optimization API with dates:', {
     startDate: monthStart.toISOString(),
-    endDate: monthEnd.toISOString()
+    endDate: monthEnd.toISOString(),
+    timestamp: timestamp || 'none'
   });
 
   try {
@@ -25,7 +27,8 @@ export const generateScheduleForMonth = async (
     const response = await schedulerApi.generateSchedule(
       monthStart.toISOString(),
       monthEnd.toISOString(),
-      settings?.department || 'General'
+      settings?.department || 'General',
+      timestamp // Pass the timestamp to avoid caching
     );
     
     console.log('Schedule optimization response:', response);

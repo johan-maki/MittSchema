@@ -1,12 +1,12 @@
-
 from ortools.sat.python import cp_model
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
 from config import SCHEDULING_CONSTRAINTS, logger
 from utils import create_date_list, format_shift_times
+import random
 
-def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: datetime, department: Optional[str] = None):
+def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: datetime, department: Optional[str] = None, random_seed: Optional[int] = None):
     """Core function to optimize the employee schedule using CP-SAT solver"""
     if not employees:
         logger.warning("No employees found in the database")
@@ -117,6 +117,17 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
     _add_experience_constraints(model, shifts, employees, date_list, shift_types, staffing_issues)
     _add_employee_preference_constraints(model, shifts, employees, date_list, shift_types)
     
+    # Initialize random number generator with seed
+    if random_seed is not None:
+        random.seed(random_seed)
+        logger.info(f"Initialized random seed: {random_seed}")
+    else:
+        random.seed()
+        logger.info("Using system random seed")
+    
+    # Add randomization to encourage different solutions
+    _add_randomization_objective(model, shifts, employees, date_list, shift_types)
+    
     # Create the solver and solve
     logger.info("Creating CP-SAT solver")
     solver = cp_model.CpSolver()
@@ -124,7 +135,11 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
     # Set time limit for solver (in seconds)
     solver.parameters.max_time_in_seconds = 60.0  # 1 minute max
     
-    logger.info("Starting solver")
+    # Set random seed to get different solutions each time
+    solver_seed = random_seed if random_seed is not None else int(random.random() * 10000)
+    solver.parameters.random_seed = solver_seed
+    
+    logger.info(f"Starting solver with random seed: {solver.parameters.random_seed}")
     status = solver.Solve(model)
     logger.info(f"Solver status: {solver.StatusName(status)}")
     
@@ -137,6 +152,26 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
             status_code=400, 
             detail="No feasible schedule found. Try relaxing some constraints or adding more employees."
         )
+
+def _add_randomization_objective(model, shifts, employees, date_list, shift_types):
+    """Add random weights to objectives to encourage different solutions each time"""
+    # Add a small random weight to each shift assignment to encourage different solutions
+    # while still prioritizing the main constraints
+    random_weights = {}
+    for e in employees:
+        for d in range(len(date_list)):
+            for s in shift_types:
+                # Generate a small random weight between 0.1 and 0.9
+                random_weights[(e['id'], d, s)] = random.random() * 0.8 + 0.1
+    
+    # Add these weighted objectives with a low priority compared to the main constraints
+    # This will guide the solver to prefer certain assignments when multiple feasible solutions exist
+    for e in employees:
+        for d in range(len(date_list)):
+            for s in shift_types:
+                model.Maximize(shifts[(e['id'], d, s)] * random_weights[(e['id'], d, s)])
+    
+    logger.info("Added randomization to the objective function")
 
 def _add_experience_constraints(model, shifts, employees, date_list, shift_types, staffing_issues):
     """Add constraints related to experience levels"""
