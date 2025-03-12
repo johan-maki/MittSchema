@@ -13,20 +13,22 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
     
     console.log("Adding new profile with ID:", newId);
     
-    // Call the dev_add_profile RPC function to bypass foreign key constraints
-    // Fixed: Using 'employees' table instead of 'profiles'
-    const { data, error } = await supabase.rpc('dev_add_profile', {
-      profile_id: newId,
-      first_name: profileData.first_name,
-      last_name: profileData.last_name,
-      role_val: profileData.role,
-      department_val: profileData.department || null,
-      phone_val: profileData.phone || null,
-      experience_level_val: profileData.experience_level || 1
-    });
+    // Insert directly into the employees table instead of using RPC
+    const { data, error } = await supabase
+      .from('employees')
+      .insert([{
+        id: newId,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        role: profileData.role,
+        department: profileData.department || null,
+        phone: profileData.phone || null,
+        experience_level: profileData.experience_level || 1
+      }])
+      .select();
     
     if (error) {
-      console.error('Error from RPC function:', error);
+      console.error('Error inserting profile:', error);
       throw error;
     }
     

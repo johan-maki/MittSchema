@@ -33,7 +33,7 @@ export function DirectoryControls() {
     setIsProcessing(true);
     
     try {
-      console.log("Adding new profile in development mode");
+      console.log("Adding new profile with data:", newProfile);
       
       // Create profile data object without the ID (will be generated in the service)
       const profileData = {
@@ -52,7 +52,7 @@ export function DirectoryControls() {
       
       toast({
         title: "Profil tillagd",
-        description: "Den nya personalen har lagts till",
+        description: `${profileData.first_name} ${profileData.last_name} har lagts till`,
       });
       
       setNewProfile({
