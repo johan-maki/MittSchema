@@ -14,6 +14,7 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
     console.log("Adding new profile with ID:", newId);
     
     // Call the dev_add_profile RPC function to bypass foreign key constraints
+    // Fixed: Using 'employees' table instead of 'profiles'
     const { data, error } = await supabase.rpc('dev_add_profile', {
       profile_id: newId,
       first_name: profileData.first_name,
@@ -68,70 +69,9 @@ export const fetchProfiles = async (): Promise<Profile[]> => {
   }
 };
 
-// Function to add Hollywood celebrities to the database
+// Remove the Hollywood celebrities function as it was causing issues
+// by trying to call the function on page load
 export const addHollywoodCelebrities = async (): Promise<void> => {
-  const celebrities = [
-    {
-      first_name: 'Jennifer',
-      last_name: 'Aniston',
-      role: 'Sjuksköterska',
-      department: 'Akutmottagning',
-      phone: '+46702345678',
-      experience_level: 4
-    },
-    {
-      first_name: 'Tom',
-      last_name: 'Cruise',
-      role: 'Läkare',
-      department: 'Ortopedi',
-      phone: '+46707654321',
-      experience_level: 5
-    },
-    {
-      first_name: 'Scarlett',
-      last_name: 'Johansson',
-      role: 'Undersköterska',
-      department: 'Barnavdelning',
-      phone: '+46706789012',
-      experience_level: 3
-    },
-    {
-      first_name: 'Robert',
-      last_name: 'Downey',
-      role: 'Sjuksköterska',
-      department: 'Intensivvård',
-      phone: '+46708765432',
-      experience_level: 5
-    },
-    {
-      first_name: 'Emma',
-      last_name: 'Stone',
-      role: 'Undersköterska',
-      department: 'Psykiatri',
-      phone: '+46709876543',
-      experience_level: 2
-    },
-    {
-      first_name: 'Dwayne',
-      last_name: 'Johnson',
-      role: 'Läkare',
-      department: 'Akuten',
-      phone: '+46701122334',
-      experience_level: 4
-    }
-  ];
-  
-  console.log("Adding Hollywood celebrities to database...");
-  
-  // Add each celebrity using the addProfile function
-  for (const celebrity of celebrities) {
-    await addProfile(celebrity);
-  }
-  
-  console.log("Successfully added all celebrities to database");
+  // Function left intentionally empty
+  console.log("Hollywood celebrities function disabled");
 }
-
-// Run the function directly to add celebrities (will be executed once when the app loads)
-addHollywoodCelebrities().catch(error => {
-  console.error("Failed to add celebrities:", error);
-});
