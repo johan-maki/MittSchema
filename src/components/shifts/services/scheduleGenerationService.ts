@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
+import { deduplicateShifts } from "../utils/validation";
 
 export const generateScheduleForMonth = async (
   currentDate: Date,
@@ -19,23 +20,27 @@ export const generateScheduleForMonth = async (
   console.log('Calling optimization API with dates:', {
     startDate: monthStart.toISOString(),
     endDate: monthEnd.toISOString(),
-    timestamp: timestamp || 'none'
+    timestamp: timestamp || Date.now() // Ensure we always have a timestamp
   });
 
   try {
-    // Call the Scheduler API directly
+    // Call the Scheduler API directly with timestamp to ensure randomization
     const response = await schedulerApi.generateSchedule(
       monthStart.toISOString(),
       monthEnd.toISOString(),
       settings?.department || 'General',
-      timestamp // Pass the timestamp to avoid caching
+      timestamp || Date.now() // Ensure we always have a timestamp
     );
     
     console.log('Schedule optimization response:', response);
     
+    // Deduplicate shifts to prevent conflicts
+    const deduplicatedSchedule = deduplicateShifts(response.schedule || []);
+    console.log(`Deduplicated schedule from ${response.schedule?.length || 0} to ${deduplicatedSchedule.length} shifts`);
+    
     // Ensure the response includes staffing issues if available
     return {
-      schedule: response.schedule || [],
+      schedule: deduplicatedSchedule,
       staffingIssues: response.staffingIssues || []
     };
   } catch (error) {
@@ -45,7 +50,13 @@ export const generateScheduleForMonth = async (
     console.log('Falling back to local schedule generation');
     const localSchedule = await generateBasicSchedule(monthStart, monthEnd, profiles, settings);
     
-    return localSchedule;
+    // Deduplicate locally generated shifts too
+    const deduplicatedLocalSchedule = {
+      schedule: deduplicateShifts(localSchedule.schedule),
+      staffingIssues: localSchedule.staffingIssues
+    };
+    
+    return deduplicatedLocalSchedule;
   }
 };
 
