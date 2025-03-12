@@ -38,6 +38,7 @@ export const ScheduleActions = ({
 
   const {
     handleSettingsClick,
+    handleApplySchedule
   } = useScheduleActionHandlers();
   
   const {
@@ -48,17 +49,6 @@ export const ScheduleActions = ({
   const handleCancelPreview = () => {
     setShowPreview(false);
     setGeneratedShifts([]);
-  };
-  
-  const handleApplySchedule = async (shifts: Shift[], onSuccess: () => void) => {
-    try {
-      const saveResult = await saveScheduleToSupabase(shifts);
-      if (saveResult) {
-        onSuccess();
-      }
-    } catch (error) {
-      console.error("Error applying schedule:", error);
-    }
   };
 
   return (
