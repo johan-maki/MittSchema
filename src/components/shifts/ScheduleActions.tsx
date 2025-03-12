@@ -55,18 +55,21 @@ export const ScheduleActions = ({
         onClick={generateSchedule}
       />
 
-      <ScheduleGenerationPreview 
-        open={showPreview}
-        onOpenChange={setShowPreview}
-        generatedShifts={generatedShifts}
-        profiles={profiles}
-        staffingIssues={staffingIssues}
-        onApply={() => handleApplySchedule(generatedShifts, () => {
-          setShowPreview(false);
-          setGeneratedShifts([]);
-        })}
-        onCancel={handleCancelPreview}
-      />
+      {/* Only show preview dialog if needed - when automatic saving fails */}
+      {showPreview && (
+        <ScheduleGenerationPreview 
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          generatedShifts={generatedShifts}
+          profiles={profiles}
+          staffingIssues={staffingIssues}
+          onApply={() => handleApplySchedule(generatedShifts, () => {
+            setShowPreview(false);
+            setGeneratedShifts([]);
+          })}
+          onCancel={handleCancelPreview}
+        />
+      )}
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <ScheduleActionsMenu
