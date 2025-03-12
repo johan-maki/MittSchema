@@ -12,7 +12,11 @@ export const schedulerApi = {
       start_date: startDate,
       end_date: endDate,
       department: department,
-      random_seed: random_seed
+      random_seed: random_seed,
+      constraints: {
+        max_consecutive_days: 5,
+        min_rest_hours: 11
+      }
     };
     
     console.log("Calling scheduler API with:", requestBody);

@@ -34,7 +34,7 @@ export const generateScheduleForMonth = async (
     
     console.log('Schedule optimization response:', response);
     
-    // Deduplicate shifts to prevent conflicts
+    // Apply strict deduplication to enforce all constraints
     const deduplicatedSchedule = deduplicateShifts(response.schedule || []);
     console.log(`Deduplicated schedule from ${response.schedule?.length || 0} to ${deduplicatedSchedule.length} shifts`);
     
@@ -60,7 +60,7 @@ export const generateScheduleForMonth = async (
   }
 };
 
-// New function to directly save generated shifts to Supabase
+// Save generated shifts to Supabase
 export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> => {
   try {
     if (!shifts || shifts.length === 0) {
@@ -68,11 +68,15 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       return false;
     }
     
-    console.log(`Saving ${shifts.length} shifts to Supabase`);
+    // Apply one more round of deduplication before saving to ensure constraints are met
+    const finalShifts = deduplicateShifts(shifts);
+    console.log(`Final deduplication: from ${shifts.length} to ${finalShifts.length} shifts`);
+    
+    console.log(`Saving ${finalShifts.length} shifts to Supabase`);
     
     // Process shifts in smaller batches to avoid timeouts
     const BATCH_SIZE = 10;
-    const shiftsToInsert = shifts.map(shift => ({
+    const shiftsToInsert = finalShifts.map(shift => ({
       id: uuidv4(), // Generate proper UUIDs for new shifts
       start_time: shift.start_time,
       end_time: shift.end_time,

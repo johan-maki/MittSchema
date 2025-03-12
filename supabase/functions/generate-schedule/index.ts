@@ -27,12 +27,13 @@ serve(async (req) => {
       );
     }
     
-    const { start_date, end_date, department } = requestBody;
+    const { start_date, end_date, department, random_seed } = requestBody;
     
     console.log("Received request to generate schedule with:", {
       start_date,
       end_date,
-      department
+      department,
+      random_seed
     });
     
     // Validate inputs
@@ -52,6 +53,16 @@ serve(async (req) => {
     // Generate schedule for the given date range
     const start = new Date(start_date);
     const end = new Date(end_date);
+    
+    // Use the random seed if provided
+    if (random_seed) {
+      console.log(`Using random seed: ${random_seed}`);
+      // Set a pseudo-random seed based on the timestamp
+      Math.random = () => {
+        const x = Math.sin(random_seed++) * 10000;
+        return x - Math.floor(x);
+      };
+    }
     
     const { shifts, staffingIssues } = generateSchedule(start, end, mockProfiles, department);
     
