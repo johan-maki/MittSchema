@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { convertDatabaseProfile, InsertProfile, Profile } from "@/types/profile";
 
@@ -8,13 +9,16 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
   try {
     console.log("Adding new profile with data:", profileData);
     
+    // Ensure experience_level is within the valid range (0-50)
+    const experience = Math.min(Math.max(profileData.experience_level || 1, 0), 50);
+    
     const { data, error } = await supabase.rpc('insert_employee', {
       first_name: profileData.first_name,
       last_name: profileData.last_name,
       role: profileData.role,
       department: profileData.department || '',
       phone: profileData.phone || '',
-      experience_level: profileData.experience_level || 1
+      experience_level: experience
     });
     
     if (error) {

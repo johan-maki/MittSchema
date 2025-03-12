@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InsertProfile } from "@/types/profile";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 
 interface AddProfileDialogProps {
   isOpen: boolean;
@@ -24,7 +24,8 @@ const FormField = ({
   type = "text", 
   min, 
   max,
-  disabled = false
+  disabled = false,
+  error = ""
 }: { 
   label: string;
   value: string | number;
@@ -34,6 +35,7 @@ const FormField = ({
   min?: string;
   max?: string;
   disabled?: boolean;
+  error?: string;
 }) => (
   <div className="mb-4">
     <label className="text-sm font-medium text-[#1A1F2C] dark:text-gray-300 block mb-1">{label}</label>
@@ -44,9 +46,10 @@ const FormField = ({
       max={max}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
+      className={`dark:bg-gray-800 dark:text-white dark:border-gray-700 ${error ? 'border-red-500' : ''}`}
       disabled={disabled}
     />
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
   </div>
 );
 
@@ -59,9 +62,39 @@ export const AddProfileDialog = ({
   isEditing = false,
   isProcessing = false
 }: AddProfileDialogProps) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!newProfile.first_name.trim()) {
+      newErrors.first_name = "Förnamn krävs";
+    }
+    
+    if (!newProfile.last_name.trim()) {
+      newErrors.last_name = "Efternamn krävs";
+    }
+    
+    if (!newProfile.role.trim()) {
+      newErrors.role = "Yrkesroll krävs";
+    }
+    
+    const expLevel = Number(newProfile.experience_level);
+    if (isNaN(expLevel) || expLevel < 0 || expLevel > 50) {
+      newErrors.experience_level = "Erfarenhetsnivå måste vara mellan 0 och 50 år";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isProcessing) return;
+    
+    if (!validateForm()) {
+      return;
+    }
     
     try {
       await onSubmit(e);
@@ -73,7 +106,12 @@ export const AddProfileDialog = ({
   const updateProfile = (field: keyof InsertProfile, value: string) => {
     setNewProfile(prev => {
       if (field === 'experience_level') {
-        return { ...prev, [field]: parseInt(value) || 1 };
+        // Parse to number but enforce range (0-50)
+        const numValue = parseInt(value);
+        if (!isNaN(numValue)) {
+          return { ...prev, [field]: Math.min(Math.max(numValue, 0), 50) };
+        }
+        return { ...prev, [field]: prev.experience_level };
       }
       
       // For nullable fields, convert empty strings to null
@@ -83,6 +121,11 @@ export const AddProfileDialog = ({
       
       return { ...prev, [field]: value };
     });
+    
+    // Clear error for this field when typing
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: "" });
+    }
   };
 
   return (
@@ -93,6 +136,7 @@ export const AddProfileDialog = ({
         onChange={(value) => updateProfile('first_name', value)} 
         required 
         disabled={isProcessing}
+        error={errors.first_name}
       />
       
       <FormField 
@@ -101,6 +145,7 @@ export const AddProfileDialog = ({
         onChange={(value) => updateProfile('last_name', value)} 
         required 
         disabled={isProcessing}
+        error={errors.last_name}
       />
       
       <FormField 
@@ -109,6 +154,7 @@ export const AddProfileDialog = ({
         onChange={(value) => updateProfile('role', value)} 
         required 
         disabled={isProcessing}
+        error={errors.role}
       />
       
       <FormField 
@@ -116,6 +162,7 @@ export const AddProfileDialog = ({
         value={newProfile.department || ''} 
         onChange={(value) => updateProfile('department', value)} 
         disabled={isProcessing}
+        error={errors.department}
       />
       
       <FormField 
@@ -123,6 +170,7 @@ export const AddProfileDialog = ({
         value={newProfile.phone || ''} 
         onChange={(value) => updateProfile('phone', value)} 
         disabled={isProcessing}
+        error={errors.phone}
       />
       
       <FormField 
@@ -133,6 +181,7 @@ export const AddProfileDialog = ({
         min="0" 
         max="50" 
         disabled={isProcessing}
+        error={errors.experience_level}
       />
 
       <DialogFooter className="mt-6">
