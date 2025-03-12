@@ -5,7 +5,7 @@ import { generateBasicSchedule } from "../utils/localScheduleGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
-import { useToast } from "@/components/ui/use-toast";
+import { v4 as uuidv4 } from 'uuid';
 
 export const generateScheduleForMonth = async (
   currentDate: Date,
@@ -62,7 +62,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     // Process shifts in smaller batches to avoid timeouts
     const BATCH_SIZE = 10;
     const shiftsToInsert = shifts.map(shift => ({
-      id: shift.id || `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: uuidv4(), // Generate proper UUIDs for new shifts
       start_time: shift.start_time,
       end_time: shift.end_time,
       shift_type: shift.shift_type,
@@ -76,17 +76,16 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
       console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
       
-      const { data, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('shifts')
-        .insert(batch)
-        .select();
+        .insert(batch);
         
       if (insertError) {
         console.error("Error inserting batch:", insertError);
         throw new Error(`Could not save batch: ${insertError.message}`);
       }
       
-      console.log(`Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}, received:`, data);
+      console.log(`Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}`);
     }
     
     return true;

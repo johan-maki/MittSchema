@@ -1,7 +1,8 @@
 
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import type { Shift } from "@/types/shift";
 import type { Profile } from "@/types/profile";
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Generate a basic schedule locally as a fallback when API calls fail
@@ -28,6 +29,12 @@ export const generateBasicSchedule = async (
     'Undersköterska': 'night'
   };
   
+  // Track assigned shifts to avoid scheduling the same person repeatedly
+  const assignedShifts: Record<string, { date: string, shiftType: string }[]> = {};
+  availableProfiles.forEach(profile => {
+    assignedShifts[profile.id] = [];
+  });
+  
   // Group profiles by role
   const profilesByRole = availableProfiles.reduce((acc, profile) => {
     const role = profile.role || 'Other';
@@ -40,31 +47,57 @@ export const generateBasicSchedule = async (
   while (currentDay <= endDate) {
     const dateStr = format(currentDay, 'yyyy-MM-dd');
     
-    // For each role, schedule employees
-    Object.entries(profilesByRole).forEach(([role, profiles]) => {
-      if (profiles.length === 0) return;
+    // For each shift type, schedule employees with some randomization
+    for (const shiftType of shiftTypes) {
+      // Get all potential profiles for this shift type
+      let potentialProfiles: Profile[] = [];
       
-      const shiftType = roleToShiftType[role] || 'day';
+      // Match roles to shift types when possible, otherwise use all available profiles
+      if (shiftType === 'day') {
+        potentialProfiles = profilesByRole['Läkare'] || [];
+      } else if (shiftType === 'evening') {
+        potentialProfiles = profilesByRole['Sjuksköterska'] || [];
+      } else if (shiftType === 'night') {
+        potentialProfiles = profilesByRole['Undersköterska'] || [];
+      }
+      
+      // If no specific profiles for this shift type, use all available
+      if (potentialProfiles.length === 0) {
+        potentialProfiles = availableProfiles;
+      }
       
       // Determine how many staff we need for this shift
-      const shiftSetting = scheduleSettings?.[`${shiftType}_shift`] || { min_staff: 1 };
-      const staffNeeded = shiftSetting.min_staff || 1;
+      let staffNeeded = 2; // Default
+      if (shiftType === 'day') staffNeeded = scheduleSettings?.morning_shift?.min_staff || 3;
+      else if (shiftType === 'evening') staffNeeded = scheduleSettings?.afternoon_shift?.min_staff || 3;
+      else if (shiftType === 'night') staffNeeded = scheduleSettings?.night_shift?.min_staff || 2;
       
       // Check if we have enough staff and record issues
-      if (profiles.length < staffNeeded) {
+      if (potentialProfiles.length < staffNeeded) {
         staffingIssues.push({
           date: dateStr,
           shiftType,
-          current: profiles.length,
+          current: potentialProfiles.length,
           required: staffNeeded
         });
+        staffNeeded = Math.min(staffNeeded, potentialProfiles.length);
       }
       
+      // Shuffle the profiles for randomization
+      const shuffledProfiles = [...potentialProfiles]
+        .sort(() => Math.random() - 0.5) // Random shuffle
+        .sort((a, b) => {
+          // Prioritize profiles with fewer assigned shifts
+          const aShifts = assignedShifts[a.id]?.length || 0;
+          const bShifts = assignedShifts[b.id]?.length || 0;
+          return aShifts - bShifts;
+        });
+      
       // Schedule up to staffNeeded employees
-      for (let i = 0; i < Math.min(staffNeeded, profiles.length); i++) {
-        // Simple round-robin assignment
-        const employee = profiles[i % profiles.length];
+      for (let i = 0; i < Math.min(staffNeeded, shuffledProfiles.length); i++) {
+        const employee = shuffledProfiles[i];
         
+        // Generate shift times based on shift type
         let startTime, endTime;
         switch(shiftType) {
           case 'day':
@@ -77,23 +110,27 @@ export const generateBasicSchedule = async (
             break;
           case 'night':
             startTime = `${dateStr}T23:00:00.000Z`;
-            const nextDay = new Date(currentDay);
-            nextDay.setDate(nextDay.getDate() + 1);
+            const nextDay = addDays(new Date(currentDay), 1);
             const nextDateStr = format(nextDay, 'yyyy-MM-dd');
             endTime = `${nextDateStr}T07:00:00.000Z`;
             break;
         }
         
+        // Create the shift
         shifts.push({
-          id: `local-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          id: uuidv4(), // Generate a proper UUID for the shift
           employee_id: employee.id,
           shift_type: shiftType,
           start_time: startTime,
           end_time: endTime,
           department: scheduleSettings?.department || 'General'
         });
+        
+        // Track that we assigned this employee a shift
+        if (!assignedShifts[employee.id]) assignedShifts[employee.id] = [];
+        assignedShifts[employee.id].push({ date: dateStr, shiftType });
       }
-    });
+    }
     
     // Move to next day
     currentDay.setDate(currentDay.getDate() + 1);
