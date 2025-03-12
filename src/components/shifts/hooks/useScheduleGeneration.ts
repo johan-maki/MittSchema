@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Shift } from "@/types/shift";
@@ -45,7 +44,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     }
 
     console.log('About to validate constraints');
-    // Note: We still validate frontend constraints, but the backend is the source of truth
     if (!validateConstraints(settings, isLoadingSettings)) {
       console.log('Constraint validation failed');
       return false;
@@ -53,28 +51,23 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
-      // Clear existing unpublished shifts first to avoid confusion
+      // Clear existing unpublished shifts first
       await clearUnpublishedShifts();
       
       console.log("Calling generateScheduleForMonth");
-      // Add a timestamp parameter to avoid API caching
-      const timestamp = new Date().getTime();
+      // Add timestamp to ensure different results each time
+      const timestamp = Date.now();
       const generatedSchedule = await generateScheduleForMonth(
         currentDate, 
         profiles, 
         settings, 
-        timestamp // Pass timestamp to ensure we get different results each time
+        timestamp
       );
 
       if (generatedSchedule?.schedule?.length > 0) {
         console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts");
         
         // Save shifts directly to Supabase
-        toast({
-          title: "Sparar schema",
-          description: "Sparar genererat schema till databasen...",
-        });
-        
         const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
         
         if (saveResult) {
@@ -85,39 +78,17 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           
           // Invalidate shifts query to refresh the calendar
           queryClient.invalidateQueries({ queryKey: ['shifts'] });
-          
-          // No need to show preview, shifts are already saved
-          setShowPreview(false);
           return true;
-        } else {
-          // If saving fails, still show the preview to give the user a chance to review and apply manually
-          // Use staffing issues from API if available, otherwise process them locally
-          if (generatedSchedule.staffingIssues && generatedSchedule.staffingIssues.length > 0) {
-            console.log("Using staffing issues from API:", generatedSchedule.staffingIssues);
-            setStaffingIssues(generatedSchedule.staffingIssues);
-            setGeneratedShifts(generatedSchedule.schedule);
-          } else {
-            console.log("Processing schedule locally for staffing issues");
-            const processedShifts = processScheduleForStaffingIssues(
-              generatedSchedule.schedule, 
-              profiles, 
-              settings
-            );
-            setGeneratedShifts(processedShifts);
-          }
-          
-          setShowPreview(true);
         }
-      } else {
-        console.log('No shifts generated');
-        toast({
-          title: "Kunde inte generera schema",
-          description: "Det gick inte att hitta en giltig schemaläggning med nuvarande begränsningar.",
-          variant: "destructive",
-        });
-        
-        setShowPreview(false);
       }
+      
+      toast({
+        title: "Kunde inte generera schema",
+        description: "Det gick inte att hitta en giltig schemaläggning. Försök igen.",
+        variant: "destructive",
+      });
+      
+      return false;
     } catch (error) {
       console.error('Error generating schedule:', error);
       toast({

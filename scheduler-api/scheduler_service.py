@@ -12,6 +12,14 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
         logger.warning("No employees found in the database")
         raise HTTPException(status_code=404, detail="No employees found in the database")
     
+    # Initialize random number generator with seed
+    if random_seed is not None:
+        random.seed(random_seed)
+        logger.info(f"Initialized random seed: {random_seed}")
+    else:
+        random.seed()
+        logger.info("Using system random seed")
+    
     # Create date list for the scheduling period
     date_list = create_date_list(start_date, end_date)
     logger.info(f"Created date list from {date_list[0]} to {date_list[-1]}")
@@ -23,7 +31,6 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
     shift_types = ["day", "evening", "night"]
     
     # Create variables for each employee, date, and shift type
-    # Variable will be 1 if employee e works on date d in shift s, 0 otherwise
     shifts = {}
     for e in employees:
         for d in range(len(date_list)):
@@ -117,14 +124,6 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
     _add_experience_constraints(model, shifts, employees, date_list, shift_types, staffing_issues)
     _add_employee_preference_constraints(model, shifts, employees, date_list, shift_types)
     
-    # Initialize random number generator with seed
-    if random_seed is not None:
-        random.seed(random_seed)
-        logger.info(f"Initialized random seed: {random_seed}")
-    else:
-        random.seed()
-        logger.info("Using system random seed")
-    
     # Add randomization to encourage different solutions
     _add_randomization_objective(model, shifts, employees, date_list, shift_types)
     
@@ -135,17 +134,18 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
     # Set time limit for solver (in seconds)
     solver.parameters.max_time_in_seconds = 60.0  # 1 minute max
     
-    # Set random seed to get different solutions each time
-    solver_seed = random_seed if random_seed is not None else int(random.random() * 10000)
+    # Set random seed for solver
+    solver_seed = random_seed if random_seed is not None else random.randint(0, 1000000)
     solver.parameters.random_seed = solver_seed
+    logger.info(f"Using solver random seed: {solver_seed}")
     
-    logger.info(f"Starting solver with random seed: {solver.parameters.random_seed}")
+    logger.info("Starting solver")
     status = solver.Solve(model)
     logger.info(f"Solver status: {solver.StatusName(status)}")
     
     # Process the solution
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        return _process_solution(solver, shifts, employees, date_list, shift_types, department, staffing_issues)
+        return _process_solution(solver, shifts, employees, date_list, shift_types, department, [])
     else:
         logger.error(f"Failed to find feasible schedule. Status: {solver.StatusName(status)}")
         raise HTTPException(
@@ -155,21 +155,14 @@ def optimize_schedule(employees: List[Dict], start_date: datetime, end_date: dat
 
 def _add_randomization_objective(model, shifts, employees, date_list, shift_types):
     """Add random weights to objectives to encourage different solutions each time"""
-    # Add a small random weight to each shift assignment to encourage different solutions
-    # while still prioritizing the main constraints
-    random_weights = {}
+    # Add a small random weight to each shift assignment
     for e in employees:
         for d in range(len(date_list)):
             for s in shift_types:
-                # Generate a small random weight between 0.1 and 0.9
-                random_weights[(e['id'], d, s)] = random.random() * 0.8 + 0.1
-    
-    # Add these weighted objectives with a low priority compared to the main constraints
-    # This will guide the solver to prefer certain assignments when multiple feasible solutions exist
-    for e in employees:
-        for d in range(len(date_list)):
-            for s in shift_types:
-                model.Maximize(shifts[(e['id'], d, s)] * random_weights[(e['id'], d, s)])
+                # Generate a random weight between 0.1 and 0.9
+                weight = random.random() * 0.8 + 0.1
+                # Add to objective with low priority
+                model.Maximize(shifts[(e['id'], d, s)] * weight)
     
     logger.info("Added randomization to the objective function")
 
