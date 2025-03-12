@@ -1,43 +1,33 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { convertDatabaseProfile, InsertProfile, Profile } from "@/types/profile";
-import { v4 as uuidv4 } from "uuid";
 
 /**
- * Add a new profile in development mode, bypassing auth user creation
+ * Add a new profile in development mode using the insert_employee function
  */
 export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promise<Profile> => {
   try {
-    // Generate a random UUID for the new profile
-    const newId = uuidv4();
+    console.log("Adding new profile with data:", profileData);
     
-    console.log("Adding new profile with ID:", newId);
-    
-    // Insert directly into the employees table instead of using RPC
-    const { data, error } = await supabase
-      .from('employees')
-      .insert([{
-        id: newId,
-        first_name: profileData.first_name,
-        last_name: profileData.last_name,
-        role: profileData.role,
-        department: profileData.department || null,
-        phone: profileData.phone || null,
-        experience_level: profileData.experience_level || 1
-      }])
-      .select();
+    const { data, error } = await supabase.rpc('insert_employee', {
+      first_name: profileData.first_name,
+      last_name: profileData.last_name,
+      role: profileData.role,
+      department: profileData.department || '',
+      phone: profileData.phone || '',
+      experience_level: profileData.experience_level || 1
+    });
     
     if (error) {
       console.error('Error inserting profile:', error);
       throw error;
     }
     
-    if (!data || data.length === 0) {
+    if (!data) {
       throw new Error('No profile data returned from database');
     }
     
     // Convert the database response to our Profile type
-    const profile = convertDatabaseProfile(data[0]);
+    const profile = convertDatabaseProfile(data);
     
     console.log("Profile successfully added:", profile);
     return profile;

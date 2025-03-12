@@ -322,6 +322,29 @@ export type Database = {
           work_preferences: Json | null
         }[]
       }
+      insert_employee: {
+        Args: {
+          first_name: string
+          last_name: string
+          role: string
+          department: string
+          phone: string
+          experience_level: number
+        }
+        Returns: {
+          created_at: string
+          department: string | null
+          experience_level: number
+          first_name: string
+          id: string
+          is_manager: boolean
+          last_name: string
+          phone: string | null
+          role: string
+          updated_at: string
+          work_preferences: Json | null
+        }
+      }
       postgres_fdw_disconnect: {
         Args: {
           "": string
