@@ -15,7 +15,8 @@ export const schedulerApi = {
       random_seed: random_seed,
       constraints: {
         max_consecutive_days: 5,
-        min_rest_hours: 11
+        min_rest_hours: 11,
+        max_shifts_per_day: 1  // Explicitly limit to one shift per day
       }
     };
     
@@ -24,7 +25,8 @@ export const schedulerApi = {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store"  // Prevent caching
       },
       body: JSON.stringify(requestBody)
     });

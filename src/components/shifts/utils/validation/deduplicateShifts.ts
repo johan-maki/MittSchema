@@ -1,4 +1,4 @@
-import { format, addDays, isSameDay, parseISO } from "date-fns";
+import { format, addDays, isSameDay, parseISO, differenceInDays } from "date-fns";
 import type { Shift } from "@/types/shift";
 
 /**
@@ -8,109 +8,102 @@ import type { Shift } from "@/types/shift";
  */
 export const deduplicateShifts = (shifts: Shift[]): Shift[] => {
   console.log("Running deduplicateShifts on", shifts.length, "shifts");
-  const uniqueKeys = new Map<string, Shift>();
-  const employeeAssignments = new Map<string, Map<string, string>>();
+  
+  // First, create a Map to track shifts by employee and date to prevent
+  // employees from being scheduled multiple times on the same day
+  const employeeShiftsByDay = new Map<string, Map<string, Shift>>();
   
   // Sort shifts chronologically to ensure proper consecutive days check
   const sortedShifts = [...shifts].sort((a, b) => 
     new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
   
-  // Map to track consecutive working days for each employee
-  const employeeWorkingDays = new Map<string, Set<string>>();
-  const MAX_CONSECUTIVE_DAYS = 5;
-  
-  // First pass: Deduplicate shifts and collect working days
+  // First pass: Collect shifts by employee and date
   sortedShifts.forEach(shift => {
     const shiftDate = new Date(shift.start_time);
     const dateStr = format(shiftDate, 'yyyy-MM-dd');
-    const key = `${shift.employee_id}-${dateStr}`;
+    const employeeId = shift.employee_id;
     
-    // Track assignments by day - one person should only work one shift per day
-    if (!employeeAssignments.has(dateStr)) {
-      employeeAssignments.set(dateStr, new Map<string, string>());
+    if (!employeeShiftsByDay.has(employeeId)) {
+      employeeShiftsByDay.set(employeeId, new Map<string, Shift>());
     }
-    const dayAssignments = employeeAssignments.get(dateStr)!;
     
-    // If this employee already has a shift on this day, but it's a different shift type,
-    // don't add this shift (prevents same person from working different shifts same day)
-    if (dayAssignments.has(shift.employee_id)) {
-      console.log(`Skipping duplicate shift for employee ${shift.employee_id} on ${dateStr} - already assigned`);
+    const employeeDays = employeeShiftsByDay.get(employeeId)!;
+    
+    // If this employee already has a shift on this day, skip this one
+    // This ensures one shift per day per employee
+    if (employeeDays.has(dateStr)) {
+      console.log(`Skipping duplicate shift for employee ${employeeId} on ${dateStr} - already assigned`);
       return;
     }
     
-    // Track working days for each employee
-    if (!employeeWorkingDays.has(shift.employee_id)) {
-      employeeWorkingDays.set(shift.employee_id, new Set<string>());
-    }
-    
-    // Add this day to employee's working days
-    const employeeDays = employeeWorkingDays.get(shift.employee_id)!;
-    employeeDays.add(dateStr);
-    
-    // Set this employee's shift for the day and add to unique shifts
-    dayAssignments.set(shift.employee_id, shift.shift_type);
-    uniqueKeys.set(key, shift);
+    // Otherwise, record this shift
+    employeeDays.set(dateStr, shift);
   });
   
-  // Second pass: Check consecutive days constraint
-  const finalShifts = new Map<string, Shift>();
+  // Second pass: Check for consecutive working days and apply the constraint
+  const finalShifts: Shift[] = [];
+  const MAX_CONSECUTIVE_DAYS = 5;
   
-  // For each employee, check if they have more than MAX_CONSECUTIVE_DAYS in a row
-  employeeWorkingDays.forEach((days, employeeId) => {
-    // Convert all dates to Date objects and sort them
-    const sortedDates = Array.from(days)
+  // Process each employee's shifts
+  employeeShiftsByDay.forEach((employeeDays, employeeId) => {
+    // Get all the dates this employee is scheduled to work, sorted
+    const workDates = Array.from(employeeDays.keys())
       .map(dateStr => new Date(dateStr))
       .sort((a, b) => a.getTime() - b.getTime());
     
     // Find consecutive sequences
-    const sequences: Date[][] = [];
+    const continuousSequences: Date[][] = [];
     let currentSequence: Date[] = [];
     
-    // Build sequences of consecutive days
-    for (let i = 0; i < sortedDates.length; i++) {
-      if (i === 0 || isSameDay(addDays(sortedDates[i-1], 1), sortedDates[i])) {
-        currentSequence.push(sortedDates[i]);
+    // Group consecutive days together
+    for (let i = 0; i < workDates.length; i++) {
+      if (i === 0) {
+        currentSequence.push(workDates[i]);
       } else {
-        if (currentSequence.length > 0) {
-          sequences.push([...currentSequence]);
+        const prevDate = workDates[i-1];
+        const currDate = workDates[i];
+        
+        // Check if dates are consecutive
+        if (differenceInDays(currDate, prevDate) === 1) {
+          currentSequence.push(currDate);
+        } else {
+          // Start a new sequence
+          if (currentSequence.length > 0) {
+            continuousSequences.push([...currentSequence]);
+          }
+          currentSequence = [currDate];
         }
-        currentSequence = [sortedDates[i]];
       }
     }
     
-    // Add the last sequence
+    // Add the last sequence if it exists
     if (currentSequence.length > 0) {
-      sequences.push(currentSequence);
+      continuousSequences.push(currentSequence);
     }
     
-    // Now check each sequence and remove days if it exceeds MAX_CONSECUTIVE_DAYS
-    for (const sequence of sequences) {
+    // Process each sequence and keep only shifts within the constraints
+    continuousSequences.forEach(sequence => {
       if (sequence.length > MAX_CONSECUTIVE_DAYS) {
         console.log(`Employee ${employeeId} has ${sequence.length} consecutive days - removing excess shifts`);
         
-        // Keep only the first MAX_CONSECUTIVE_DAYS days in this sequence
-        const daysToKeep = sequence.slice(0, MAX_CONSECUTIVE_DAYS);
-        const daysToRemove = sequence.slice(MAX_CONSECUTIVE_DAYS);
-        
-        // Remove the excess days from our final shifts collection
-        daysToRemove.forEach(day => {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          const key = `${employeeId}-${dateStr}`;
-          
-          if (uniqueKeys.has(key)) {
-            console.log(`Removing excess consecutive shift for ${employeeId} on ${dateStr}`);
-            uniqueKeys.delete(key);
-          }
-        });
+        // Keep only the first MAX_CONSECUTIVE_DAYS shifts in this sequence
+        sequence = sequence.slice(0, MAX_CONSECUTIVE_DAYS);
       }
-    }
+      
+      // Add the allowed shifts to final result
+      sequence.forEach(date => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const shift = employeeDays.get(dateStr);
+        if (shift) {
+          finalShifts.push(shift);
+        }
+      });
+    });
   });
   
-  // Convert our map of unique shifts back to an array
-  const result = Array.from(uniqueKeys.values());
-  console.log("After deduplication and consecutive day check, have", result.length, "shifts");
-  return result;
+  console.log("After deduplication and consecutive day check, have", finalShifts.length, "shifts");
+  return finalShifts;
 };
 
 /**

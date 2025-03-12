@@ -1,4 +1,3 @@
-
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
 import { generateBasicSchedule } from "../utils/localScheduleGenerator";
@@ -34,8 +33,11 @@ export const generateScheduleForMonth = async (
     
     console.log('Schedule optimization response:', response);
     
+    // Pre-deduplicate before applying strict constraints
+    const preDeduplicatedSchedule = preDeduplicateShifts(response.schedule || []);
+    
     // Apply strict deduplication to enforce all constraints
-    const deduplicatedSchedule = deduplicateShifts(response.schedule || []);
+    const deduplicatedSchedule = deduplicateShifts(preDeduplicatedSchedule);
     console.log(`Deduplicated schedule from ${response.schedule?.length || 0} to ${deduplicatedSchedule.length} shifts`);
     
     // Ensure the response includes staffing issues if available
@@ -59,6 +61,26 @@ export const generateScheduleForMonth = async (
     return deduplicatedLocalSchedule;
   }
 };
+
+/**
+ * Simple pre-deduplication to ensure one shift per employee per day
+ */
+function preDeduplicateShifts(shifts: Shift[]): Shift[] {
+  const uniqueEmployeeShifts = new Map<string, Shift>();
+  
+  for (const shift of shifts) {
+    const shiftDate = new Date(shift.start_time);
+    const dateStr = format(shiftDate, 'yyyy-MM-dd');
+    const key = `${shift.employee_id}-${dateStr}`;
+    
+    // Only keep one shift per employee per day (first one encountered)
+    if (!uniqueEmployeeShifts.has(key)) {
+      uniqueEmployeeShifts.set(key, shift);
+    }
+  }
+  
+  return Array.from(uniqueEmployeeShifts.values());
+}
 
 // Save generated shifts to Supabase
 export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> => {
@@ -85,6 +107,17 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       employee_id: shift.employee_id,
       is_published: false
     }));
+    
+    // Clear all existing unpublished shifts first
+    const { error: clearError } = await supabase
+      .from('shifts')
+      .delete()
+      .eq('is_published', false);
+      
+    if (clearError) {
+      console.error("Error clearing unpublished shifts:", clearError);
+      throw new Error(`Could not clear existing shifts: ${clearError.message}`);
+    }
     
     // Insert shifts in batches
     for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {

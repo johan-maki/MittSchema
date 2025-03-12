@@ -11,7 +11,19 @@ export function generateSchedule(
   start: Date, 
   end: Date, 
   employees: Employee[], 
-  department?: string
+  department?: string,
+  constraints?: {
+    max_consecutive_days?: number;
+    min_rest_hours?: number;
+    max_shifts_per_day?: number;
+  }
 ): { shifts: Shift[], staffingIssues: StaffingIssue[] } {
-  return buildSchedule(start, end, employees, department);
+  // Apply default constraints if not provided
+  const finalConstraints = {
+    max_consecutive_days: constraints?.max_consecutive_days || 5,
+    min_rest_hours: constraints?.min_rest_hours || 11,
+    max_shifts_per_day: constraints?.max_shifts_per_day || 1
+  };
+  
+  return buildSchedule(start, end, employees, department, finalConstraints);
 }

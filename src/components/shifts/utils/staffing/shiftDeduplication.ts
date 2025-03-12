@@ -1,38 +1,96 @@
 
 import type { Shift } from "@/types/shift";
+import { format, differenceInDays } from "date-fns";
 
 /**
  * Removes duplicate shifts - ensures employees only have one shift per day
+ * and don't work more than MAX_CONSECUTIVE_DAYS in a row
  */
 export const removeDuplicateShifts = (shifts: Shift[]): Shift[] => {
-  const uniqueShiftMap = new Map<string, Shift>();
-  const employeeShiftsByDay = new Map<string, Map<string, string>>();
+  const MAX_CONSECUTIVE_DAYS = 5;
   
-  shifts.forEach(shift => {
+  // Map to track shifts by employee and date
+  const employeeShiftsByDay = new Map<string, Map<string, Shift>>();
+  
+  // Sort shifts chronologically
+  const sortedShifts = [...shifts].sort((a, b) => 
+    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
+  
+  // First pass: Deduplicate based on employee and day
+  for (const shift of sortedShifts) {
     const shiftDate = new Date(shift.start_time);
-    const dateKey = `${shiftDate.getFullYear()}-${shiftDate.getMonth()}-${shiftDate.getDate()}`;
+    const dateStr = format(shiftDate, 'yyyy-MM-dd');
     const employeeId = shift.employee_id;
-    const shiftType = shift.shift_type;
     
-    if (!employeeShiftsByDay.has(dateKey)) {
-      employeeShiftsByDay.set(dateKey, new Map<string, string>());
+    // Initialize employee map if needed
+    if (!employeeShiftsByDay.has(employeeId)) {
+      employeeShiftsByDay.set(employeeId, new Map<string, Shift>());
     }
     
-    const dayEmployees = employeeShiftsByDay.get(dateKey)!;
+    const employeeDays = employeeShiftsByDay.get(employeeId)!;
     
-    if (dayEmployees.has(employeeId) && dayEmployees.get(employeeId) !== shiftType) {
-      console.log(`Employee ${employeeId} already has a different shift on ${dateKey}`);
-      return;
+    // If employee already has a shift this day, skip
+    if (!employeeDays.has(dateStr)) {
+      employeeDays.set(dateStr, shift);
+    }
+  }
+  
+  // Second pass: Check for consecutive days
+  const finalShifts: Shift[] = [];
+  
+  // Process each employee's shifts
+  employeeShiftsByDay.forEach((dayMap, employeeId) => {
+    // Get dates sorted chronologically
+    const dates = Array.from(dayMap.keys())
+      .map(d => new Date(d))
+      .sort((a, b) => a.getTime() - b.getTime());
+    
+    // Find consecutive sequences
+    const sequences: Date[][] = [];
+    let currentSequence: Date[] = [];
+    
+    for (let i = 0; i < dates.length; i++) {
+      if (i === 0) {
+        currentSequence.push(dates[i]);
+      } else {
+        const prevDate = dates[i-1];
+        const currDate = dates[i];
+        
+        // Check if consecutive (1 day apart)
+        if (differenceInDays(currDate, prevDate) === 1) {
+          currentSequence.push(currDate);
+        } else {
+          // End current sequence and start a new one
+          if (currentSequence.length > 0) {
+            sequences.push([...currentSequence]);
+          }
+          currentSequence = [currDate];
+        }
+      }
     }
     
-    dayEmployees.set(employeeId, shiftType);
-    
-    const uniqueKey = `${employeeId}-${dateKey}-${shiftType}`;
-    
-    if (!uniqueShiftMap.has(uniqueKey)) {
-      uniqueShiftMap.set(uniqueKey, shift);
+    // Add the last sequence
+    if (currentSequence.length > 0) {
+      sequences.push(currentSequence);
     }
+    
+    // Apply max consecutive days constraint to each sequence
+    sequences.forEach(sequence => {
+      const allowedDates = sequence.length <= MAX_CONSECUTIVE_DAYS ? 
+        sequence : 
+        sequence.slice(0, MAX_CONSECUTIVE_DAYS);
+      
+      // Add allowed shifts to final result
+      allowedDates.forEach(date => {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const shift = dayMap.get(dateStr);
+        if (shift) {
+          finalShifts.push(shift);
+        }
+      });
+    });
   });
   
-  return Array.from(uniqueShiftMap.values());
+  return finalShifts;
 };
