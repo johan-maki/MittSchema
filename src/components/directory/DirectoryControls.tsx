@@ -74,9 +74,12 @@ export function DirectoryControls() {
       
       let errorMessage = "Kunde inte lägga till profilen";
       
-      // Handle specific errors
-      if (error.message && error.message.includes("experience_level")) {
-        errorMessage = "Erfarenhetsnivå måste vara mellan 0 och 15 år";
+      // Handle specific errors related to experience_level
+      if (error.message && (
+        error.message.includes("experience_level") || 
+        error.message.includes("profiles_experience_level_check")
+      )) {
+        errorMessage = "Erfarenhetsnivå måste vara mellan 0 och 50 år";
       } else if (error.message && error.message.includes("constraint")) {
         errorMessage = "Ett fel uppstod med databasen. Kontrollera att alla fält är korrekt ifyllda.";
       } else if (error.message) {

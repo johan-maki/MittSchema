@@ -9,9 +9,8 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
   try {
     console.log("Adding new profile with data:", profileData);
     
-    // Ensure experience_level is within the valid range (0-15)
-    // The database has a constraint for 0-50, but let's be more restrictive in the frontend
-    const experience = Math.min(Math.max(profileData.experience_level || 1, 0), 15);
+    // Ensure experience_level is within the valid range (0-50)
+    const experience = Math.min(Math.max(profileData.experience_level || 1, 0), 50);
     
     const { data, error } = await supabase.rpc('insert_employee', {
       first_name: profileData.first_name,
