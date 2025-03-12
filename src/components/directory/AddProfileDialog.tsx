@@ -80,8 +80,8 @@ export const AddProfileDialog = ({
     }
     
     const expLevel = Number(newProfile.experience_level);
-    if (isNaN(expLevel) || expLevel < 0 || expLevel > 50) {
-      newErrors.experience_level = "Erfarenhetsnivå måste vara mellan 0 och 50 år";
+    if (isNaN(expLevel) || expLevel < 0 || expLevel > 15) {
+      newErrors.experience_level = "Erfarenhetsnivå måste vara mellan 0 och 15 år";
     }
     
     setErrors(newErrors);
@@ -106,10 +106,10 @@ export const AddProfileDialog = ({
   const updateProfile = (field: keyof InsertProfile, value: string) => {
     setNewProfile(prev => {
       if (field === 'experience_level') {
-        // Parse to number but enforce range (0-50)
+        // Parse to number but enforce range (0-15)
         const numValue = parseInt(value);
         if (!isNaN(numValue)) {
-          return { ...prev, [field]: Math.min(Math.max(numValue, 0), 50) };
+          return { ...prev, [field]: Math.min(Math.max(numValue, 0), 15) };
         }
         return { ...prev, [field]: prev.experience_level };
       }
@@ -179,7 +179,7 @@ export const AddProfileDialog = ({
         onChange={(value) => updateProfile('experience_level', value)} 
         type="number" 
         min="0" 
-        max="50" 
+        max="15" 
         disabled={isProcessing}
         error={errors.experience_level}
       />

@@ -42,7 +42,7 @@ export function DirectoryControls() {
         role: newProfile.role,
         department: newProfile.department || '',
         phone: newProfile.phone || '',
-        experience_level: newProfile.experience_level
+        experience_level: Number(newProfile.experience_level)
       };
       
       // Use the profile service to add the profile
@@ -71,9 +71,21 @@ export function DirectoryControls() {
       setIsDialogOpen(false);
     } catch (error: any) {
       console.error('Error adding profile:', error);
+      
+      let errorMessage = "Kunde inte lägga till profilen";
+      
+      // Handle specific errors
+      if (error.message && error.message.includes("experience_level")) {
+        errorMessage = "Erfarenhetsnivå måste vara mellan 0 och 15 år";
+      } else if (error.message && error.message.includes("constraint")) {
+        errorMessage = "Ett fel uppstod med databasen. Kontrollera att alla fält är korrekt ifyllda.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte lägga till profilen",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
