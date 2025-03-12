@@ -8,6 +8,7 @@ import { validateConstraints } from "../utils/schedulingConstraints";
 import { generateScheduleForMonth, saveScheduleToSupabase } from "../services/scheduleGenerationService";
 import { useStaffingIssues } from "./useStaffingIssues";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
@@ -52,8 +53,24 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
-      // Clear existing unpublished shifts first
-      await clearUnpublishedShifts();
+      // IMPORTANT: First, clear all unpublished shifts directly using Supabase
+      console.log("Clearing all unpublished shifts");
+      const { error: clearError } = await supabase
+        .from('shifts')
+        .delete()
+        .eq('is_published', false);
+        
+      if (clearError) {
+        console.error("Error clearing shifts:", clearError);
+        toast({
+          title: "Fel vid rensning",
+          description: "Kunde inte rensa befintliga opublicerade pass.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log("Successfully cleared unpublished shifts");
       
       console.log("Calling generateScheduleForMonth");
       // Add timestamp to ensure different results each time
@@ -101,23 +118,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       setIsGenerating(false);
     }
     return false;
-  };
-  
-  // Helper function to clear unpublished shifts before generating new ones
-  const clearUnpublishedShifts = async () => {
-    try {
-      const response = await fetch("./api/shifts/clear-unpublished", {
-        method: "POST",
-      });
-      
-      if (!response.ok) {
-        console.error("Error clearing unpublished shifts:", await response.text());
-      } else {
-        console.log("Successfully cleared unpublished shifts");
-      }
-    } catch (e) {
-      console.error("Failed to clear unpublished shifts:", e);
-    }
   };
 
   return {
