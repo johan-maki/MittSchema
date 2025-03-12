@@ -3,14 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Film } from "lucide-react";
 import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { InsertProfile } from "@/types/profile";
-import { addProfile } from "@/services/profileService";
+import { addProfile, addHollywoodCelebrities } from "@/services/profileService";
 
 export function DirectoryControls() {
   const { roleFilter, setRoleFilter, searchQuery, setSearchQuery } = useDirectory();
@@ -79,6 +79,31 @@ export function DirectoryControls() {
     }
   };
 
+  const handleAddCelebrities = async () => {
+    setIsProcessing(true);
+    
+    try {
+      await addHollywoodCelebrities();
+      
+      toast({
+        title: "Kändisar tillagda",
+        description: "6 Hollywood-kändisar har lagts till som medarbetare",
+      });
+      
+      // Refresh the directory list
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    } catch (error: any) {
+      console.error('Error adding celebrities:', error);
+      toast({
+        title: "Fel",
+        description: error.message || "Kunde inte lägga till kändisar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
       <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -128,15 +153,12 @@ export function DirectoryControls() {
         
         <Button 
           variant="outline"
-          onClick={() => {
-            toast({
-              title: "Utvecklingsläge",
-              description: "Du är alltid inloggad med fulla rättigheter i utvecklingsläge",
-            });
-          }}
+          onClick={handleAddCelebrities}
+          disabled={isProcessing}
           className="w-full sm:w-auto dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
         >
-          Alltid admin
+          <Film className="w-4 h-4 mr-2" />
+          {isProcessing ? "Lägger till..." : "Lägg till kändisar"}
         </Button>
       </div>
     </div>

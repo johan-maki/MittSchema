@@ -5,7 +5,7 @@ import type { DatabaseProfile } from "@/types/profile";
 import { convertDatabaseProfile } from "@/types/profile";
 
 export const useProfileData = () => {
-  const { data: profiles = [] } = useQuery({
+  const { data: profiles = [], isLoading, error } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -23,5 +23,5 @@ export const useProfileData = () => {
     }
   });
 
-  return { profiles };
+  return { profiles, isLoading, error };
 };
