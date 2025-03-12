@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Shift } from "@/types/shift";
@@ -105,12 +106,12 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   // Helper function to clear unpublished shifts before generating new ones
   const clearUnpublishedShifts = async () => {
     try {
-      const { error } = await fetch("./api/shifts/clear-unpublished", {
+      const response = await fetch("./api/shifts/clear-unpublished", {
         method: "POST",
       });
       
-      if (error) {
-        console.error("Error clearing unpublished shifts:", error);
+      if (!response.ok) {
+        console.error("Error clearing unpublished shifts:", await response.text());
       } else {
         console.log("Successfully cleared unpublished shifts");
       }
