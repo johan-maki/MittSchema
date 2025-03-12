@@ -90,7 +90,7 @@ export const ProfileFormContent = ({
         onChange={(value) => updateProfile('experience_level', value)} 
         type="number" 
         min="0" 
-        max="50" 
+        max="10" 
         disabled={isProcessing}
         error={errors.experience_level}
       />

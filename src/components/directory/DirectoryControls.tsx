@@ -79,7 +79,7 @@ export function DirectoryControls() {
         error.message.includes("experience_level") || 
         error.message.includes("profiles_experience_level_check")
       )) {
-        errorMessage = "Erfarenhetsnivå måste vara mellan 0 och 50 år";
+        errorMessage = "Erfarenhetsnivå måste vara mellan 0 och 10 år";
       } else if (error.message && error.message.includes("constraint")) {
         errorMessage = "Ett fel uppstod med databasen. Kontrollera att alla fält är korrekt ifyllda.";
       } else if (error.message) {
