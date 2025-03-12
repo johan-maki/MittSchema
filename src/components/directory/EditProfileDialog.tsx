@@ -1,8 +1,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AddProfileDialog } from "./AddProfileDialog";
 import { InsertProfile } from "@/types/profile";
 import { Dispatch, SetStateAction } from "react";
+import { ProfileFormContent } from "./ProfileFormContent";
 
 interface EditProfileDialogProps {
   isOpen: boolean;
@@ -27,12 +27,11 @@ export function EditProfileDialog({
         <DialogHeader>
           <DialogTitle>Redigera personal</DialogTitle>
         </DialogHeader>
-        <AddProfileDialog
-          isOpen={isOpen}
-          setIsOpen={onOpenChange}
-          newProfile={editingProfile}
-          setNewProfile={setEditingProfile}
+        <ProfileFormContent
+          initialProfile={editingProfile}
+          onProfileChange={setEditingProfile}
           onSubmit={onSubmit}
+          onCancel={() => onOpenChange(false)}
           isEditing={true}
           isProcessing={isProcessing}
         />
