@@ -53,25 +53,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
-      // IMPORTANT: First, clear all unpublished shifts directly using Supabase
-      console.log("Clearing all unpublished shifts");
-      const { error: clearError } = await supabase
-        .from('shifts')
-        .delete()
-        .eq('is_published', false);
-        
-      if (clearError) {
-        console.error("Error clearing shifts:", clearError);
-        toast({
-          title: "Fel vid rensning",
-          description: "Kunde inte rensa befintliga opublicerade pass.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      console.log("Successfully cleared unpublished shifts");
-      
       console.log("Calling generateScheduleForMonth");
       // Add timestamp to ensure different results each time
       const timestamp = Date.now();
@@ -82,29 +63,38 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         timestamp
       );
 
-      if (generatedSchedule?.schedule?.length > 0) {
-        console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts");
-        
-        // Save shifts directly to Supabase
-        const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
-        
-        if (saveResult) {
-          toast({
-            title: "Schema sparat",
-            description: `${generatedSchedule.schedule.length} arbetspass har lagts till i schemat.`,
-          });
-          
-          // Invalidate shifts query to refresh the calendar
-          queryClient.invalidateQueries({ queryKey: ['shifts'] });
-          return true;
-        }
+      console.log("Schedule generation result:", generatedSchedule);
+      
+      if (!generatedSchedule || (!generatedSchedule.schedule || generatedSchedule.schedule.length === 0)) {
+        toast({
+          title: "Kunde inte generera schema",
+          description: "Det gick inte att hitta en giltig schemaläggning. Försök igen.",
+          variant: "destructive",
+        });
+        return false;
       }
       
-      toast({
-        title: "Kunde inte generera schema",
-        description: "Det gick inte att hitta en giltig schemaläggning. Försök igen.",
-        variant: "destructive",
-      });
+      console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts");
+      
+      // Save shifts directly to Supabase
+      const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
+      
+      if (saveResult) {
+        toast({
+          title: "Schema sparat",
+          description: `${generatedSchedule.schedule.length} arbetspass har lagts till i schemat.`,
+        });
+        
+        // Invalidate shifts query to refresh the calendar
+        queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        return true;
+      } else {
+        toast({
+          title: "Kunde inte spara schema",
+          description: "Det gick inte att spara schemat. Försök igen.",
+          variant: "destructive",
+        });
+      }
       
       return false;
     } catch (error) {

@@ -1,3 +1,4 @@
+
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
 import { generateBasicSchedule } from "../utils/localScheduleGenerator";
@@ -19,7 +20,8 @@ export const generateScheduleForMonth = async (
   console.log('Calling optimization API with dates:', {
     startDate: monthStart.toISOString(),
     endDate: monthEnd.toISOString(),
-    timestamp: timestamp || Date.now() // Ensure we always have a timestamp
+    timestamp: timestamp || Date.now(), // Ensure we always have a timestamp
+    profiles: profiles.length
   });
 
   try {
@@ -32,6 +34,12 @@ export const generateScheduleForMonth = async (
     );
     
     console.log('Schedule optimization response:', response);
+    
+    // If the API returned an empty schedule, fall back to local generation
+    if (!response.schedule || response.schedule.length === 0) {
+      console.log('API returned empty schedule, falling back to local generation');
+      return generateBasicSchedule(monthStart, monthEnd, profiles, settings);
+    }
     
     // Pre-deduplicate before applying strict constraints
     const preDeduplicatedSchedule = preDeduplicateShifts(response.schedule || []);
@@ -99,7 +107,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     // Process shifts in smaller batches to avoid timeouts
     const BATCH_SIZE = 10;
     const shiftsToInsert = finalShifts.map(shift => ({
-      id: uuidv4(), // Generate proper UUIDs for new shifts
+      id: shift.id || uuidv4(), // Generate proper UUIDs for new shifts
       start_time: shift.start_time,
       end_time: shift.end_time,
       shift_type: shift.shift_type,

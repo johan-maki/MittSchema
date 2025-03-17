@@ -22,28 +22,30 @@ export const schedulerApi = {
     
     console.log("Calling scheduler API with:", requestBody);
     
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache, no-store"  // Prevent caching
-      },
-      body: JSON.stringify(requestBody)
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("API error:", errorText);
-      throw new Error(`Failed to generate schedule: ${response.status} ${errorText}`);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store"  // Prevent caching
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API error:", errorText);
+        throw new Error(`Failed to generate schedule: ${response.status} ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log("API response:", result);
+      
+      // Return the result even if schedule is empty - we'll handle fallback in the service
+      return result;
+    } catch (error) {
+      console.error("Error calling schedule API:", error);
+      throw error;
     }
-    
-    const result = await response.json();
-    console.log("API response:", result);
-    
-    if (!result.schedule || result.schedule.length === 0) {
-      throw new Error("No schedule generated - try again with different parameters");
-    }
-    
-    return result;
   }
 };
