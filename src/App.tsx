@@ -27,18 +27,27 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  console.log('🔧 App component loading...');
+  
   // Add test employees in development mode
   if (import.meta.env.DEV) {
+    console.log('🔧 Development mode - adding test employees...');
     addTestEmployeesForDevelopment().catch(error => {
       console.error('Failed to add development employees:', error);
     });
+  } else {
+    console.log('🌐 Production mode - adding sample employees...');
+    // Add sample employees in production mode
+    try {
+      addSampleEmployeesForProduction().catch(error => {
+        console.warn('Failed to add production employees (non-critical):', error);
+      });
+    } catch (error) {
+      console.warn('Failed to call production employee function (non-critical):', error);
+    }
   }
-  
-  // Add sample employees in production mode
-  addSampleEmployeesForProduction().catch(error => {
-    console.error('Failed to add production employees:', error);
-  });
 
+  console.log('🔧 Rendering App component...');
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

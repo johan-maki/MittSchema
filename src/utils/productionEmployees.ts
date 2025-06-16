@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const addSampleEmployeesForProduction = async () => {
   // Only run in production (not localhost)
-  const isProduction = !import.meta.env.DEV || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   
-  if (!isProduction) {
-    console.log('🏠 Development mode: Skipping production employee creation');
+  if (import.meta.env.DEV || isLocalhost) {
+    console.log('🏠 Development/localhost mode: Skipping production employee creation');
     return;
   }
 
@@ -14,7 +14,7 @@ export const addSampleEmployeesForProduction = async () => {
 
   try {
     // Add a small delay to ensure Supabase is ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Check if we already have employees
     const { data: existingEmployees, error: checkError } = await supabase
@@ -23,8 +23,8 @@ export const addSampleEmployeesForProduction = async () => {
       .limit(1);
 
     if (checkError) {
-      console.error('Error checking existing employees:', checkError);
-      // Continue with creation anyway
+      console.warn('Could not check existing employees, skipping:', checkError.message);
+      return; // Fail gracefully
     }
 
     if (existingEmployees && existingEmployees.length > 0) {
