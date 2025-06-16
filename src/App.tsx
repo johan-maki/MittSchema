@@ -29,11 +29,15 @@ const queryClient = new QueryClient({
 function App() {
   // Add test employees in development mode
   if (import.meta.env.DEV) {
-    addTestEmployeesForDevelopment().catch(console.error);
+    addTestEmployeesForDevelopment().catch(error => {
+      console.error('Failed to add development employees:', error);
+    });
   }
   
   // Add sample employees in production mode
-  addSampleEmployeesForProduction().catch(console.error);
+  addSampleEmployeesForProduction().catch(error => {
+    console.error('Failed to add production employees:', error);
+  });
 
   return (
     <ErrorBoundary>

@@ -11,9 +11,11 @@ const isDevelopment = import.meta.env.DEV && (window.location.hostname === 'loca
 
 let realSupabase: any = null;
 
-// Only create real client in production
-if (!isDevelopment) {
+// Always create real client for production
+try {
   realSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error);
 }
 
 export const supabase = isDevelopment ? {
@@ -34,7 +36,14 @@ export const supabase = isDevelopment ? {
   },
   // Add any other methods that might be called
   rpc: () => Promise.resolve({ data: null, error: null })
-} : realSupabase;
+} : (realSupabase || {
+  from: () => ({ select: () => Promise.resolve({ data: [], error: null }) }),
+  auth: { getUser: () => Promise.resolve({ data: { user: null }, error: null }) },
+  channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
+  removeChannel: () => {},
+  storage: { from: () => ({ upload: () => Promise.resolve({ data: null, error: null }) }) },
+  rpc: () => Promise.resolve({ data: null, error: null })
+});
 
 console.log(isDevelopment ? '🚀 Using MOCK Supabase service for development' : '🔗 Using REAL Supabase service');
 
