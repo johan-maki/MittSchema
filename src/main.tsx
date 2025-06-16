@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client'
-import MinimalApp from './MinimalApp.tsx'
+import App from './App.tsx'
 import './index.css'
 
 console.log('🚀 MittSchema starting with minimal app...');
@@ -15,7 +15,7 @@ if (!rootElement) {
   console.log('✅ Root element found, creating React root...');
   try {
     const root = createRoot(rootElement);
-    root.render(<MinimalApp />);
+    root.render(<App />);
     console.log('✅ Minimal React app rendered successfully');
   } catch (error) {
     console.error('❌ Failed to render React app:', error);
