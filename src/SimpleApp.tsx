@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { addTestEmployeesForDevelopment } from "./utils/devEmployees";
+import { addSampleEmployeesForProduction } from "./utils/productionEmployees";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -19,6 +21,7 @@ const TestIndex = () => (
   <div style={{ padding: '2rem', textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', minHeight: '100vh' }}>
     <h1>🏠 MittSchema - Test Index</h1>
     <p>This is a simplified version of the home page.</p>
+    <p>Employee seeding functions are loaded but not called.</p>
   </div>
 );
 
@@ -31,6 +34,12 @@ const TestAuth = () => (
 
 function SimpleApp() {
   console.log('🔧 SimpleApp component loading...');
+  
+  // Test if importing the employee functions causes issues (but don't call them yet)
+  console.log('📋 Employee functions imported:', {
+    devEmployees: typeof addTestEmployeesForDevelopment,
+    prodEmployees: typeof addSampleEmployeesForProduction
+  });
 
   return (
     <ErrorBoundary>
