@@ -15,6 +15,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { Shift } from "@/types/shift";
 
+
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');

@@ -45,10 +45,13 @@ export type DatabaseProfile = Omit<Profile, 'work_preferences'> & {
 
 // Helper function to convert database profile to our internal Profile type
 export function convertDatabaseProfile(dbProfile: DatabaseProfile): Profile {
-  return {
+  console.log("🔧 Converting database profile:", dbProfile);
+  const converted = {
     ...dbProfile,
     work_preferences: convertWorkPreferences(dbProfile.work_preferences),
   };
+  console.log("🔧 Converted to profile:", converted);
+  return converted;
 }
 
 // Helper function to safely convert Json to WorkPreferences

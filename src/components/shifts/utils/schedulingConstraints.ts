@@ -10,6 +10,14 @@ export const validateConstraints = (settings: any, isLoadingSettings: boolean) =
     return true;
   }
 
+  // In development mode, be more permissive with validation
+  if (import.meta.env.DEV || window.location.hostname === 'localhost') {
+    if (!settings) {
+      console.log('🚀 Development mode: Using default settings for validation');
+      return true; // Allow generation to proceed with defaults
+    }
+  }
+
   if (!settings) {
     console.log('No settings found');
     toast({

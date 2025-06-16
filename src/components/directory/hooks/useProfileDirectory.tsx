@@ -27,21 +27,24 @@ export function useProfileDirectory() {
   const { data: profiles = [], isLoading, error } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
-      console.log("Fetching profiles from database...");
+      console.log("🔍 useProfileDirectory: Starting to fetch profiles...");
       try {
         const { data, error } = await supabase
           .from('employees')
           .select('*');
         
+        console.log("🔍 useProfileDirectory: Raw supabase response:", { data, error });
+        
         if (error) {
-          console.error('Error fetching profiles:', error);
+          console.error('🔍 useProfileDirectory: Error fetching profiles:', error);
           throw error;
         }
         
-        console.log("Profiles fetched:", data);
-        return (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
+        const convertedProfiles = (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
+        console.log("🔍 useProfileDirectory: Converted profiles:", convertedProfiles);
+        return convertedProfiles;
       } catch (err) {
-        console.error("Failed to fetch profiles:", err);
+        console.error("🔍 useProfileDirectory: Failed to fetch profiles:", err);
         return [];
       }
     },

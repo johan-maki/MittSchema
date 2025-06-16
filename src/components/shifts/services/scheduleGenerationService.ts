@@ -1,7 +1,6 @@
-
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
-import { generateBasicSchedule } from "../utils/localScheduleGenerator";
+import { generateBasicSchedule, generateEnhancedLocalSchedule } from "../utils/localScheduleGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
@@ -12,19 +11,29 @@ export const generateScheduleForMonth = async (
   currentDate: Date,
   profiles: Profile[],
   settings: any,
-  timestamp?: number // Optional timestamp to ensure different results each time
+  timestamp?: number,
+  onProgress?: (step: string, progress: number) => void
 ): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
+  onProgress?.('Initializing schedule generation...', 0);
+  
+  // Validate inputs
+  if (!profiles || profiles.length === 0) {
+    throw new Error('No employees available for scheduling');
+  }
+  
   console.log('Calling optimization API with dates:', {
     startDate: monthStart.toISOString(),
     endDate: monthEnd.toISOString(),
-    timestamp: timestamp || Date.now(), // Ensure we always have a timestamp
+    timestamp: timestamp || Date.now(),
     profiles: profiles.length
   });
 
   try {
+    onProgress?.('Calling schedule optimization API...', 20);
+    
     // Call the Scheduler API directly with timestamp to ensure randomization
     const response = await schedulerApi.generateSchedule(
       monthStart.toISOString(),
@@ -33,13 +42,17 @@ export const generateScheduleForMonth = async (
       timestamp || Date.now() // Ensure we always have a timestamp
     );
     
+    onProgress?.('Processing API response...', 40);
     console.log('Schedule optimization response:', response);
     
     // If the API returned an empty schedule, fall back to local generation
     if (!response.schedule || response.schedule.length === 0) {
       console.log('API returned empty schedule, falling back to local generation');
+      onProgress?.('Falling back to local generation...', 60);
       return generateBasicSchedule(monthStart, monthEnd, profiles, settings);
     }
+    
+    onProgress?.('Deduplicating shifts...', 80);
     
     // Pre-deduplicate before applying strict constraints
     const preDeduplicatedSchedule = preDeduplicateShifts(response.schedule || []);
@@ -48,6 +61,8 @@ export const generateScheduleForMonth = async (
     const deduplicatedSchedule = deduplicateShifts(preDeduplicatedSchedule);
     console.log(`Deduplicated schedule from ${response.schedule?.length || 0} to ${deduplicatedSchedule.length} shifts`);
     
+    onProgress?.('Schedule generation complete', 100);
+    
     // Ensure the response includes staffing issues if available
     return {
       schedule: deduplicatedSchedule,
@@ -55,6 +70,8 @@ export const generateScheduleForMonth = async (
     };
   } catch (error) {
     console.error('API call failed:', error);
+    
+    onProgress?.('API failed, falling back to local generation...', 60);
     
     // Fallback to local generation if the API fails
     console.log('Falling back to local schedule generation');
@@ -149,4 +166,88 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     console.error("Error saving shifts to Supabase:", error);
     return false;
   }
+};
+
+// NEW: Two-week generation function
+export const generateScheduleForTwoWeeks = async (
+  currentDate: Date,
+  profiles: Profile[],
+  settings: any,
+  timestamp?: number,
+  onProgress?: (step: string, progress: number) => void
+): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
+  // Calculate two-week period starting from the current week
+  const weekStart = new Date(currentDate);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of current week (Sunday)
+  
+  const twoWeeksEnd = new Date(weekStart);
+  twoWeeksEnd.setDate(twoWeeksEnd.getDate() + 13); // 14 days total
+  
+  onProgress?.('Initializing two-week schedule generation...', 0);
+  
+  console.log('🗓️ Generating two-week schedule:', {
+    weekStart: weekStart.toISOString().split('T')[0],
+    twoWeeksEnd: twoWeeksEnd.toISOString().split('T')[0],
+    profiles: profiles.length
+  });
+  
+  // Validate inputs
+  if (!profiles || profiles.length === 0) {
+    throw new Error('No employees available for scheduling');
+  }
+
+  // Skip API calls entirely in development (localhost)
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (isLocalhost) {
+    console.log('🏠 Development mode - using enhanced local schedule generation only');
+    console.log('🔧 Skipping API calls completely in localhost environment');
+    onProgress?.('Generating smart local schedule for two weeks...', 30);
+    const localSchedule = await generateEnhancedLocalSchedule(weekStart, twoWeeksEnd, profiles, settings, onProgress);
+    
+    onProgress?.('Two-week schedule complete', 100);
+    console.log('✅ Enhanced local generation completed successfully');
+    return {
+      schedule: deduplicateShifts(localSchedule.schedule),
+      staffingIssues: localSchedule.staffingIssues
+    };
+  }
+
+  // Production mode - try API first
+  try {
+    onProgress?.('Calling scheduler for two weeks...', 20);
+    
+    const response = await schedulerApi.generateSchedule(
+      weekStart.toISOString(),
+      twoWeeksEnd.toISOString(),
+      settings?.department || 'General',
+      timestamp || Date.now()
+    );
+    
+    onProgress?.('Processing two-week schedule...', 60);
+    
+    if (response.schedule && response.schedule.length > 0) {
+      const deduplicatedSchedule = deduplicateShifts(response.schedule);
+      console.log(`✅ Generated ${deduplicatedSchedule.length} shifts for two weeks`);
+      
+      onProgress?.('Two-week schedule complete', 100);
+      return {
+        schedule: deduplicatedSchedule,
+        staffingIssues: response.staffingIssues || []
+      };
+    }
+  } catch (error) {
+    console.error('Two-week API failed, using local generation:', error);
+  }
+  
+  // Fallback to local generation
+  onProgress?.('Generating locally for two weeks...', 70);
+  const localSchedule = await generateEnhancedLocalSchedule(weekStart, twoWeeksEnd, profiles, settings, onProgress);
+  
+  onProgress?.('Two-week schedule complete', 100);
+  return {
+    schedule: deduplicateShifts(localSchedule.schedule),
+    staffingIssues: localSchedule.staffingIssues
+  };
 };

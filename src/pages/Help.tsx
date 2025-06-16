@@ -2,6 +2,7 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Link as ScrollLink } from "react-scroll";
 import { Separator } from "@/components/ui/separator";
+import { SystemStatus } from "@/components/system/SystemStatus";
 import { 
   Calendar, 
   Navigation2, 
@@ -192,6 +193,13 @@ const Help = () => {
                 Tack för att du använder AI-drivet schemaläggningssystem! 👨‍⚕️👩‍⚕️
               </p>
             </div>
+          </section>
+
+          <Separator />
+
+          {/* System Status */}
+          <section className="flex justify-center">
+            <SystemStatus />
           </section>
         </div>
       </div>

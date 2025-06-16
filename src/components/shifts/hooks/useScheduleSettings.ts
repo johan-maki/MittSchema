@@ -10,13 +10,14 @@ export const useScheduleSettings = () => {
     queryKey: ['schedule-settings'],
     queryFn: async () => {
       try {
-        // The issue is with .execute() - in the current Supabase JS client version 
-        // we should not include .execute() after .single()
+        console.log('🔍 Starting settings query...');
         const { data, error } = await supabase
           .from('schedule_settings')
           .select('*')
           .eq('department', 'General')
           .single();
+
+        console.log('🔍 Settings query result:', { data, error });
 
         if (error) {
           console.error('Error fetching settings:', error);
@@ -31,6 +32,7 @@ export const useScheduleSettings = () => {
           }
           
           // Return default settings if not found
+          console.log('🔍 Returning default settings...');
           return {
             max_consecutive_days: 5,
             min_rest_hours: 11,
@@ -51,11 +53,29 @@ export const useScheduleSettings = () => {
           };
         }
 
-        console.log('Fetched settings:', data);
+        console.log('🔍 Fetched settings from database:', data);
         return data;
       } catch (err) {
-        console.error('Unexpected error fetching settings:', err);
-        return null;
+        console.error('🔍 Unexpected error fetching settings:', err);
+        console.log('🔍 Returning default settings due to error...');
+        return {
+          max_consecutive_days: 5,
+          min_rest_hours: 11,
+          min_weekly_rest_hours: 36,
+          department: 'General',
+          morning_shift: {
+            min_staff: 3,
+            min_experience_sum: 6
+          },
+          afternoon_shift: {
+            min_staff: 3,
+            min_experience_sum: 6
+          },
+          night_shift: {
+            min_staff: 2,
+            min_experience_sum: 4
+          }
+        };
       }
     },
   });

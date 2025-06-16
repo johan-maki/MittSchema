@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { addTestEmployeesForDevelopment } from "./utils/devEmployees";
+import { addSampleEmployeesForProduction } from "./utils/productionEmployees";
 import Schedule from "./pages/Schedule";
 import Auth from "./pages/Auth";
 import Directory from "./pages/Directory";
@@ -13,14 +16,31 @@ import Index from "./pages/Index";
 import ScheduleSettings from "./pages/ScheduleSettings";
 import "./App.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 function App() {
+  // Add test employees in development mode
+  if (import.meta.env.DEV) {
+    addTestEmployeesForDevelopment().catch(console.error);
+  }
+  
+  // Add sample employees in production mode
+  addSampleEmployeesForProduction().catch(console.error);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route
@@ -68,6 +88,7 @@ function App() {
         </Router>
       </AuthProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

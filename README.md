@@ -1,26 +1,222 @@
-# Welcome to your Lovable project
+# Vårdschema - AI-Driven Employee Scheduling System
 
-## Project info
+An intelligent healthcare staff scheduling application built with React, TypeScript, Supabase, and Python FastAPI with OR-Tools optimization.
 
-**URL**: https://lovable.dev/projects/78ac2d2a-1a83-481b-b1fc-31e7d8c7ea83
+## 🚀 Features
 
-## How can I edit this code?
+- **AI-Powered Scheduling**: Uses Google OR-Tools for constraint-based optimization
+- **Real-time Updates**: Supabase integration for live data synchronization
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **User Authentication**: Secure login with Supabase Auth
+- **Employee Management**: Complete CRUD operations for staff profiles
+- **Schedule Optimization**: Considers experience levels, availability, and constraints
+- **Fallback System**: Local scheduling when API is unavailable
+- **Health Monitoring**: Built-in system status monitoring
 
-There are several ways of editing your application.
+## 🏗️ Architecture
 
-**Use Lovable**
+### Frontend (React + TypeScript)
+- **Framework**: Vite + React 18
+- **UI Library**: Tailwind CSS + shadcn/ui components
+- **State Management**: TanStack Query + React Context
+- **Authentication**: Supabase Auth
+- **Routing**: React Router v6
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/78ac2d2a-1a83-481b-b1fc-31e7d8c7ea83) and start prompting.
+### Backend (Python FastAPI)
+- **API Framework**: FastAPI
+- **Optimization**: Google OR-Tools
+- **Database**: Supabase (PostgreSQL)
+- **Deployment**: Google Cloud Run
+- **CORS**: Enabled for cross-origin requests
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📋 Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
+- Python 3.11+
+- Supabase account
+- Google Cloud Platform account (for API deployment)
+- Docker (for containerization)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 1. Clone the Repository
 
-Follow these steps:
+```bash
+git clone <YOUR_GIT_URL>
+cd vardschema-v1
+```
+
+### 2. Frontend Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env
+```
+
+Edit `.env` with your configuration:
+```env
+VITE_SCHEDULER_API_URL=https://your-scheduler-api-url
+VITE_ENABLE_SCHEDULER_API=true
+VITE_ENABLE_LOCAL_FALLBACK=true
+```
+
+### 3. Backend Setup
+
+```bash
+cd scheduler-api
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+export SUPABASE_URL="your_supabase_url"
+export SUPABASE_KEY="your_supabase_key"
+export PORT=8080
+```
+
+## 🚀 Running the Application
+
+### Development Mode
+
+**Frontend:**
+```bash
+npm run dev
+# Opens at http://localhost:8080
+```
+
+**Backend (Local):**
+```bash
+cd scheduler-api
+uvicorn app:app --reload --port 8080
+```
+
+### Production Deployment
+
+**Frontend:**
+```bash
+npm run build
+npm run preview
+```
+
+**Backend (Google Cloud Run):**
+```bash
+cd scheduler-api
+chmod +x deploy.sh
+export PROJECT_ID="your-gcp-project-id"
+export SUPABASE_URL="your_supabase_url"
+export SUPABASE_KEY="your_supabase_key"
+./deploy.sh
+```
+
+## 🗄️ Database Schema
+
+The application uses Supabase with the following main tables:
+
+- `employees`: Staff profiles with experience levels and preferences
+- `shifts`: Individual work shifts with timestamps and assignments
+- `schedule_settings`: Department-specific scheduling constraints
+- `leave_requests`: Employee time-off requests
+- `notifications`: System notifications
+
+## 📊 API Endpoints
+
+### Scheduler API
+
+- `GET /`: Health check
+- `GET /health`: Detailed health status with database connectivity
+- `POST /optimize-schedule`: Generate optimized schedule
+
+**Request Example:**
+```json
+{
+  "start_date": "2025-06-01T00:00:00Z",
+  "end_date": "2025-06-30T23:59:59Z",
+  "department": "General",
+  "random_seed": 123456,
+  "constraints": {
+    "max_consecutive_days": 5,
+    "min_rest_hours": 11,
+    "max_shifts_per_day": 1
+  }
+}
+```
+
+## 🔧 Configuration
+
+### Scheduling Constraints
+
+The system supports configurable constraints:
+
+- Maximum consecutive working days
+- Minimum rest hours between shifts
+- Experience level requirements per shift
+- Minimum staff per shift type
+- Department-specific rules
+
+### Environment Variables
+
+**Frontend:**
+- `VITE_SCHEDULER_API_URL`: Scheduler API endpoint
+- `VITE_ENABLE_SCHEDULER_API`: Enable/disable API calls
+- `VITE_ENABLE_LOCAL_FALLBACK`: Enable local scheduling fallback
+
+**Backend:**
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_KEY`: Supabase service key
+- `PORT`: Server port (default: 8080)
+
+## 🔍 Monitoring & Health Checks
+
+The application includes built-in health monitoring:
+
+- **Frontend**: System status component shows API and database connectivity
+- **Backend**: Health endpoint provides detailed system status
+- **Error Handling**: Comprehensive error boundaries and retry logic
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**1. API Connection Failed**
+- Check if scheduler API is deployed and accessible
+- Verify CORS settings
+- Ensure environment variables are set correctly
+
+**2. Database Connection Issues**
+- Verify Supabase credentials
+- Check network connectivity
+- Confirm database schema is up to date
+
+**3. Scheduling Optimization Fails**
+- Review employee data completeness
+- Check constraint settings
+- Monitor API logs for OR-Tools errors
+
+### Development Tips
+
+- Use browser DevTools to monitor API calls
+- Check the System Status component on the Help page
+- Enable local fallback for offline development
+- Review console logs for detailed error information
+
+## 📝 License
+
+This project is developed for healthcare staff scheduling optimization.
+
+## 🤝 Support
+
+For technical support or questions:
+- Check the in-app Help page
+- Review system status on the Help page
+- Contact your system administrator
+
+---
+
+**Version**: 1.2.0  
+**Last Updated**: June 2025
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.

@@ -5,7 +5,7 @@ import { Wand2 } from "lucide-react";
 interface GenerateButtonProps {
   isGenerating: boolean;
   isLoadingSettings: boolean;
-  onClick: () => void;
+  onClick: () => Promise<boolean> | void;
 }
 
 export const GenerateButton = ({
@@ -13,9 +13,27 @@ export const GenerateButton = ({
   isLoadingSettings,
   onClick
 }: GenerateButtonProps) => {
+  // Debug logging to see what's happening
+  console.log('🔘 GenerateButton render:', {
+    isGenerating,
+    isLoadingSettings,
+    disabled: isGenerating || isLoadingSettings
+  });
+
   return (
     <Button
-      onClick={onClick}
+      type="button"
+      onClick={async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🖱️ Generate button clicked!');
+        try {
+          await onClick();
+          console.log('✅ Generate schedule function completed');
+        } catch (error) {
+          console.error('❌ Generate schedule function failed:', error);
+        }
+      }}
       disabled={isGenerating || isLoadingSettings}
       className="bg-violet-500 hover:bg-violet-600 text-white"
       title="Optimera schema med OR-Tools AI"
