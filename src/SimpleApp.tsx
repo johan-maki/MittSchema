@@ -41,6 +41,23 @@ function SimpleApp() {
     prodEmployees: typeof addSampleEmployeesForProduction
   });
 
+  // Now test calling the employee functions like the real app does
+  if (import.meta.env.DEV) {
+    console.log('🔧 Development mode - adding test employees...');
+    addTestEmployeesForDevelopment().catch(error => {
+      console.error('Failed to add development employees:', error);
+    });
+  } else {
+    console.log('🌐 Production mode - adding sample employees...');
+    try {
+      addSampleEmployeesForProduction().catch(error => {
+        console.warn('Failed to add production employees (non-critical):', error);
+      });
+    } catch (error) {
+      console.warn('Failed to call production employee function (non-critical):', error);
+    }
+  }
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
