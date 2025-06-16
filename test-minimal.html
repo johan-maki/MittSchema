@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Test - MittSchema</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .success {
+            color: #10b981;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-family: monospace;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success">✅ Minimal Test Successful</div>
+        <h1>MittSchema - Minimal Test Page</h1>
+        <p>This page tests basic HTML/CSS loading without React.</p>
+        
+        <div class="info" id="info">
+            <div>Loading environment info...</div>
+        </div>
+        
+        <button onclick="testFetch()" style="padding: 10px 20px; margin: 10px; border: none; border-radius: 5px; background: #10b981; color: white; cursor: pointer;">
+            Test Network
+        </button>
+        
+        <button onclick="testConsole()" style="padding: 10px 20px; margin: 10px; border: none; border-radius: 5px; background: #3b82f6; color: white; cursor: pointer;">
+            Test Console
+        </button>
+    </div>
+
+    <script>
+        // Basic environment test
+        const info = document.getElementById('info');
+        
+        function updateInfo() {
+            info.innerHTML = `
+                <div><strong>URL:</strong> ${window.location.href}</div>
+                <div><strong>Host:</strong> ${window.location.hostname}</div>
+                <div><strong>Protocol:</strong> ${window.location.protocol}</div>
+                <div><strong>User Agent:</strong> ${navigator.userAgent}</div>
+                <div><strong>Timestamp:</strong> ${new Date().toISOString()}</div>
+            `;
+        }
+        
+        function testFetch() {
+            console.log('Testing fetch...');
+            fetch('/').then(response => {
+                console.log('Fetch test successful:', response.status);
+                alert('Network test successful!');
+            }).catch(error => {
+                console.error('Fetch test failed:', error);
+                alert('Network test failed: ' + error.message);
+            });
+        }
+        
+        function testConsole() {
+            console.log('Console test - this should appear in browser dev tools');
+            console.error('This is a test error message');
+            console.warn('This is a test warning message');
+            alert('Check browser console for test messages');
+        }
+        
+        // Initialize
+        updateInfo();
+        console.log('🚀 Minimal test page loaded successfully');
+    </script>
+</body>
+</html>

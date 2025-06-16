@@ -60,7 +60,7 @@ export class ErrorBoundary extends React.Component<
                   Ladda om sidan
                 </button>
               </div>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {this.state.error && (
                 <details className="mt-4 text-left">
                   <summary className="text-sm text-gray-600 cursor-pointer">
                     Teknisk information

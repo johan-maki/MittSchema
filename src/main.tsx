@@ -5,16 +5,17 @@ import './index.css'
 console.log('🚀 MittSchema starting...');
 console.log('Environment:', import.meta.env.MODE);
 console.log('Development mode:', import.meta.env.DEV);
-console.log('Hostname:', window.location.hostname);
+console.log('Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'server-side');
 
-// Only load network interceptor in development
-if (import.meta.env.DEV) {
-  console.log('🔧 Loading network interceptor for development...');
+// Only load network interceptor in local development
+if (typeof window !== 'undefined' && import.meta.env.DEV && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  console.log('🔧 Loading network interceptor for local development...');
   import('./utils/networkInterceptor').catch(error => {
     console.error('Failed to load network interceptor:', error);
   });
 } else {
-  console.log('🌐 Production mode - no network interceptor needed');
+  console.log('🌐 Production/remote mode - no network interceptor needed');
 }
 
 const rootElement = document.getElementById('root');
@@ -26,7 +27,7 @@ if (!rootElement) {
   try {
     const root = createRoot(rootElement);
     root.render(<App />);
-    console.log('✅ React app rendered');
+    console.log('✅ React app rendered successfully');
   } catch (error) {
     console.error('❌ Failed to render React app:', error);
     throw error;

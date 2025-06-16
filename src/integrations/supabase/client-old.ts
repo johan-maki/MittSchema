@@ -23,39 +23,38 @@ try {
   console.error('❌ Failed to initialize Supabase client:', error);
 }
 
-// Create mock client structure
-const mockClient = {
-  from: mockSupabase.from.bind(mockSupabase),
-  auth: mockAuth,
-  channel: () => ({ 
-    on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
-    subscribe: () => ({ unsubscribe: () => {} })
-  }),
-  removeChannel: () => {},
-  storage: {
+// Export a function that determines which client to use
+function getSupabaseClient() {
+  if (isDevelopmentMode()) {
+    console.log('🔧 Using mock Supabase for development');
+    return {
+      from: mockSupabase.from.bind(mockSupabase),
+      auth: mockAuth,
+      // Mock all other methods to prevent network calls
+      channel: () => ({ 
+        on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+        subscribe: () => ({ unsubscribe: () => {} })
+      }),
+      removeChannel: () => {},
+      storage: {
     from: () => ({
       upload: () => Promise.resolve({ data: null, error: null }),
       download: () => Promise.resolve({ data: null, error: null }),
       remove: () => Promise.resolve({ data: null, error: null })
     })
   },
+  // Add any other methods that might be called
   rpc: () => Promise.resolve({ data: null, error: null })
-};
-
-// Create fallback client for when real client fails
-const fallbackClient = {
+} : (realSupabase || {
   from: () => ({ select: () => Promise.resolve({ data: [], error: null }) }),
   auth: { getUser: () => Promise.resolve({ data: { user: null }, error: null }) },
   channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
   removeChannel: () => {},
-  storage: { from: () => ({}) },
+  storage: { from: () => ({ upload: () => Promise.resolve({ data: null, error: null }) }) },
   rpc: () => Promise.resolve({ data: null, error: null })
-};
+});
 
-// Export the appropriate client
-export const supabase = isDevelopmentMode() ? mockClient : (realSupabase || fallbackClient);
+console.log(isDevelopment ? '🚀 Using MOCK Supabase service for development' : '🔗 Using REAL Supabase service');
 
-console.log(isDevelopmentMode() ? '🚀 Using MOCK Supabase service for development' : '🔗 Using REAL Supabase service');
-
-// Usage example:
+// Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
