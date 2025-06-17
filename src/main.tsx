@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client'
-import LightweightApp from './LightweightApp.tsx'
+import App from './App.tsx'
 import './index.css'
 
-console.log('🚀 MittSchema starting with minimal app...');
+console.log('🚀 MittSchema starting with full functionality...');
 console.log('Environment:', import.meta.env.MODE);
 console.log('Development mode:', import.meta.env.DEV);
 console.log('Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'server-side');
@@ -15,8 +15,8 @@ if (!rootElement) {
   console.log('✅ Root element found, creating React root...');
   try {
     const root = createRoot(rootElement);
-    root.render(<LightweightApp />);
-    console.log('✅ Minimal React app rendered successfully');
+    root.render(<App />);
+    console.log('✅ Full React app rendered successfully');
   } catch (error) {
     console.error('❌ Failed to render React app:', error);
     throw error;

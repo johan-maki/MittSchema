@@ -1,9 +1,9 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Toaster } from "./components/ui/toaster";
 import { addTestEmployeesForDevelopment } from "./utils/devEmployees";
 import { addSampleEmployeesForProduction } from "./utils/productionEmployees";
 import Schedule from "./pages/Schedule";
@@ -54,53 +54,54 @@ function App() {
         <AuthProvider>
           <Router>
             <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/schedule"
-              element={
-                <ProtectedRoute>
-                  <Schedule />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/schedule/settings"
-              element={
-                <ProtectedRoute>
-                  <ScheduleSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/directory"
-              element={
-                <ProtectedRoute>
-                  <Directory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employee"
-              element={
-                <ProtectedRoute>
-                  <EmployeeView />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/help"
-              element={
-                <ProtectedRoute>
-                  <Help />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/schedule"
+                element={
+                  <ProtectedRoute>
+                    <Schedule />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/schedule/settings"
+                element={
+                  <ProtectedRoute>
+                    <ScheduleSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/directory"
+                element={
+                  <ProtectedRoute>
+                    <Directory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employee"
+                element={
+                  <ProtectedRoute>
+                    <EmployeeView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <ProtectedRoute>
+                    <Help />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
