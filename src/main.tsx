@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import './debug/env-check.ts'
 
 // Add global error handler
 window.addEventListener('error', (event) => {

@@ -57,9 +57,20 @@ const fallbackClient = {
 };
 
 // Export the appropriate client
-export const supabase = isDevelopmentMode() ? mockClient : (realSupabase || fallbackClient);
+let exportedClient;
 
-console.log(isDevelopmentMode() ? '🚀 Using MOCK Supabase service for development' : '🔗 Using REAL Supabase service');
+if (isDevelopmentMode()) {
+  console.log('🚀 Using MOCK Supabase service for development');
+  exportedClient = mockClient;
+} else if (realSupabase) {
+  console.log('🔗 Using REAL Supabase service');
+  exportedClient = realSupabase;
+} else {
+  console.log('⚠️ Using fallback client - check environment variables');
+  exportedClient = mockClient; // Use mock client as fallback instead of broken client
+}
+
+export const supabase = exportedClient;
 
 // Usage example:
 // import { supabase } from "@/integrations/supabase/client";
