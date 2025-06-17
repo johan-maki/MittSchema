@@ -25,13 +25,14 @@ export const checkNetworkStatus = async (): Promise<{
     
     // Check Supabase connectivity
     try {
-      const supabaseUrl = 'https://smblztfikisrnqfjmyqj.supabase.co';
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ebyvourlaomcwitpibdl.supabase.co';
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVieXZvdXJsYW9tY3dpdHBpYmRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxODY4NDYsImV4cCI6MjA2NTc2Mjg0Nn0.jNK_J5mLw4DKZO8NTmXQzA5d51ugm9czzNkAEWyd4gY';
       const supabaseResponse = await fetch(
         `${supabaseUrl}/rest/v1/`,
         {
           method: 'HEAD',
           headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYmx6dGZpa2lzcm5xZmpteXFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY4MjgsImV4cCI6MjA1NTQwMjgyOH0.yzDHEqCpNAThHKy1hNwXEUpSfgrkSchpmPuES27j8BY',
+            'apikey': supabaseKey,
           },
         }
       );
