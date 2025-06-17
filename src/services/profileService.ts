@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { convertDatabaseProfile, InsertProfile, Profile } from "@/types/profile";
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Add a new profile in development mode using the insert_employee function
+ * Add a new profile by inserting directly into the employees table
  */
 export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promise<Profile> => {
   try {
@@ -13,14 +14,22 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
     // Based on database constraint found in error messages
     const experience = Math.min(Math.max(profileData.experience_level || 1, 0), 10);
     
-    const { data, error } = await supabase.rpc('insert_employee', {
+    const insertData = {
+      id: uuidv4(),
       first_name: profileData.first_name,
       last_name: profileData.last_name,
       role: profileData.role,
-      department: profileData.department || '',
-      phone: profileData.phone || '',
-      experience_level: experience
-    });
+      department: profileData.department || null,
+      phone: profileData.phone || null,
+      experience_level: experience,
+      is_manager: false
+    };
+
+    const { data, error } = await supabase
+      .from('employees')
+      .insert(insertData)
+      .select()
+      .single();
     
     if (error) {
       console.error('Error inserting profile:', error);
