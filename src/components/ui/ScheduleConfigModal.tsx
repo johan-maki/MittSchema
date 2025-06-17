@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Settings, Users, Star, Clock, Calendar } from 'lucide-react';
 
 interface ScheduleConfig {
@@ -60,16 +61,17 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
     }));
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
+        style={{ zIndex: 9998 }}
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[90vh] flex flex-col" style={{ zIndex: 10000 }}>
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -311,4 +313,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
       `}</style>
     </div>
   );
+
+  // Use portal to render modal at document root level
+  return createPortal(modalContent, document.body);
 };
