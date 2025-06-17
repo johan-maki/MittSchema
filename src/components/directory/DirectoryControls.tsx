@@ -97,51 +97,64 @@ export function DirectoryControls() {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-      <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-        <Input
-          placeholder="Sök personal..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full sm:w-[300px] dark:bg-gray-800 dark:text-white dark:border-gray-700"
-        />
-        <Select
-          value={roleFilter}
-          onValueChange={setRoleFilter}
-        >
-          <SelectTrigger className="w-full sm:w-[200px] dark:bg-gray-800 dark:text-white dark:border-gray-700">
-            <SelectValue placeholder="Alla roller" />
-          </SelectTrigger>
-          <SelectContent className="dark:bg-gray-800 dark:text-white dark:border-gray-700">
-            <SelectItem value="all">Alla roller</SelectItem>
-            <SelectItem value="Läkare">Läkare</SelectItem>
-            <SelectItem value="Sjuksköterska">Sjuksköterska</SelectItem>
-            <SelectItem value="Undersköterska">Undersköterska</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="w-full sm:w-auto">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto dark:bg-[#7C3AED] dark:hover:bg-[#6D28D9]">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Lägg till personal
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogTitle>Lägg till ny personal</DialogTitle>
-            <DialogDescription>Lägg till information om den nya medarbetaren nedan.</DialogDescription>
-            <AddProfileDialog 
-              isOpen={isDialogOpen}
-              setIsOpen={setIsDialogOpen}
-              newProfile={newProfile}
-              setNewProfile={setNewProfile}
-              onSubmit={handleSubmit}
-              isProcessing={isProcessing}
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200/50">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        {/* Search and Filter Section */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="relative">
+            <Input
+              placeholder="Sök personal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full sm:w-[320px] h-11 pl-4 pr-4 border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-200"
             />
-          </DialogContent>
-        </Dialog>
+          </div>
+          <Select
+            value={roleFilter}
+            onValueChange={setRoleFilter}
+          >
+            <SelectTrigger className="w-full sm:w-[200px] h-11 border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-200">
+              <SelectValue placeholder="Alla roller" />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg border-slate-300 shadow-lg">
+              <SelectItem value="all" className="rounded-md">Alla roller</SelectItem>
+              <SelectItem value="Läkare" className="rounded-md">Läkare</SelectItem>
+              <SelectItem value="Sjuksköterska" className="rounded-md">Sjuksköterska</SelectItem>
+              <SelectItem value="Undersköterska" className="rounded-md">Undersköterska</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Add Employee Button */}
+        <div className="w-full lg:w-auto">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full lg:w-auto h-11 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Lägg till personal
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <UserPlus className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                Lägg till ny medarbetare
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
+                Fyll i informationen nedan för att lägga till en ny medarbetare i systemet.
+              </DialogDescription>
+              <AddProfileDialog 
+                isOpen={isDialogOpen}
+                setIsOpen={setIsDialogOpen}
+                newProfile={newProfile}
+                setNewProfile={setNewProfile}
+                onSubmit={handleSubmit}
+                isProcessing={isProcessing}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
   );

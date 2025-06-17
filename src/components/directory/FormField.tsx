@@ -11,6 +11,7 @@ interface FormFieldProps {
   max?: string;
   disabled?: boolean;
   error?: string;
+  placeholder?: string;
 }
 
 export const FormField = ({ 
@@ -22,10 +23,14 @@ export const FormField = ({
   min, 
   max,
   disabled = false,
-  error = ""
+  error = "",
+  placeholder
 }: FormFieldProps) => (
-  <div className="mb-4">
-    <label className="text-sm font-medium text-[#1A1F2C] dark:text-gray-300 block mb-1">{label}</label>
+  <div className="space-y-2">
+    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </label>
     <Input
       required={required}
       type={type}
@@ -33,9 +38,19 @@ export const FormField = ({
       max={max}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`dark:bg-gray-800 dark:text-white dark:border-gray-700 ${error ? 'border-red-500' : ''}`}
+      placeholder={placeholder}
+      className={`h-11 dark:bg-gray-800 dark:text-white dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 transition-colors ${
+        error ? 'border-red-500 focus:border-red-500' : ''
+      }`}
       disabled={disabled}
     />
-    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    {error && (
+      <p className="text-red-500 text-sm flex items-center gap-1">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {error}
+      </p>
+    )}
   </div>
 );

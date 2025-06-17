@@ -4,6 +4,7 @@ import { DirectoryProvider } from "@/contexts/DirectoryContext";
 import { DirectoryControls } from "@/components/directory/DirectoryControls";
 import { DirectoryTable } from "@/components/directory/DirectoryTable";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Users, Building2 } from "lucide-react";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -13,17 +14,65 @@ const Directory = () => {
     <QueryClientProvider client={queryClient}>
       <DirectoryProvider>
         <AppLayout>
-          <div className="max-w-[95%] mx-auto">
-            <header className="mb-4 sm:mb-8 bg-gradient-to-r from-[#F2FCE2] to-[#E5DEFF] p-4 sm:p-8 rounded-2xl">
-              <div className="bg-white/90 p-4 sm:p-6 rounded-xl backdrop-blur-sm">
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1F2C] mb-2">Personalkatalog</h1>
-                <p className="text-[#6E59A5]">Här hittar du all information om vårdpersonalen</p>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {/* Modern Header with Better Visual Hierarchy */}
+              <div className="mb-8">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Personalkatalog</h1>
+                    <p className="text-slate-600 mt-1">Hantera och övervaka vårdpersonalen</p>
+                  </div>
+                </div>
+                
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/50">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Users className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-600">Total Personal</p>
+                        <p className="text-2xl font-bold text-slate-900">5</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/50">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Building2 className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-600">Avdelningar</p>
+                        <p className="text-2xl font-bold text-slate-900">4</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/50">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-amber-100 rounded-lg">
+                        <Users className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-600">Seniora Medarbetare</p>
+                        <p className="text-2xl font-bold text-slate-900">3</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </header>
-            
-            <div className="grid gap-4 sm:gap-8">
-              <DirectoryControls />
-              <div className="bg-white rounded-lg shadow overflow-x-auto">
+              
+              {/* Controls with Better Spacing */}
+              <div className="mb-6">
+                <DirectoryControls />
+              </div>
+              
+              {/* Table Container with Modern Styling */}
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200/50 overflow-hidden">
                 <DirectoryTable />
               </div>
             </div>
