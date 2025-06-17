@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { mockSupabase, mockAuth } from '@/services/mockSupabaseService';
 
-const SUPABASE_URL = "https://smblztfikisrnqfjmyqj.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYmx6dGZpa2lzcm5xZmpteXFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY4MjgsImV4cCI6MjA1NTQwMjgyOH0.yzDHEqCpNAThHKy1hNwXEUpSfgrkSchpmPuES27j8BY";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://smblztfikisrnqfjmyqj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtYmx6dGZpa2lzcm5xZmpteXFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4MjY4MjgsImV4cCI6MjA1NTQwMjgyOH0.yzDHEqCpNAThHKy1hNwXEUpSfgrkSchpmPuES27j8BY";
 
 // Check if we're in development only after window is available
 function isDevelopmentMode(): boolean {
@@ -17,8 +17,12 @@ function isDevelopmentMode(): boolean {
 // Always create real client
 let realSupabase: any = null;
 try {
-  realSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-  console.log('✅ Supabase client initialized successfully');
+  if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
+    realSupabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    console.log('✅ Supabase client initialized successfully');
+  } else {
+    console.warn('⚠️ Supabase credentials missing, using mock client');
+  }
 } catch (error) {
   console.error('❌ Failed to initialize Supabase client:', error);
 }

@@ -1,28 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "env": {
-    "VITE_SCHEDULER_API_URL": "https://scheduler3-723515091945.europe-north2.run.app",
-    "VITE_ENABLE_SCHEDULER_API": "true",
-    "VITE_ENABLE_LOCAL_FALLBACK": "true",
-    "VITE_ENABLE_DEV_TOOLS": "false"
-  }
+  ]
 }
