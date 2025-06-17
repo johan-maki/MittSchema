@@ -61,7 +61,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -69,9 +69,9 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+      <div className="relative w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-white/20 rounded-lg">
@@ -92,7 +92,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 flex-shrink-0">
           <button
             onClick={() => setActiveTab('basic')}
             className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
@@ -116,7 +116,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 max-h-96 overflow-y-auto">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
           {activeTab === 'basic' && (
             <>
               {/* Minimum Staff */}
@@ -271,7 +271,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-6 bg-gray-50">
+        <div className="border-t border-gray-200 p-6 bg-gray-50 flex-shrink-0">
           <div className="flex space-x-3">
             <button
               onClick={onClose}
