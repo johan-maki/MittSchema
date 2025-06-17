@@ -28,6 +28,14 @@ const queryClient = new QueryClient({
 function App() {
   console.log('🔧 App component loading...');
   
+  // Debug environment variables
+  console.log('🔍 Environment check:', {
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+    NODE_ENV: import.meta.env.NODE_ENV,
+    MODE: import.meta.env.MODE
+  });
+  
   // Seed Supabase data on app start
   console.log('🌱 Seeding Supabase data...');
   seedSupabaseData().then(result => {

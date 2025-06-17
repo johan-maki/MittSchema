@@ -13,5 +13,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 console.log('🔗 Supabase client initialized:', {
   url: SUPABASE_URL,
-  hasKey: !!SUPABASE_PUBLISHABLE_KEY
+  hasKey: !!SUPABASE_PUBLISHABLE_KEY,
+  actualUrl: SUPABASE_URL,
+  envVars: {
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: !!import.meta.env.VITE_SUPABASE_ANON_KEY
+  }
 });
