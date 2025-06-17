@@ -4,8 +4,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Toaster } from "./components/ui/toaster";
-import { addTestEmployeesForDevelopment } from "./utils/devEmployees";
-import { addSampleEmployeesForProduction } from "./utils/productionEmployees";
+import { seedSupabaseData } from "./utils/seedData";
 import Schedule from "./pages/Schedule";
 import Auth from "./pages/Auth";
 import Directory from "./pages/Directory";
@@ -29,23 +28,17 @@ const queryClient = new QueryClient({
 function App() {
   console.log('🔧 App component loading...');
   
-  // Add test employees in development mode
-  if (import.meta.env.DEV) {
-    console.log('🔧 Development mode - adding test employees...');
-    addTestEmployeesForDevelopment().catch(error => {
-      console.error('Failed to add development employees:', error);
-    });
-  } else {
-    console.log('🌐 Production mode - adding sample employees...');
-    // Add sample employees in production mode
-    try {
-      addSampleEmployeesForProduction().catch(error => {
-        console.warn('Failed to add production employees (non-critical):', error);
-      });
-    } catch (error) {
-      console.warn('Failed to call production employee function (non-critical):', error);
+  // Seed Supabase data on app start
+  console.log('🌱 Seeding Supabase data...');
+  seedSupabaseData().then(result => {
+    if (result.success) {
+      console.log('✅ Data seeding result:', result.message);
+    } else {
+      console.warn('⚠️ Data seeding failed:', result.error);
     }
-  }
+  }).catch(error => {
+    console.error('💥 Data seeding error:', error);
+  });
 
   console.log('🔧 Rendering App component...');
   return (

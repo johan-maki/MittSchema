@@ -22,19 +22,12 @@ const Auth = () => {
       const result = await testSupabaseConnection();
       setConnectionStatus(result.success ? 'connected' : 'failed');
       
-      if (!result.success && !result.warning) {
+      if (!result.success) {
         toast({
           title: "Anslutningsproblem",
           description: `Kunde inte ansluta till servern: ${result.error}`,
           variant: "destructive"
         });
-      } else if (result.warning) {
-        toast({
-          title: "Offline-läge",
-          description: "Arbetar med lokala data. Vissa funktioner kan vara begränsade.",
-          variant: "default"
-        });
-        setConnectionStatus('connected'); // Allow app to continue
       }
     };
     
@@ -210,27 +203,12 @@ const Auth = () => {
             <p className="text-red-700 text-sm mb-4">
               Kunde inte ansluta till servern. Kontrollera din internetanslutning och försök igen.
             </p>
-            <div className="flex gap-2 justify-center">
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Försök igen
-              </button>
-              <button
-                onClick={() => {
-                  setConnectionStatus('connected');
-                  toast({
-                    title: "Offline-läge aktiverat",
-                    description: "Använder lokala data. Vissa funktioner kan vara begränsade.",
-                    variant: "default"
-                  });
-                }}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-              >
-                Fortsätt offline
-              </button>
-            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Försök igen
+            </button>
           </div>
         )}
       </Card>
