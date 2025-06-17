@@ -1,11 +1,22 @@
 
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
+import { ScheduleConfigModal } from "@/components/ui/ScheduleConfigModal";
+
+interface ScheduleConfig {
+  minStaffPerDay: number;
+  minExperiencePerDay: number;
+  maxConsecutiveDays: number;
+  minRestHours: number;
+  includeWeekends: boolean;
+  prioritizeExperience: boolean;
+}
 
 interface GenerateButtonProps {
   isGenerating: boolean;
   isLoadingSettings: boolean;
-  onClick: () => Promise<boolean> | void;
+  onClick: (config?: ScheduleConfig) => Promise<boolean> | void;
 }
 
 export const GenerateButton = ({
@@ -13,6 +24,8 @@ export const GenerateButton = ({
   isLoadingSettings,
   onClick
 }: GenerateButtonProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Debug logging to see what's happening
   console.log('🔘 GenerateButton render:', {
     isGenerating,
@@ -20,35 +33,58 @@ export const GenerateButton = ({
     disabled: isGenerating || isLoadingSettings
   });
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('🖱️ Generate button clicked - opening modal!');
+    setIsModalOpen(true);
+  };
+
+  const handleConfigConfirm = async (config: ScheduleConfig) => {
+    console.log('🎯 Starting schedule generation with config:', config);
+    try {
+      await onClick(config);
+      console.log('✅ Generate schedule function completed');
+    } catch (error) {
+      console.error('❌ Generate schedule function failed:', error);
+    }
+  };
+
   return (
-    <Button
-      type="button"
-      onClick={async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('🖱️ Generate button clicked!');
-        try {
-          await onClick();
-          console.log('✅ Generate schedule function completed');
-        } catch (error) {
-          console.error('❌ Generate schedule function failed:', error);
-        }
-      }}
-      disabled={isGenerating || isLoadingSettings}
-      className="bg-violet-500 hover:bg-violet-600 text-white"
-      title="Optimera schema med OR-Tools AI"
-    >
-      {isGenerating ? (
-        <>
-          <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-          Genererar schema...
-        </>
-      ) : (
-        <>
-          <Wand2 className="mr-2 h-4 w-4" />
-          Generera schema
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        type="button"
+        onClick={handleButtonClick}
+        disabled={isGenerating || isLoadingSettings}
+        className="bg-violet-500 hover:bg-violet-600 text-white"
+        title="Konfigurera och generera schema"
+      >
+        {isGenerating ? (
+          <>
+            <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+            Genererar schema...
+          </>
+        ) : (
+          <>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Generera schema
+          </>
+        )}
+      </Button>
+
+      <ScheduleConfigModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfigConfirm}
+        currentConfig={{
+          minStaffPerDay: 3,
+          minExperiencePerDay: 8,
+          maxConsecutiveDays: 5,
+          minRestHours: 11,
+          includeWeekends: true,
+          prioritizeExperience: false,
+        }}
+      />
+    </>
   );
 };

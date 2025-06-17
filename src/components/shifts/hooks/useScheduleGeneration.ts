@@ -22,7 +22,17 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const { profiles } = useProfileData();
   const { staffingIssues, setStaffingIssues, processScheduleForStaffingIssues } = useStaffingIssues();
 
-  const generateSchedule = async (onProgress?: (step: string, progress: number) => void) => {
+  const generateSchedule = async (
+    config?: {
+      minStaffPerDay?: number;
+      minExperiencePerDay?: number;
+      maxConsecutiveDays?: number;
+      minRestHours?: number;
+      includeWeekends?: boolean;
+      prioritizeExperience?: boolean;
+    },
+    onProgress?: (step: string, progress: number) => void
+  ) => {
     console.log('🎯 === GENERATE SCHEDULE FUNCTION CALLED ===');
     console.log('🚀 Starting two-week schedule generation');
     console.log('📊 Current state:', {
@@ -30,13 +40,16 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       profilesCount: profiles?.length || 0,
       settingsLoaded: !!settings,
       currentDate: currentDate.toISOString(),
-      profiles: profiles
+      profiles: profiles,
+      config: config
     });
     
     // Show toast notification that function was called
     toast({
       title: "Schema-generering startad",
-      description: "Kontrollerar medarbetare och inställningar...",
+      description: config 
+        ? `Använder anpassade inställningar: ${config.minStaffPerDay} personal/dag, ${config.minExperiencePerDay} erfarenhetspoäng` 
+        : "Kontrollerar medarbetare och inställningar...",
     });
     
     setStaffingIssues([]); // Reset staffing issues
@@ -70,8 +83,25 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     try {
       console.log("🚀 Calling generateScheduleForTwoWeeks for better coverage");
       
-      // Use default settings if none are loaded (development fallback)
-      const effectiveSettings = settings || {
+      // Use config settings if provided, otherwise use default settings
+      const effectiveSettings = config ? {
+        max_consecutive_days: config.maxConsecutiveDays || 5,
+        min_rest_hours: config.minRestHours || 11,
+        min_weekly_rest_hours: 36,
+        department: 'General',
+        morning_shift: { 
+          min_staff: config.minStaffPerDay || 3, 
+          min_experience_sum: config.minExperiencePerDay || 6 
+        },
+        afternoon_shift: { 
+          min_staff: config.minStaffPerDay || 3, 
+          min_experience_sum: config.minExperiencePerDay || 6 
+        },
+        night_shift: { 
+          min_staff: Math.max(1, (config.minStaffPerDay || 3) - 1), 
+          min_experience_sum: Math.max(3, (config.minExperiencePerDay || 6) - 2) 
+        }
+      } : settings || {
         max_consecutive_days: 5,
         min_rest_hours: 11,
         min_weekly_rest_hours: 36,
