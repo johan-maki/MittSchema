@@ -8,6 +8,7 @@ import { useScheduleActionHandlers } from "./actions/useScheduleActionHandlers";
 import { ScheduleActionsMenu } from "./actions/ScheduleActionsMenu";
 import { GenerateButton } from "./actions/GenerateButton";
 import { useSchedulePublishing } from "./actions/useSchedulePublishing";
+import { ScheduleSummaryModal } from "@/components/ui/ScheduleSummaryModal";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -33,7 +34,10 @@ export const ScheduleActions = ({
     setGeneratedShifts,
     generateSchedule,
     profiles,
-    staffingIssues
+    staffingIssues,
+    showSummary,
+    setShowSummary,
+    summaryData
   } = useScheduleGeneration(currentDate, currentView);
 
   const {
@@ -72,6 +76,18 @@ export const ScheduleActions = ({
             setGeneratedShifts([]);
           })}
           onCancel={handleCancelPreview}
+        />
+      )}
+
+      {/* Schedule Summary Modal */}
+      {showSummary && summaryData && (
+        <ScheduleSummaryModal
+          isOpen={showSummary}
+          onClose={() => setShowSummary(false)}
+          shifts={summaryData.shifts}
+          employees={profiles}
+          startDate={summaryData.startDate}
+          endDate={summaryData.endDate}
         />
       )}
 

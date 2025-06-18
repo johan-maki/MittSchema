@@ -9,12 +9,19 @@ import { generateScheduleForMonth, generateScheduleForTwoWeeks, saveScheduleToSu
 import { useStaffingIssues } from "./useStaffingIssues";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { startOfWeek, endOfWeek, addWeeks } from "date-fns";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryData, setSummaryData] = useState<{
+    shifts: Shift[];
+    startDate: Date;
+    endDate: Date;
+  } | null>(null);
   const queryClient = useQueryClient();
   
   // Use our refactored hooks
@@ -83,12 +90,13 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     try {
       console.log("🚀 Calling generateScheduleForTwoWeeks for better coverage");
       
-      // Use config settings if provided, otherwise use default settings
+      // Add includeWeekends parameter to ensure Sunday is included
       const effectiveSettings = config ? {
         max_consecutive_days: config.maxConsecutiveDays || 5,
         min_rest_hours: config.minRestHours || 11,
         min_weekly_rest_hours: 36,
         department: 'General',
+        include_weekends: config.includeWeekends ?? true, // Explicitly include weekends setting
         morning_shift: { 
           min_staff: config.minStaffPerDay || 3, 
           min_experience_sum: config.minExperiencePerDay || 6 
@@ -106,6 +114,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         min_rest_hours: 11,
         min_weekly_rest_hours: 36,
         department: 'General',
+        include_weekends: true, // Default to include weekends
         morning_shift: { min_staff: 3, min_experience_sum: 6 },
         afternoon_shift: { min_staff: 3, min_experience_sum: 6 },
         night_shift: { min_staff: 2, min_experience_sum: 4 }
@@ -140,6 +149,18 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
       
       if (saveResult) {
+        // Calculate date range for summary
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 });
+        
+        // Set summary data and show modal
+        setSummaryData({
+          shifts: generatedSchedule.schedule,
+          startDate: weekStart,
+          endDate: weekEnd
+        });
+        setShowSummary(true);
+        
         toast({
           title: "Schema sparat",
           description: `${generatedSchedule.schedule.length} arbetspass har lagts till i schemat.`,
@@ -187,6 +208,9 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     setGeneratedShifts,
     generateSchedule,
     profiles,
-    staffingIssues
+    staffingIssues,
+    showSummary,
+    setShowSummary,
+    summaryData
   };
 };

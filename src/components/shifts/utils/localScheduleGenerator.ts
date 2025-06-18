@@ -268,6 +268,15 @@ export const generateEnhancedLocalSchedule = async (
     
     onProgress?.(`Scheduling ${dateStr}...`, 60 + (dayCount / totalDays) * 30);
 
+    // Check if weekends should be included
+    const includeWeekends = scheduleSettings?.include_weekends ?? true;
+    if (isWeekend && !includeWeekends) {
+      // Skip weekend days if weekends are not included
+      currentDay.setDate(currentDay.getDate() + 1);
+      dayCount++;
+      continue;
+    }
+
     // For each shift type on this day (limit to 2-3 shifts per day)
     const dailyShifts = isWeekend ? shiftTypes.slice(0, 2) : shiftTypes; // Fewer shifts on weekends
     
