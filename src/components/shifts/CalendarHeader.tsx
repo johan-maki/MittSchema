@@ -1,14 +1,8 @@
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { format, addWeeks, isToday, startOfWeek, addDays, addMonths, subDays, subWeeks, subMonths } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -102,37 +96,39 @@ export const CalendarHeader = ({
         </Button>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="min-w-[160px] bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700"
-          >
-            {getViewLabel()}
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem 
-            className={`${currentView === 'day' ? 'bg-purple-50 text-purple-700' : ''}`}
-            onClick={() => onViewChange('day')}
-          >
-            Dag
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className={`${currentView === 'week' ? 'bg-purple-50 text-purple-700' : ''}`}
-            onClick={() => onViewChange('week')}
-          >
-            Vecka
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className={`${currentView === 'month' ? 'bg-purple-50 text-purple-700' : ''}`}
-            onClick={() => onViewChange('month')}
-          >
-            Månad
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* View Toggle Buttons */}
+      <div className="flex items-center bg-purple-50 rounded-lg p-1 border border-purple-100">
+        <button
+          onClick={() => onViewChange('day')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            currentView === 'day'
+              ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
+              : 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+          }`}
+        >
+          Dag
+        </button>
+        <button
+          onClick={() => onViewChange('week')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            currentView === 'week'
+              ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
+              : 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+          }`}
+        >
+          Vecka
+        </button>
+        <button
+          onClick={() => onViewChange('month')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            currentView === 'month'
+              ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
+              : 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+          }`}
+        >
+          Månad
+        </button>
+      </div>
     </div>
   );
 };

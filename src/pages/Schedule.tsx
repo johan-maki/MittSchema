@@ -3,8 +3,8 @@ import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
 import { ManagerScheduleView } from "@/components/shifts/ManagerScheduleView";
-import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
-import DayView from "@/components/shifts/DayView";
+import { ModernMonthlySchedule } from "@/components/shifts/ModernMonthlySchedule";
+import ModernDayView from "@/components/shifts/ModernDayView";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShiftData } from "@/hooks/useShiftData";
 import { ScheduleActions } from "@/components/shifts/ScheduleActions";
@@ -81,7 +81,7 @@ const Schedule = () => {
 
     switch (currentView) {
       case 'day':
-        return <DayView date={currentDate} shifts={shifts} />;
+        return <ModernDayView date={currentDate} shifts={shifts} />;
       case 'week':
         return (
           <ManagerScheduleView 
@@ -95,7 +95,7 @@ const Schedule = () => {
         );
       case 'month':
         return (
-          <MonthlySchedule 
+          <ModernMonthlySchedule 
             date={currentDate} 
             shifts={shifts} 
             profiles={profiles} 

@@ -1,4 +1,3 @@
-
 import { Shift, ShiftType } from "@/types/shift";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -25,7 +24,7 @@ interface DayViewProps {
   shifts: Shift[];
 }
 
-const DayView = ({ date, shifts }: DayViewProps) => {
+const ModernDayView = ({ date, shifts }: DayViewProps) => {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -86,6 +85,24 @@ const DayView = ({ date, shifts }: DayViewProps) => {
       return `${shift.profiles.first_name[0]}${shift.profiles.last_name[0]}`;
     }
     return '??';
+  };
+
+  const getDefaultStartTime = (shiftType: ShiftType): string => {
+    const times = {
+      'day': '08:00',
+      'evening': '16:00', 
+      'night': '00:00'
+    };
+    return times[shiftType] || '09:00';
+  };
+
+  const getDefaultEndTime = (shiftType: ShiftType): string => {
+    const times = {
+      'day': '16:00',
+      'evening': '00:00',
+      'night': '08:00'
+    };
+    return times[shiftType] || '17:00';
   };
 
   return (
@@ -167,7 +184,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                               {getEmployeeName(shift)}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {shift.profiles?.role || 'Medarbetare'}
+                              Medarbetare
                             </p>
                           </div>
                         </div>
@@ -198,9 +215,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
               </CardContent>
             </Card>
           );
-        })}
-      </div>
-
         })}
       </div>
 
@@ -246,22 +260,4 @@ const DayView = ({ date, shifts }: DayViewProps) => {
   );
 };
 
-const getDefaultStartTime = (shiftType: ShiftType): string => {
-  const times = {
-    'day': '08:00',
-    'evening': '16:00', 
-    'night': '00:00'
-  };
-  return times[shiftType] || '09:00';
-};
-
-const getDefaultEndTime = (shiftType: ShiftType): string => {
-  const times = {
-    'day': '16:00',
-    'evening': '00:00',
-    'night': '08:00'
-  };
-  return times[shiftType] || '17:00';
-};
-
-export default DayView;
+export default ModernDayView;
