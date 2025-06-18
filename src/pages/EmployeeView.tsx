@@ -19,6 +19,8 @@ import { Profile, convertDatabaseProfile } from "@/types/profile";
 import type { DatabaseProfile } from "@/types/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DebugShifts } from "@/components/debug/DebugShifts";
+import { DatabaseIdChecker } from "@/components/debug/DatabaseIdChecker";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -27,12 +29,20 @@ const EmployeeView = () => {
   const { data: employees, isLoading: loadingEmployees } = useQuery({
     queryKey: ['all-employees'],
     queryFn: async () => {
+      console.log('🔍 Fetching all employees...');
       const { data, error } = await supabase
         .from('employees')
         .select('id, first_name, last_name, role, department, experience_level')
         .order('first_name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching employees:', error);
+        throw error;
+      }
+      
+      console.log('✅ Fetched employees:', data?.length || 0);
+      console.log('Employee data:', data);
+      
       return data as Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'>[];
     }
   });
@@ -42,13 +52,20 @@ const EmployeeView = () => {
     queryKey: ['employee-profile', selectedEmployeeId],
     queryFn: async () => {
       if (!selectedEmployeeId) return null;
+      console.log('🔍 Fetching profile for employee:', selectedEmployeeId);
+      
       const { data, error } = await supabase
         .from('employees')
         .select('*')
         .eq('id', selectedEmployeeId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching employee profile:', error);
+        throw error;
+      }
+      
+      console.log('✅ Fetched employee profile:', data);
       return convertDatabaseProfile(data as DatabaseProfile);
     },
     enabled: !!selectedEmployeeId
@@ -57,6 +74,7 @@ const EmployeeView = () => {
   // Auto-select first employee if none selected and employees are loaded
   React.useEffect(() => {
     if (!selectedEmployeeId && employees?.length) {
+      console.log('📌 Auto-selecting first employee:', employees[0].id, employees[0].first_name);
       setSelectedEmployeeId(employees[0].id);
     }
   }, [employees, selectedEmployeeId]);
@@ -137,26 +155,32 @@ const EmployeeView = () => {
           </Card>
 
           {selectedEmployeeId ? (
-            <Tabs defaultValue="schedule" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2">
-                <TabsTrigger value="schedule" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Mitt schema
-                </TabsTrigger>
-                <TabsTrigger value="preferences" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Inställningar
-                </TabsTrigger>
-              </TabsList>
+            <div className="space-y-6">
+              {/* Debug sections - temporary */}
+              <DatabaseIdChecker />
+              <DebugShifts />
+              
+              <Tabs defaultValue="schedule" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2">
+                  <TabsTrigger value="schedule" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Mitt schema
+                  </TabsTrigger>
+                  <TabsTrigger value="preferences" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Inställningar
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="schedule" className="space-y-4">
-                <EmployeeSchedule employeeId={selectedEmployeeId} />
-              </TabsContent>
+                <TabsContent value="schedule" className="space-y-4">
+                  <EmployeeSchedule employeeId={selectedEmployeeId} />
+                </TabsContent>
 
-              <TabsContent value="preferences" className="space-y-4">
-                <WorkPreferences employeeId={selectedEmployeeId} />
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="preferences" className="space-y-4">
+                  <WorkPreferences employeeId={selectedEmployeeId} />
+                </TabsContent>
+              </Tabs>
+            </div>
           ) : (
             <Card className="p-12">
               <div className="text-center">

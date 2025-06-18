@@ -40,13 +40,14 @@ import * as XLSX from 'xlsx';
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 import { Shift, ShiftType } from "@/types/shift";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EmployeeScheduleProps {
   employeeId: string;
 }
 
 interface ExtendedShift extends Shift {
-  profiles?: {
+  employees?: {
     first_name: string;
     last_name: string;
     experience_level?: number;
@@ -82,26 +83,34 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'week' | 'month'>('week');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: shifts, isLoading } = useQuery({
+  const { data: shifts, isLoading, error } = useQuery({
     queryKey: ['employee-shifts', employeeId],
     queryFn: async () => {
+      console.log('🔍 Fetching shifts for employee:', employeeId);
+      
+      // Try without JOIN first to see if that's the issue
       const { data, error } = await supabase
         .from('shifts')
-        .select(`
-          *,
-          profiles:employee_id (
-            first_name,
-            last_name,
-            experience_level
-          )
-        `)
+        .select('*')
         .eq('employee_id', employeeId)
         .order('start_time');
 
-      if (error) throw error;
-      return data as ExtendedShift[];
-    }
+      if (error) {
+        console.error('❌ Error fetching shifts:', error);
+        throw error;
+      }
+      
+      console.log('✅ Fetched shifts:', data?.length || 0, 'shifts for employee', employeeId);
+      console.log('Shifts data:', data);
+      
+      return data as Shift[];
+    },
+    // Add staleTime to reduce caching issues and refetchOnWindowFocus
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   const handleDateChange = (direction: 'prev' | 'next') => {
@@ -173,8 +182,8 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
       const ws = XLSX.utils.json_to_sheet(excelData);
       XLSX.utils.book_append_sheet(wb, ws, 'Mitt Schema');
       
-      // Get employee name from first shift for filename
-      const employeeName = filteredShifts[0]?.profiles?.first_name || 'schema';
+      // Get employee name from first shift for filename - simplified without JOIN
+      const employeeName = 'schema';
       const periodText = view === 'week' 
         ? `vecka-${format(currentDate, 'w', { locale: sv })}`
         : format(currentDate, 'yyyy-MM');
@@ -194,6 +203,17 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
     }
   };
 
+  const handleRefreshData = () => {
+    console.log('🔄 Manually refreshing data...');
+    queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
+    queryClient.invalidateQueries({ queryKey: ['debug-all-shifts'] });
+    toast({
+      title: "Data uppdaterad",
+      description: "Schemat har uppdaterats från databasen.",
+      variant: "default",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -204,6 +224,21 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (error) {
+    console.error('Query error:', error);
+    return (
+      <Card className="p-8 text-center">
+        <h3 className="text-lg font-medium mb-2 text-red-600">Fel vid hämtning av schema</h3>
+        <p className="text-muted-foreground mb-4">
+          Kunde inte hämta schemaData från databasen.
+        </p>
+        <p className="text-sm text-red-500">
+          Error: {error?.message || 'Okänt fel'}
+        </p>
+      </Card>
     );
   }
 
@@ -280,6 +315,14 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
               >
                 <FileDown className="h-4 w-4 mr-2" />
                 Exportera
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshData}
+              >
+                🔄 Uppdatera
               </Button>
             </div>
           </div>

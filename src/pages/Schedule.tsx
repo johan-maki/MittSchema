@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
+import { ManagerScheduleView } from "@/components/shifts/ManagerScheduleView";
 import { MonthlySchedule } from "@/components/shifts/MonthlySchedule";
 import DayView from "@/components/shifts/DayView";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,7 +83,20 @@ const Schedule = () => {
       case 'day':
         return <DayView date={currentDate} shifts={shifts} />;
       case 'week':
-        return <WeekView date={currentDate} shifts={shifts} />;
+        return (
+          <ManagerScheduleView 
+            shifts={shifts} 
+            profiles={profiles}
+            currentDate={currentDate}
+            onDateChange={setCurrentDate}
+            onShiftClick={handleShiftClick}
+            onAddShift={handleAddShift}
+            currentView={currentView}
+            onViewChange={setCurrentView}
+            isCreateDialogOpen={isCreateDialogOpen}
+            setIsCreateDialogOpen={setIsCreateDialogOpen}
+          />
+        );
       case 'month':
         return (
           <MonthlySchedule 
@@ -99,23 +113,41 @@ const Schedule = () => {
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
-        <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CalendarHeader
-              currentDate={currentDate}
-              onDateChange={setCurrentDate}
-              currentView={currentView}
-              onViewChange={setCurrentView}
-            />
-            <ScheduleActions
-              currentView={currentView}
-              currentDate={currentDate}
-              shifts={shifts}
-              isCreateDialogOpen={isCreateDialogOpen}
-              setIsCreateDialogOpen={setIsCreateDialogOpen}
-            />
-          </div>
-        </header>
+        {/* Show header with ScheduleActions for week view at the top */}
+        {currentView === 'week' && (
+          <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
+            <div className="max-w-7xl mx-auto flex justify-end">
+              <ScheduleActions
+                currentView={currentView}
+                currentDate={currentDate}
+                shifts={shifts}
+                isCreateDialogOpen={isCreateDialogOpen}
+                setIsCreateDialogOpen={setIsCreateDialogOpen}
+              />
+            </div>
+          </header>
+        )}
+
+        {/* Only show header for non-week views since ManagerScheduleView has its own */}
+        {currentView !== 'week' && (
+          <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CalendarHeader
+                currentDate={currentDate}
+                onDateChange={setCurrentDate}
+                currentView={currentView}
+                onViewChange={setCurrentView}
+              />
+              <ScheduleActions
+                currentView={currentView}
+                currentDate={currentDate}
+                shifts={shifts}
+                isCreateDialogOpen={isCreateDialogOpen}
+                setIsCreateDialogOpen={setIsCreateDialogOpen}
+              />
+            </div>
+          </header>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -123,11 +155,17 @@ const Schedule = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="flex-1 p-2 sm:p-4 overflow-hidden"
+            className={`flex-1 overflow-hidden ${currentView === 'week' ? 'p-4' : 'p-2 sm:p-4'}`}
           >
-            <div className="h-full bg-white border border-gray-200 rounded-md shadow-sm">
-              {renderView()}
-            </div>
+            {currentView === 'week' ? (
+              <div className="h-full max-w-7xl mx-auto">
+                {renderView()}
+              </div>
+            ) : (
+              <div className="h-full bg-white border border-gray-200 rounded-md shadow-sm">
+                {renderView()}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
