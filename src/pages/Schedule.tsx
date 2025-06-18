@@ -18,7 +18,7 @@ import { Shift } from "@/types/shift";
 
 
 const Schedule = () => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(2025, 2, 1));
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);

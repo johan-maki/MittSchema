@@ -176,17 +176,17 @@ export const generateScheduleForTwoWeeks = async (
   timestamp?: number,
   onProgress?: (step: string, progress: number) => void
 ): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
-  // Calculate two-week period starting from the current week
-  const weekStart = new Date(currentDate);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of current week (Sunday)
+  // Calculate two-week period starting from TODAY (not last Sunday)
+  const startDate = new Date();
+  startDate.setHours(0, 0, 0, 0); // Start from today at midnight
   
-  const twoWeeksEnd = new Date(weekStart);
+  const twoWeeksEnd = new Date(startDate);
   twoWeeksEnd.setDate(twoWeeksEnd.getDate() + 13); // 14 days total
   
   onProgress?.('Initializing two-week schedule generation...', 0);
   
   console.log('🗓️ Generating two-week schedule:', {
-    weekStart: weekStart.toISOString().split('T')[0],
+    startDate: startDate.toISOString().split('T')[0],
     twoWeeksEnd: twoWeeksEnd.toISOString().split('T')[0],
     profiles: profiles.length
   });
@@ -204,7 +204,7 @@ export const generateScheduleForTwoWeeks = async (
     console.log('🏠 Development mode - using enhanced local schedule generation only');
     console.log('🔧 Skipping API calls completely in localhost environment');
     onProgress?.('Generating smart local schedule for two weeks...', 30);
-    const localSchedule = await generateEnhancedLocalSchedule(weekStart, twoWeeksEnd, profiles, settings, onProgress);
+    const localSchedule = await generateEnhancedLocalSchedule(startDate, twoWeeksEnd, profiles, settings, onProgress);
     
     onProgress?.('Two-week schedule complete', 100);
     console.log('✅ Enhanced local generation completed successfully');
@@ -219,7 +219,7 @@ export const generateScheduleForTwoWeeks = async (
     onProgress?.('Calling scheduler for two weeks...', 20);
     
     const response = await schedulerApi.generateSchedule(
-      weekStart.toISOString(),
+      startDate.toISOString(),
       twoWeeksEnd.toISOString(),
       settings?.department || 'General',
       timestamp || Date.now()
@@ -243,7 +243,7 @@ export const generateScheduleForTwoWeeks = async (
   
   // Fallback to local generation
   onProgress?.('Generating locally for two weeks...', 70);
-  const localSchedule = await generateEnhancedLocalSchedule(weekStart, twoWeeksEnd, profiles, settings, onProgress);
+  const localSchedule = await generateEnhancedLocalSchedule(startDate, twoWeeksEnd, profiles, settings, onProgress);
   
   onProgress?.('Two-week schedule complete', 100);
   return {

@@ -9,7 +9,7 @@ import { generateScheduleForMonth, generateScheduleForTwoWeeks, saveScheduleToSu
 import { useStaffingIssues } from "./useStaffingIssues";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfWeek, endOfWeek, addWeeks } from "date-fns";
+import { startOfWeek, endOfWeek, addWeeks, addDays } from "date-fns";
 
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
@@ -149,15 +149,16 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
       
       if (saveResult) {
-        // Calculate date range for summary
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(addWeeks(currentDate, 1), { weekStartsOn: 1 });
+        // Calculate date range for summary - from today for 2 weeks
+        const summaryStartDate = new Date();
+        summaryStartDate.setHours(0, 0, 0, 0);
+        const summaryEndDate = addDays(summaryStartDate, 13);
         
         // Set summary data and show modal
         setSummaryData({
           shifts: generatedSchedule.schedule,
-          startDate: weekStart,
-          endDate: weekEnd
+          startDate: summaryStartDate,
+          endDate: summaryEndDate
         });
         setShowSummary(true);
         
