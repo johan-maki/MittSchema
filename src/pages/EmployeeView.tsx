@@ -1,11 +1,12 @@
 
+import React, { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeSchedule } from "@/components/employee/EmployeeSchedule";
 import { WorkPreferences } from "@/components/employee/WorkPreferences";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, User, Calendar } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,10 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
 import { Globe } from "@/components/ui/globe";
 import { Profile, convertDatabaseProfile } from "@/types/profile";
 import type { DatabaseProfile } from "@/types/profile";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -27,11 +29,11 @@ const EmployeeView = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, role, department')
+        .select('id, first_name, last_name, role, department, experience_level')
         .order('first_name');
 
       if (error) throw error;
-      return data as Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department'>[];
+      return data as Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'>[];
     }
   });
 
@@ -52,6 +54,13 @@ const EmployeeView = () => {
     enabled: !!selectedEmployeeId
   });
 
+  // Auto-select first employee if none selected and employees are loaded
+  React.useEffect(() => {
+    if (!selectedEmployeeId && employees?.length) {
+      setSelectedEmployeeId(employees[0].id);
+    }
+  }, [employees, selectedEmployeeId]);
+
   if (loadingEmployees) {
     return (
       <AppLayout>
@@ -62,47 +71,82 @@ const EmployeeView = () => {
     );
   }
 
+  const getExperienceBadge = (level: number) => {
+    const levels = {
+      1: { label: 'Junior', color: 'bg-blue-100 text-blue-800' },
+      2: { label: 'Medel', color: 'bg-green-100 text-green-800' },
+      3: { label: 'Senior', color: 'bg-purple-100 text-purple-800' }
+    };
+    const config = levels[level as keyof typeof levels] || levels[1];
+    return <Badge className={config.color}>{config.label}</Badge>;
+  };
+
   return (
     <AppLayout>
       <div className="min-h-[calc(100vh-56px)] bg-gradient-to-br from-sage-50 to-lavender-50 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
-                {profile ? `${profile.first_name} ${profile.last_name}` : 'Välj anställd'}
-              </h1>
-              {profile && (
-                <p className="text-gray-600">
-                  {profile.role} - {profile.department}
-                </p>
-              )}
-            </div>
+          {/* Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                    <User className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl">
+                      {profile ? `${profile.first_name} ${profile.last_name}` : 'Välkommen'}
+                    </CardTitle>
+                    {profile && (
+                      <div className="flex items-center gap-3 mt-2">
+                        <Badge variant="outline">{profile.role}</Badge>
+                        <Badge variant="outline">{profile.department}</Badge>
+                        {profile.experience_level && getExperienceBadge(profile.experience_level)}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Users className="h-5 w-5 text-gray-500" />
-              <Select
-                value={selectedEmployeeId || ""}
-                onValueChange={setSelectedEmployeeId}
-              >
-                <SelectTrigger className="w-full md:w-[250px]">
-                  <SelectValue placeholder="Välj anställd" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees?.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.first_name} {employee.last_name} - {employee.role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <Select
+                    value={selectedEmployeeId || ""}
+                    onValueChange={setSelectedEmployeeId}
+                  >
+                    <SelectTrigger className="w-full lg:w-[280px]">
+                      <SelectValue placeholder="Välj anställd" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employees?.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {employee.first_name} {employee.last_name}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {employee.role}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
 
           {selectedEmployeeId ? (
-            <Tabs defaultValue="schedule" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="schedule">Mitt schema</TabsTrigger>
-                <TabsTrigger value="preferences">Inställningar</TabsTrigger>
+            <Tabs defaultValue="schedule" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2">
+                <TabsTrigger value="schedule" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Mitt schema
+                </TabsTrigger>
+                <TabsTrigger value="preferences" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Inställningar
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="schedule" className="space-y-4">
@@ -114,9 +158,15 @@ const EmployeeView = () => {
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="relative h-[600px] flex items-center justify-center">
-              <Globe />
-            </div>
+            <Card className="p-12">
+              <div className="text-center">
+                <Globe className="mx-auto mb-6" />
+                <h3 className="text-xl font-medium mb-2">Välj en anställd</h3>
+                <p className="text-muted-foreground">
+                  Välj en anställd från listan ovan för att visa deras schema och inställningar.
+                </p>
+              </div>
+            </Card>
           )}
         </div>
       </div>
