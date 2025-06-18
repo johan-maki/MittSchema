@@ -106,62 +106,75 @@ const ModernDayView = ({ date, shifts }: DayViewProps) => {
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50 to-blue-50 min-h-[calc(100vh-200px)]">
-      {/* Day Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30 min-h-[calc(100vh-200px)]">
+      {/* Enhanced Day Header */}
+      <div className="text-center bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-purple-100">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent mb-2">
           {format(date, 'EEEE', { locale: sv })}
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-xl text-gray-600 mb-4">
           {format(date, 'd MMMM yyyy', { locale: sv })}
         </p>
-        <div className="mt-4 flex items-center justify-center space-x-4">
-          <Badge variant="outline" className="flex items-center space-x-1">
-            <Users className="h-3 w-3" />
-            <span>{dayShifts.length} pass schemalagda</span>
+        <div className="flex items-center justify-center space-x-6">
+          <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-purple-200">
+            <Users className="h-4 w-4 text-purple-600" />
+            <span className="font-medium">{dayShifts.length} pass schemalagda</span>
+          </Badge>
+          <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-blue-200">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <span className="font-medium">
+              {dayShifts.reduce((total, shift) => total + (shift.profiles ? 1 : 0), 0)} medarbetare
+            </span>
           </Badge>
         </div>
       </div>
 
-      {/* Shifts by Type */}
+      {/* Enhanced Shifts by Type */}
       <div className="grid gap-6">
         {Object.entries(shiftTypeConfig).map(([shiftType, config]) => {
           const Icon = config.icon;
           const shiftsOfType = shiftsByType[shiftType as keyof typeof shiftsByType];
           
           return (
-            <Card key={shiftType} className="shadow-lg border-0">
-              <CardHeader className={`${config.color} rounded-t-lg`}>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Icon className="h-5 w-5" />
-                    <span>{config.title}</span>
-                    <Badge variant="secondary" className="ml-2">
-                      {config.time}
-                    </Badge>
+            <Card key={shiftType} className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <CardHeader className={`${config.color} rounded-t-lg relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
+                <div className="relative flex items-center justify-between">
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="p-2 bg-white/30 rounded-full">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <span className="text-lg">{config.title}</span>
+                      <Badge variant="secondary" className="ml-3 bg-white/80 text-gray-700">
+                        {config.time}
+                      </Badge>
+                    </div>
                   </CardTitle>
                   <Button
                     size="sm"
                     onClick={() => handleAddShift(shiftType as ShiftType)}
-                    className="bg-white/80 hover:bg-white text-gray-700 border-0"
+                    className="bg-white/90 hover:bg-white text-gray-700 border-0 shadow-sm hover:shadow-md transition-all"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Lägg till
+                    <Plus className="h-4 w-4 mr-2" />
+                    Lägg till pass
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 {shiftsOfType.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                    <p>Inga pass schemalagda</p>
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="bg-gray-50 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                      <Users className="h-10 w-10 text-gray-300" />
+                    </div>
+                    <p className="text-lg font-medium mb-2">Inga pass schemalagda</p>
+                    <p className="text-sm text-gray-400 mb-4">Klicka nedan för att lägga till ett nytt pass</p>
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => handleAddShift(shiftType as ShiftType)}
-                      className="mt-3"
+                      className="border-purple-200 text-purple-600 hover:bg-purple-50"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="h-4 w-4 mr-2" />
                       Lägg till pass
                     </Button>
                   </div>
@@ -171,41 +184,56 @@ const ModernDayView = ({ date, shifts }: DayViewProps) => {
                       <div
                         key={shift.id}
                         onClick={() => handleShiftClick(shift)}
-                        className="p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer"
+                        className="group p-5 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all duration-200 cursor-pointer hover:-translate-y-1"
                       >
-                        <div className="flex items-center space-x-3 mb-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-purple-100 text-purple-700 text-sm font-medium">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <Avatar className="h-12 w-12 ring-2 ring-white shadow-sm group-hover:ring-purple-200">
+                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-blue-100 text-purple-700 text-sm font-bold">
                               {getEmployeeInitials(shift)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">
+                            <p className="font-semibold text-gray-900 truncate text-lg">
                               {getEmployeeName(shift)}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 flex items-center">
+                              <MapPin className="h-3 w-3 mr-1" />
                               Medarbetare
                             </p>
                           </div>
                         </div>
                         
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <div className="flex items-center space-x-2">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {format(parseISO(shift.start_time), 'HH:mm')} - {format(parseISO(shift.end_time), 'HH:mm')}
-                            </span>
+                        <div className="space-y-3 text-sm">
+                          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                            <div className="flex items-center space-x-2 text-blue-700">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">
+                                {format(parseISO(shift.start_time), 'HH:mm')} - {format(parseISO(shift.end_time), 'HH:mm')}
+                              </span>
+                            </div>
+                            <Badge variant="secondary" className="bg-white/80 text-blue-700">
+                              {(() => {
+                                const start = parseISO(shift.start_time);
+                                const end = parseISO(shift.end_time);
+                                const hours = Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                                return `${hours.toFixed(1)}h`;
+                              })()}
+                            </Badge>
                           </div>
+                          
                           {shift.department && (
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 text-gray-600">
                               <MapPin className="h-4 w-4" />
                               <span>{shift.department}</span>
                             </div>
                           )}
+                          
                           {shift.notes && (
-                            <p className="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
-                              {shift.notes}
-                            </p>
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                              <p className="text-xs text-amber-800 font-medium">
+                                💡 {shift.notes}
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>

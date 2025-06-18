@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { format, addWeeks, isToday, startOfWeek, addDays, addMonths, subDays, subWeeks, subMonths } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, ArrowUp, ArrowDown } from "lucide-react";
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -42,7 +42,7 @@ export const CalendarHeader = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 bg-background">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-background">
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -96,38 +96,47 @@ export const CalendarHeader = ({
         </Button>
       </div>
 
-      {/* View Toggle Buttons */}
-      <div className="flex items-center bg-purple-50 rounded-lg p-1 border border-purple-100">
-        <button
+      {/* Modern View Toggle Buttons */}
+      <div className="flex items-center bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-1 border border-purple-200 shadow-sm">
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => onViewChange('day')}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out ${
             currentView === 'day'
-              ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
-              : 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+              ? 'bg-white text-purple-700 shadow-md border border-purple-200/50 scale-105'
+              : 'text-purple-600 hover:text-purple-700 hover:bg-white/50 hover:scale-102'
           }`}
         >
+          <Calendar className="w-4 h-4 mr-2" />
           Dag
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => onViewChange('week')}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out ${
             currentView === 'week'
-              ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
-              : 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+              ? 'bg-white text-purple-700 shadow-md border border-purple-200/50 scale-105'
+              : 'text-purple-600 hover:text-purple-700 hover:bg-white/50 hover:scale-102'
           }`}
         >
+          <ArrowUp className="w-4 h-4 mr-2 rotate-90" />
           Vecka
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => onViewChange('month')}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out ${
             currentView === 'month'
-              ? 'bg-white text-purple-700 shadow-sm border border-purple-200'
-              : 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+              ? 'bg-white text-purple-700 shadow-md border border-purple-200/50 scale-105'
+              : 'text-purple-600 hover:text-purple-700 hover:bg-white/50 hover:scale-102'
           }`}
         >
+          <ArrowDown className="w-4 h-4 mr-2" />
           Månad
-        </button>
+        </Button>
       </div>
     </div>
   );
