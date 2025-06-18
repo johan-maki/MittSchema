@@ -91,8 +91,6 @@ const Schedule = () => {
             onDateChange={setCurrentDate}
             onShiftClick={handleShiftClick}
             onAddShift={handleAddShift}
-            currentView={currentView}
-            onViewChange={setCurrentView}
           />
         );
       case 'month':
@@ -111,41 +109,24 @@ const Schedule = () => {
   return (
     <AppLayout>
       <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
-        {/* Show header with ScheduleActions for week view at the top */}
-        {currentView === 'week' && (
-          <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
-            <div className="max-w-7xl mx-auto flex justify-end">
-              <ScheduleActions
-                currentView={currentView}
-                currentDate={currentDate}
-                shifts={shifts}
-                isCreateDialogOpen={isCreateDialogOpen}
-                setIsCreateDialogOpen={setIsCreateDialogOpen}
-              />
-            </div>
-          </header>
-        )}
-
-        {/* Only show header for non-week views since ManagerScheduleView has its own */}
-        {currentView !== 'week' && (
-          <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <CalendarHeader
-                currentDate={currentDate}
-                onDateChange={setCurrentDate}
-                currentView={currentView}
-                onViewChange={setCurrentView}
-              />
-              <ScheduleActions
-                currentView={currentView}
-                currentDate={currentDate}
-                shifts={shifts}
-                isCreateDialogOpen={isCreateDialogOpen}
-                setIsCreateDialogOpen={setIsCreateDialogOpen}
-              />
-            </div>
-          </header>
-        )}
+        {/* Unified header for all views */}
+        <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CalendarHeader
+              currentDate={currentDate}
+              onDateChange={setCurrentDate}
+              currentView={currentView}
+              onViewChange={setCurrentView}
+            />
+            <ScheduleActions
+              currentView={currentView}
+              currentDate={currentDate}
+              shifts={shifts}
+              isCreateDialogOpen={isCreateDialogOpen}
+              setIsCreateDialogOpen={setIsCreateDialogOpen}
+            />
+          </div>
+        </header>
 
         <AnimatePresence mode="wait">
           <motion.div

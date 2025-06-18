@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { format, addWeeks } from "date-fns";
+import { format, addWeeks, isToday, startOfWeek, addDays, addMonths, subDays, subWeeks, subMonths } from "date-fns";
 import { sv } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
@@ -27,8 +27,9 @@ export const CalendarHeader = ({
     if (currentView === 'day') {
       return format(currentDate, 'EEEE d MMMM yyyy', { locale: sv });
     } else if (currentView === 'week') {
-      const endDate = addWeeks(currentDate, 1);
-      return `${format(currentDate, 'd MMM', { locale: sv })} – ${format(endDate, 'd MMM', { locale: sv })}`;
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const weekEnd = addDays(weekStart, 6);
+      return `${format(weekStart, 'd MMM', { locale: sv })} – ${format(weekEnd, 'd MMM', { locale: sv })}`;
     }
     return format(currentDate, 'MMMM yyyy', { locale: sv });
   };
@@ -54,15 +55,13 @@ export const CalendarHeader = ({
           size="icon"
           className="h-10 w-10 rounded-lg bg-purple-50 hover:bg-purple-100 border-purple-100"
           onClick={() => {
-            const newDate = new Date(currentDate);
             if (currentView === 'day') {
-              newDate.setDate(newDate.getDate() - 1);
+              onDateChange(subDays(currentDate, 1));
             } else if (currentView === 'week') {
-              newDate.setDate(newDate.getDate() - 7);
+              onDateChange(subWeeks(currentDate, 1));
             } else {
-              newDate.setMonth(newDate.getMonth() - 1);
+              onDateChange(subMonths(currentDate, 1));
             }
-            onDateChange(newDate);
           }}
         >
           <ChevronLeft className="h-4 w-4 text-purple-700" />
@@ -79,18 +78,27 @@ export const CalendarHeader = ({
           size="icon"
           className="h-10 w-10 rounded-lg bg-purple-50 hover:bg-purple-100 border-purple-100"
           onClick={() => {
-            const newDate = new Date(currentDate);
             if (currentView === 'day') {
-              newDate.setDate(newDate.getDate() + 1);
+              onDateChange(addDays(currentDate, 1));
             } else if (currentView === 'week') {
-              newDate.setDate(newDate.getDate() + 7);
+              onDateChange(addWeeks(currentDate, 1));
             } else {
-              newDate.setMonth(newDate.getMonth() + 1);
+              onDateChange(addMonths(currentDate, 1));
             }
-            onDateChange(newDate);
           }}
         >
           <ChevronRight className="h-4 w-4 text-purple-700" />
+        </Button>
+
+        {/* Idag button */}
+        <Button 
+          variant={isToday(currentDate) ? "outline" : "ghost"} 
+          size="sm"
+          onClick={() => onDateChange(new Date())} 
+          className={`ml-2 ${isToday(currentDate) ? 'bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700' : 'text-muted-foreground hover:text-purple-700'}`}
+          disabled={isToday(currentDate)}
+        >
+          {isToday(currentDate) ? 'Idag' : 'Gå till idag'}
         </Button>
       </div>
 

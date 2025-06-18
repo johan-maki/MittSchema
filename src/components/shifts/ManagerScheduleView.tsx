@@ -46,8 +46,6 @@ interface ManagerScheduleViewProps {
   onDateChange: (date: Date) => void;
   onShiftClick?: (shift: Shift) => void;
   onAddShift?: (day: Date, role: string) => void;
-  currentView?: 'day' | 'week' | 'month';
-  onViewChange?: (view: 'day' | 'week' | 'month') => void;
 }
 
 // Modern shift type configuration
@@ -93,9 +91,7 @@ export const ManagerScheduleView = ({
   currentDate, 
   onDateChange, 
   onShiftClick,
-  onAddShift,
-  currentView = 'week',
-  onViewChange
+  onAddShift
 }: ManagerScheduleViewProps) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
@@ -205,39 +201,17 @@ export const ManagerScheduleView = ({
               <Button variant="outline" size="icon" onClick={handlePrevWeek}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" onClick={handleToday} className="text-sm">
-                Idag
+              <Button 
+                variant={isToday(currentDate) ? "outline" : "ghost"} 
+                onClick={handleToday} 
+                className={`text-sm ${isToday(currentDate) ? '' : 'text-muted-foreground'}`}
+                disabled={isToday(currentDate)}
+              >
+                {isToday(currentDate) ? 'Idag' : 'Gå till idag'}
               </Button>
               <Button variant="outline" size="icon" onClick={handleNextWeek}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              
-              {/* View selector */}
-              {onViewChange && (
-                <div className="ml-4 flex items-center gap-1">
-                  <Button 
-                    variant={currentView === 'day' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onViewChange('day')}
-                  >
-                    Dag
-                  </Button>
-                  <Button 
-                    variant={currentView === 'week' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onViewChange('week')}
-                  >
-                    Vecka
-                  </Button>
-                  <Button 
-                    variant={currentView === 'month' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onViewChange('month')}
-                  >
-                    Månad
-                  </Button>
-                </div>
-              )}
               
               <div className="ml-4 flex items-center gap-2">
                 <Button 
