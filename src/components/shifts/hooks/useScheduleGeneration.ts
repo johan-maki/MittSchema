@@ -21,6 +21,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     shifts: Shift[];
     startDate: Date;
     endDate: Date;
+    staffingIssues: { date: string; shiftType: string; current: number; required: number }[];
   } | null>(null);
   const queryClient = useQueryClient();
   
@@ -158,7 +159,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         setSummaryData({
           shifts: generatedSchedule.schedule,
           startDate: summaryStartDate,
-          endDate: summaryEndDate
+          endDate: summaryEndDate,
+          staffingIssues: generatedSchedule.staffingIssues || []
         });
         setShowSummary(true);
         

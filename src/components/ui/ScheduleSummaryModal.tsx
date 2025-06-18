@@ -1,8 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Clock, Calendar, TrendingUp, Award, BarChart3 } from 'lucide-react';
+import { X, Users, Clock, Calendar, TrendingUp, Award, BarChart3, AlertTriangle, Info } from 'lucide-react';
 import type { Shift } from '@/types/shift';
 import type { Profile } from '@/types/profile';
+import type { StaffingIssue } from '@/components/shifts/utils/staffingUtils';
 import { format, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -26,6 +27,7 @@ interface ScheduleSummaryModalProps {
   employees: Profile[];
   startDate: Date;
   endDate: Date;
+  staffingIssues?: StaffingIssue[];
 }
 
 export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
@@ -34,7 +36,8 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   shifts,
   employees,
   startDate,
-  endDate
+  endDate,
+  staffingIssues = []
 }) => {
   if (!isOpen) return null;
 
@@ -161,6 +164,85 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
               <p className="text-2xl font-bold text-orange-900 mt-1">{Math.round(averageHoursPerEmployee * 10) / 10}</p>
             </div>
           </div>
+
+          {/* Unfilled Shifts Section */}
+          {staffingIssues.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <span>Ofyllda Pass</span>
+                <span className="text-sm font-normal text-red-600">
+                  ({staffingIssues.length} pass kunde inte fyllas)
+                </span>
+              </h3>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg overflow-hidden">
+                <div className="p-4 bg-red-100 border-b border-red-200">
+                  <div className="flex items-center space-x-2">
+                    <Info className="h-4 w-4 text-red-600" />
+                    <span className="text-sm font-medium text-red-800">
+                      Dessa pass kunde inte fyllas på grund av personalens begränsningar och schemaläggningsregler
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="divide-y divide-red-200">
+                  {staffingIssues.map((issue, index) => {
+                    const shiftTypeNames: { [key: string]: string } = {
+                      'day': 'Dag',
+                      'evening': 'Kväll', 
+                      'night': 'Natt'
+                    };
+                    
+                    const formattedDate = format(new Date(issue.date), 'EEEE d MMMM', { locale: sv });
+                    const shortage = issue.required - issue.current;
+                    
+                    return (
+                      <div key={index} className="p-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-shrink-0">
+                            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <Calendar className="h-5 w-5 text-red-600" />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 capitalize">{formattedDate}</p>
+                            <p className="text-sm text-gray-600">
+                              {shiftTypeNames[issue.shiftType] || issue.shiftType}pass
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-red-700">
+                            Saknas: {shortage} person{shortage !== 1 ? 'er' : ''}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Har: {issue.current} / Behöver: {issue.required}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="p-4 bg-yellow-50 border-t border-red-200">
+                  <div className="flex items-start space-x-2">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-yellow-800">
+                      <p className="font-medium mb-1">Förslag på åtgärder:</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>Kontrollera om personal kan ta övertid för dessa pass</li>
+                        <li>Överväg att justera schemaläggningsreglerna tillfälligt</li>
+                        <li>Se över möjligheten att rekrytera vikarier</li>
+                        <li>Kontakta personal för att diskutera flexibilitet</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Employee Details */}
           <div>

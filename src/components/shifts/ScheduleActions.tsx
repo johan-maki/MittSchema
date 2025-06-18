@@ -88,6 +88,7 @@ export const ScheduleActions = ({
           employees={profiles}
           startDate={summaryData.startDate}
           endDate={summaryData.endDate}
+          staffingIssues={summaryData.staffingIssues || []}
         />
       )}
 

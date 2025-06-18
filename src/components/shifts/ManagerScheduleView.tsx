@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { 
   Calendar, 
   Clock, 
   Users, 
@@ -116,6 +122,37 @@ export const ManagerScheduleView = ({
       weekShifts.some(shift => isSameDay(parseISO(shift.start_time), day))
     ).length,
     coverage: Math.round((weekShifts.length / (weekDays.length * 3)) * 100) // Assuming 3 shifts per day
+  };
+
+  const getStaffingDetailsForDay = (day: Date) => {
+    const dayShifts = getShiftsForDay(day);
+    const shiftsByType = getShiftsByType(dayShifts);
+    
+    const details = {
+      day: {
+        current: shiftsByType.day.length,
+        required: 1,
+        shortage: Math.max(0, 1 - shiftsByType.day.length)
+      },
+      evening: {
+        current: shiftsByType.evening.length,
+        required: 1,
+        shortage: Math.max(0, 1 - shiftsByType.evening.length)
+      },
+      night: {
+        current: shiftsByType.night.length,
+        required: 1,
+        shortage: Math.max(0, 1 - shiftsByType.night.length)
+      }
+    };
+    
+    const totalShortage = details.day.shortage + details.evening.shortage + details.night.shortage;
+    
+    return {
+      ...details,
+      totalShortage,
+      isFullyStaffed: totalShortage === 0
+    };
   };
 
   const getShiftsForDay = (day: Date) => {
@@ -314,9 +351,54 @@ export const ManagerScheduleView = ({
                       {isFullStaffed ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       ) : dayShifts.length > 0 ? (
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertTriangle className="h-4 w-4 text-yellow-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <div className="space-y-2">
+                                <p className="font-semibold text-yellow-700">Delbemannat</p>
+                                {(() => {
+                                  const staffingDetails = getStaffingDetailsForDay(day);
+                                  const shiftTypeNames = { day: 'Dag', evening: 'Kväll', night: 'Natt' };
+                                  
+                                  return Object.entries(staffingDetails)
+                                    .filter(([key]) => ['day', 'evening', 'night'].includes(key))
+                                    .map(([shiftType, details]: [string, any]) => {
+                                      if (details.shortage > 0) {
+                                        return (
+                                          <div key={shiftType} className="text-xs">
+                                            <span className="text-red-600 font-medium">
+                                              {shiftTypeNames[shiftType as keyof typeof shiftTypeNames]}: 
+                                            </span>
+                                            <span className="ml-1">
+                                              Saknas {details.shortage} person{details.shortage !== 1 ? 'er' : ''} 
+                                              ({details.current}/{details.required})
+                                            </span>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })
+                                    .filter(Boolean);
+                                })()}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : (
-                        <UserX className="h-4 w-4 text-red-500" />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <UserX className="h-4 w-4 text-red-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-red-700 font-semibold">Obemannat</p>
+                              <p className="text-xs">Inga pass schemalagda för denna dag</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                       <Badge variant="outline" className="text-xs">
                         {dayShifts.length}
