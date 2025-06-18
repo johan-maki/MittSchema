@@ -93,8 +93,6 @@ const Schedule = () => {
             onAddShift={handleAddShift}
             currentView={currentView}
             onViewChange={setCurrentView}
-            isCreateDialogOpen={isCreateDialogOpen}
-            setIsCreateDialogOpen={setIsCreateDialogOpen}
           />
         );
       case 'month':

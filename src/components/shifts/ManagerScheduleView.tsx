@@ -48,8 +48,6 @@ interface ManagerScheduleViewProps {
   onAddShift?: (day: Date, role: string) => void;
   currentView?: 'day' | 'week' | 'month';
   onViewChange?: (view: 'day' | 'week' | 'month') => void;
-  isCreateDialogOpen?: boolean;
-  setIsCreateDialogOpen?: (open: boolean) => void;
 }
 
 // Modern shift type configuration
@@ -97,9 +95,7 @@ export const ManagerScheduleView = ({
   onShiftClick,
   onAddShift,
   currentView = 'week',
-  onViewChange,
-  isCreateDialogOpen,
-  setIsCreateDialogOpen
+  onViewChange
 }: ManagerScheduleViewProps) => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('detailed');
@@ -260,17 +256,7 @@ export const ManagerScheduleView = ({
                 </Button>
               </div>
 
-              {/* Schedule Actions */}
-              {setIsCreateDialogOpen && (
-                <div className="ml-4">
-                  <Button 
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                    onClick={() => setIsCreateDialogOpen(true)}
-                  >
-                    ✨ Generera schema
-                  </Button>
-                </div>
-              )}
+
             </div>
           </div>
         </CardHeader>
@@ -414,7 +400,7 @@ export const ManagerScheduleView = ({
                                           <p className="text-xs font-medium truncate">
                                             {employee ? `${employee.first_name} ${employee.last_name}` : 'Okänd'}
                                           </p>
-                                          <p className="text-xs text-muted-foreground">
+                                          <p className="text-xs text-muted-foreground truncate">
                                             {employee?.role}
                                           </p>
                                         </div>

@@ -19,8 +19,6 @@ import { Profile, convertDatabaseProfile } from "@/types/profile";
 import type { DatabaseProfile } from "@/types/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DebugShifts } from "@/components/debug/DebugShifts";
-import { DatabaseIdChecker } from "@/components/debug/DatabaseIdChecker";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -156,10 +154,6 @@ const EmployeeView = () => {
 
           {selectedEmployeeId ? (
             <div className="space-y-6">
-              {/* Debug sections - temporary */}
-              <DatabaseIdChecker />
-              <DebugShifts />
-              
               <Tabs defaultValue="schedule" className="space-y-6">
                 <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2">
                   <TabsTrigger value="schedule" className="flex items-center gap-2">
