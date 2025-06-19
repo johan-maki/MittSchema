@@ -79,6 +79,27 @@ class GurobiScheduleOptimizer:
             self.dates = create_date_list(start_date, end_date)
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
+            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, include_weekends={include_weekends}")
+            
+            # Check if we have enough employees for basic coverage
+            total_shift_requirements = len(self.dates) * len(self.shift_types) * min_staff_per_shift
+            if include_weekends:
+                working_days = len(self.dates)
+            else:
+                working_days = sum(1 for date in self.dates if date.weekday() < 5)
+            
+            actual_shift_requirements = working_days * len(self.shift_types) * min_staff_per_shift
+            max_possible_shifts = len(employees) * 5  # Max 5 days per week per employee
+            
+            logger.info(f"Shift requirements: {actual_shift_requirements} shifts needed")
+            logger.info(f"Employee capacity: {max_possible_shifts} shifts possible (max 5 days/week per employee)")
+            
+            if actual_shift_requirements > max_possible_shifts:
+                logger.error(f"Impossible to fulfill requirements: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Not enough employees: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible with {len(employees)} employees"
+                )
             
             # Create Gurobi model
             self.model = gp.Model("HealthcareScheduler")
@@ -89,7 +110,8 @@ class GurobiScheduleOptimizer:
                 logger.info(f"Set Gurobi random seed: {random_seed}")
             
             # Suppress Gurobi output for cleaner logs
-            self.model.setParam('OutputFlag', 0)
+            self.model.setParam('OutputFlag', 1)  # Enable output for debugging
+            self.model.setParam('TimeLimit', 30)  # 30 seconds should be enough for small problems
             
             # Create decision variables
             self._create_variables()
@@ -108,14 +130,33 @@ class GurobiScheduleOptimizer:
             if self.model.status == GRB.OPTIMAL:
                 logger.info("Found optimal solution!")
                 return self._extract_solution()
-            elif self.model.status == GRB.FEASIBLE:
-                logger.info("Found feasible solution!")
+            elif self.model.status == GRB.SUBOPTIMAL:
+                logger.info("Found suboptimal but feasible solution!")
+                return self._extract_solution()
+            elif self.model.status == GRB.TIME_LIMIT and self.model.SolCount > 0:
+                logger.warning("Time limit reached but found feasible solution!")
                 return self._extract_solution()
             else:
                 logger.error(f"Optimization failed with status: {self.model.status}")
+                # Let's provide more detailed error information
+                status_names = {
+                    GRB.INFEASIBLE: "INFEASIBLE",
+                    GRB.INF_OR_UNBD: "INFEASIBLE_OR_UNBOUNDED", 
+                    GRB.UNBOUNDED: "UNBOUNDED",
+                    GRB.CUTOFF: "CUTOFF",
+                    GRB.ITERATION_LIMIT: "ITERATION_LIMIT",
+                    GRB.NODE_LIMIT: "NODE_LIMIT",
+                    GRB.TIME_LIMIT: "TIME_LIMIT",
+                    GRB.SOLUTION_LIMIT: "SOLUTION_LIMIT",
+                    GRB.INTERRUPTED: "INTERRUPTED",
+                    GRB.NUMERIC: "NUMERIC_ERROR",
+                    GRB.SUBOPTIMAL: "SUBOPTIMAL",
+                    GRB.OPTIMAL: "OPTIMAL"
+                }
+                status_name = status_names.get(self.model.status, f"UNKNOWN({self.model.status})")
                 raise HTTPException(
                     status_code=400,
-                    detail=f"No feasible schedule found. Gurobi status: {self.model.status}"
+                    detail=f"No feasible schedule found. Gurobi status: {status_name}"
                 )
                 
         except Exception as e:
@@ -181,7 +222,7 @@ class GurobiScheduleOptimizer:
             if not include_weekends and date.weekday() >= 5:  # Saturday=5, Sunday=6
                 continue
                 
-            self.scheduled_days.append(d)
+            self.scheduled_days.append(d)  # Store the day index
             
             for shift in self.shift_types:
                 # Ensure minimum staff per shift
@@ -194,6 +235,7 @@ class GurobiScheduleOptimizer:
                     name=f"min_staff_{d}_{shift}"
                 )
         
+        logger.info(f"Scheduling {len(self.scheduled_days)} days out of {len(self.dates)} total days")
         logger.info("All constraints added successfully")
     
     def _set_objective(self):
@@ -262,9 +304,13 @@ class GurobiScheduleOptimizer:
                 "weekend_shifts": 0
             }
         
-        # Extract schedule assignments
+        # Extract schedule assignments - ONLY for scheduled days
+        scheduled_days = getattr(self, 'scheduled_days', list(range(len(self.dates))))
+        
         for emp in self.employees:
-            for d, date in enumerate(self.dates):
+            for d in scheduled_days:  # Only iterate over scheduled days
+                date = self.dates[d]
+                    
                 for shift in self.shift_types:
                     if self.shifts[(emp['id'], d, shift)].X > 0.5:  # Binary variable is 1
                         # Create shift assignment
@@ -291,8 +337,7 @@ class GurobiScheduleOptimizer:
                             employee_stats[emp['id']]["weekend_shifts"] += 1
         
         # Calculate total possible shifts (only count days we're actually scheduling)
-        # Use the tracked scheduled_days from constraint creation
-        coverage_stats["total_shifts"] = len(getattr(self, 'scheduled_days', self.dates)) * len(self.shift_types)
+        coverage_stats["total_shifts"] = len(scheduled_days) * len(self.shift_types)
         
         if coverage_stats["total_shifts"] > 0:
             coverage_stats["coverage_percentage"] = round(
@@ -308,7 +353,7 @@ class GurobiScheduleOptimizer:
             "coverage_stats": coverage_stats,
             "employee_stats": employee_stats,
             "optimizer": "gurobi",
-            "objective_value": self.model.objVal if self.model.status in [GRB.OPTIMAL, GRB.FEASIBLE] else None
+            "objective_value": self.model.objVal if self.model.status in [GRB.OPTIMAL, GRB.SUBOPTIMAL] else None
         }
 
 
