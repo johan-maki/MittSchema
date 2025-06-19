@@ -13,11 +13,11 @@ def test_more_employees():
     print("=" * 50)
     
     # API endpoint
-    url = "http://localhost:8081/optimize-schedule"
+    url = "http://localhost:8080/optimize-schedule"
     
-    # Calculate date range (shorter period)
+    # Calculate date range (2 weeks for realistic testing)
     start_date = datetime.now() + timedelta(days=1)
-    end_date = start_date + timedelta(days=6)  # Just 1 week
+    end_date = start_date + timedelta(days=13)  # 2 weeks (14 days)
     
     # Test request with relaxed parameters
     request_data = {
@@ -45,11 +45,24 @@ def test_more_employees():
             print("✅ SUCCESS! Gurobi optimization completed")
             print("=" * 50)
             
-            # Extract key metrics
+            # Debug: Print raw response structure
+            print("🔍 DEBUG - Raw response keys:", list(result.keys()))
+            if 'schedule' in result:
+                print(f"🔍 DEBUG - Schedule items: {len(result['schedule'])}")
+            
+            # Extract key metrics - try new structure first
             schedule = result.get("schedule", [])
-            coverage_stats = result.get("coverage_stats", {})
-            employee_stats = result.get("employee_stats", {})
-            fairness_stats = result.get("fairness_stats", {})
+            if "statistics" in result:
+                # New structure
+                statistics = result["statistics"]
+                coverage_stats = statistics.get("coverage", {})
+                fairness_stats = statistics.get("fairness", {})
+                employee_stats = result.get("employee_stats", {})
+            else:
+                # Legacy structure
+                coverage_stats = result.get("coverage_stats", {})
+                fairness_stats = result.get("fairness_stats", {})
+                employee_stats = result.get("employee_stats", {})
             
             print(f"📊 COVERAGE STATISTICS:")
             print(f"  Total shifts needed: {coverage_stats.get('total_shifts', 0)}")

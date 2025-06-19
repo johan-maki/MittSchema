@@ -69,10 +69,21 @@ async def handle_optimization_request(request: ScheduleRequest):
             include_weekends=request.include_weekends if request.include_weekends is not None else True
         )
         
+        # Debug: log what we got from optimizer
+        logger.info(f"🔍 Result keys from optimizer: {list(result.keys())}")
+        if "statistics" in result:
+            logger.info(f"🔍 Statistics keys: {list(result['statistics'].keys())}")
+        
         return {
             "schedule": result["schedule"],
+            "statistics": result.get("statistics", {}),
+            "employee_stats": result.get("employee_stats", {}),
+            "fairness_stats": result.get("fairness_stats", {}),  # Legacy compatibility
+            "coverage_stats": result.get("statistics", {}).get("coverage", {}),  # Legacy compatibility
             "staffing_issues": result.get("staffing_issues", []),
-            "message": result.get("message", "Schedule optimized successfully")
+            "message": result.get("message", "Schedule optimized successfully"),
+            "optimizer": result.get("optimizer", "gurobi"),
+            "objective_value": result.get("objective_value")
         }
     except HTTPException:
         # Re-raise HTTP exceptions without modification

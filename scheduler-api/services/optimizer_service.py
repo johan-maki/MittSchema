@@ -73,7 +73,7 @@ def optimize_schedule(
             emp = next((e for e in employees if e["id"] == emp_id), {})
             shift["department"] = emp.get('department', 'Unknown')
         
-        # Add fairness stats if not present
+        # Add fairness stats if not present (legacy compatibility)
         if "fairness_stats" not in result:
             total_shifts_list = [stats["total_shifts"] for stats in result["employee_stats"].values()]
             result["fairness_stats"] = {
@@ -84,7 +84,7 @@ def optimize_schedule(
             }
         
         logger.info(f"🎯 Schedule optimization complete!")
-        logger.info(f"📈 Coverage: {result['coverage_stats']['coverage_percentage']}% ({result['coverage_stats']['filled_shifts']}/{result['coverage_stats']['total_shifts']} shifts)")
+        logger.info(f"📈 Coverage: {result['statistics']['coverage']['coverage_percentage']}% ({result['statistics']['coverage']['filled_shifts']}/{result['statistics']['coverage']['total_shifts']} shifts)")
         
         return result
         
