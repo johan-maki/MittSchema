@@ -32,12 +32,9 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
   const generateSchedule = async (
     config?: {
-      minStaffPerDay?: number;
-      minExperiencePerDay?: number;
-      maxConsecutiveDays?: number;
-      minRestHours?: number;
+      minStaffPerShift?: number;
+      minExperiencePerShift?: number;
       includeWeekends?: boolean;
-      prioritizeExperience?: boolean;
     },
     onProgress?: (step: string, progress: number) => void
   ) => {
@@ -56,7 +53,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     toast({
       title: "Schema-generering startad",
       description: config 
-        ? `Använder anpassade inställningar: ${config.minStaffPerDay} personal/dag, ${config.minExperiencePerDay} erfarenhetspoäng` 
+        ? `Använder anpassade inställningar: ${config.minStaffPerShift} personal/pass, ${config.minExperiencePerShift} erfarenhetspoäng` 
         : "Kontrollerar medarbetare och inställningar...",
     });
     
@@ -91,34 +88,34 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     try {
       console.log("🚀 Calling generateScheduleForTwoWeeks for better coverage");
       
-      // Add includeWeekends parameter to ensure Sunday is included
+      // Simplified settings for basic scheduling
       const effectiveSettings = config ? {
-        max_consecutive_days: config.maxConsecutiveDays || 5,
-        min_rest_hours: config.minRestHours || 11,
+        max_consecutive_days: 5, // Fixed for simplicity
+        min_rest_hours: 11, // Fixed for simplicity
         min_weekly_rest_hours: 36,
-        department: 'General',
-        include_weekends: config.includeWeekends ?? true, // Explicitly include weekends setting
+        department: 'Akutmottagning', // All employees work here now
+        include_weekends: config.includeWeekends ?? true,
         morning_shift: { 
-          min_staff: config.minStaffPerDay || 3, 
-          min_experience_sum: config.minExperiencePerDay || 6 
+          min_staff: config.minStaffPerShift || 1, 
+          min_experience_sum: config.minExperiencePerShift || 1 
         },
         afternoon_shift: { 
-          min_staff: config.minStaffPerDay || 3, 
-          min_experience_sum: config.minExperiencePerDay || 6 
+          min_staff: config.minStaffPerShift || 1, 
+          min_experience_sum: config.minExperiencePerShift || 1 
         },
         night_shift: { 
-          min_staff: Math.max(1, (config.minStaffPerDay || 3) - 1), 
-          min_experience_sum: Math.max(3, (config.minExperiencePerDay || 6) - 2) 
+          min_staff: config.minStaffPerShift || 1, 
+          min_experience_sum: config.minExperiencePerShift || 1 
         }
-      } : settings || {
+      } : {
         max_consecutive_days: 5,
         min_rest_hours: 11,
         min_weekly_rest_hours: 36,
-        department: 'General',
-        include_weekends: true, // Default to include weekends
-        morning_shift: { min_staff: 3, min_experience_sum: 6 },
-        afternoon_shift: { min_staff: 3, min_experience_sum: 6 },
-        night_shift: { min_staff: 2, min_experience_sum: 4 }
+        department: 'Akutmottagning',
+        include_weekends: true,
+        morning_shift: { min_staff: 1, min_experience_sum: 1 },
+        afternoon_shift: { min_staff: 1, min_experience_sum: 1 },
+        night_shift: { min_staff: 1, min_experience_sum: 1 }
       };
       
       console.log("📊 Using settings:", effectiveSettings);

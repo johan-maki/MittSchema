@@ -1,5 +1,6 @@
 // Production data seeder - adds sample employees for demo purposes
 import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
 
 export const addSampleEmployeesForProduction = async () => {
   // Only run in production (not localhost)
@@ -34,52 +35,58 @@ export const addSampleEmployeesForProduction = async () => {
 
     const sampleEmployees = [
       {
-        first_name: 'Maria',
-        last_name: 'Andersson',
-        role: 'Läkare',
-        department: 'General',
-        experience_level: 5,
-        phone: '070-111-1111'
+        id: uuidv4(),
+        first_name: 'Erik',
+        last_name: 'Eriksson',
+        role: 'Sjuksköterska',
+        department: 'Akutmottagning',
+        experience_level: 1,
+        phone: '+46 70 234 5678'
       },
       {
-        first_name: 'Erik', 
+        id: uuidv4(),
+        first_name: 'Maria',
         last_name: 'Johansson',
         role: 'Sjuksköterska',
-        department: 'General',
-        experience_level: 4,
-        phone: '070-222-2222'
+        department: 'Akutmottagning',
+        experience_level: 1,
+        phone: '+46 70 345 6789'
       },
       {
-        first_name: 'Sara',
-        last_name: 'Petersson', 
-        role: 'Undersköterska',
-        department: 'General',
-        experience_level: 3,
-        phone: '070-333-3333'
+        id: uuidv4(),
+        first_name: 'Lars', 
+        last_name: 'Larsson',
+        role: 'Sjuksköterska',
+        department: 'Akutmottagning',
+        experience_level: 1,
+        phone: '+46 70 456 7890'
       },
       {
-        first_name: 'Johan',
-        last_name: 'Lindberg',
-        role: 'Läkare', 
-        department: 'General',
-        experience_level: 6,
-        phone: '070-444-4444'
-      },
-      {
-        first_name: 'Anna',
+        id: uuidv4(),
+        first_name: 'Karin',
         last_name: 'Karlsson',
         role: 'Sjuksköterska',
-        department: 'General', 
-        experience_level: 3,
-        phone: '070-555-5555'
+        department: 'Akutmottagning',
+        experience_level: 1,
+        phone: '+46 70 567 8901'
       },
       {
-        first_name: 'Peter',
-        last_name: 'Svensson',
-        role: 'Undersköterska',
-        department: 'General', 
-        experience_level: 2,
-        phone: '070-666-6666'
+        id: uuidv4(),
+        first_name: 'Kung',
+        last_name: 'Maxx',
+        role: 'Sjuksköterska',
+        department: 'Akutmottagning',
+        experience_level: 1,
+        phone: ''
+      },
+      {
+        id: uuidv4(),
+        first_name: 'Anna',
+        last_name: 'Andersson',
+        role: 'Sjuksköterska',
+        department: 'Akutmottagning',
+        experience_level: 1,
+        phone: '+46 70 123 4567'
       }
     ];
 

@@ -1,5 +1,6 @@
 // Development utility to add test employees
 import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
 
 export const addTestEmployeesForDevelopment = async () => {
   // Only run in development mode (localhost)
@@ -29,43 +30,48 @@ export const addTestEmployeesForDevelopment = async () => {
 
     const testEmployees = [
       {
+        id: uuidv4(),
         first_name: 'Anna',
         last_name: 'Andersson',
-        role: 'Läkare',
-        department: 'General',
-        experience_level: 4,
+        role: 'Sjuksköterska',
+        department: 'Akutmottagning',
+        experience_level: 1,
         phone: '070-123-4567'
       },
       {
+        id: uuidv4(),
         first_name: 'Bengt', 
         last_name: 'Bengtsson',
         role: 'Sjuksköterska',
-        department: 'General',
-        experience_level: 3,
+        department: 'Akutmottagning',
+        experience_level: 1,
         phone: '070-234-5678'
       },
       {
+        id: uuidv4(),
         first_name: 'Cecilia',
         last_name: 'Carlsson', 
-        role: 'Undersköterska',
-        department: 'General',
-        experience_level: 2,
+        role: 'Sjuksköterska',
+        department: 'Akutmottagning',
+        experience_level: 1,
         phone: '070-345-6789'
       },
       {
+        id: uuidv4(),
         first_name: 'David',
         last_name: 'Davidsson',
-        role: 'Läkare', 
-        department: 'General',
-        experience_level: 5,
+        role: 'Sjuksköterska', 
+        department: 'Akutmottagning',
+        experience_level: 1,
         phone: '070-456-7890'
       },
       {
+        id: uuidv4(),
         first_name: 'Emma',
         last_name: 'Eriksson',
         role: 'Sjuksköterska',
-        department: 'General', 
-        experience_level: 4,
+        department: 'Akutmottagning', 
+        experience_level: 1,
         phone: '070-567-8901'
       }
     ];
