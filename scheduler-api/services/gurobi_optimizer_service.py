@@ -325,16 +325,26 @@ class GurobiScheduleOptimizer:
                 for shift in self.shift_types:
                     if self.shifts[(emp['id'], d, shift)].x > 0.5:  # Binary variable is 1
                         # Create shift assignment
-                        shift_start, shift_end = self.shift_times[shift]
+                        shift_start_time, shift_end_time = self.shift_times[shift]
+                        
+                        # Combine date with time to create full datetime strings
+                        shift_start_datetime = f"{date.strftime('%Y-%m-%d')}T{shift_start_time}:00"
+                        shift_end_datetime = f"{date.strftime('%Y-%m-%d')}T{shift_end_time}:00"
+                        
+                        # Handle night shifts that end the next day
+                        if shift == "night" and shift_end_time == "06:00":
+                            next_date = date + timedelta(days=1)
+                            shift_end_datetime = f"{next_date.strftime('%Y-%m-%d')}T{shift_end_time}:00"
                         
                         shift_assignment = {
                             "employee_id": emp['id'],
                             "employee_name": f"{emp.get('first_name', '')} {emp.get('last_name', '')}",
                             "date": date.strftime('%Y-%m-%d'),
                             "shift_type": shift,
-                            "start_time": shift_start,
-                            "end_time": shift_end,
-                            "is_weekend": date.weekday() >= 5
+                            "start_time": shift_start_datetime,
+                            "end_time": shift_end_datetime,
+                            "is_weekend": date.weekday() >= 5,
+                            "department": emp.get('department', 'General')
                         }
                         
                         schedule.append(shift_assignment)
