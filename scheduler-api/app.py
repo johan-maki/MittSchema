@@ -8,8 +8,8 @@ from utils import get_supabase_client
 
 app = FastAPI(
     title="Scheduler API",
-    description="Employee scheduling optimization API",
-    version="1.2.0"
+    description="Employee scheduling optimization API with Gurobi",
+    version="1.2.1"
 )
 
 # Set up CORS middleware
@@ -20,7 +20,7 @@ app.include_router(schedule_router)
 
 @app.get("/")
 def home():
-    return {"status": "Scheduler API active", "version": "1.2.0"}
+    return {"status": "Scheduler API active", "version": "1.2.1"}
 
 @app.get("/health")
 def health_check():
@@ -34,7 +34,7 @@ def health_check():
         return {
             "status": "healthy",
             "database": "connected",
-            "version": "1.2.0"
+            "version": "1.2.1"
         }
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
