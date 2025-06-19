@@ -1,9 +1,7 @@
 
-"""Services package for the scheduler API."""
+"""Services package for the Gurobi-based scheduler API."""
 
-# Import main services for easy access
+# Import main Gurobi optimizer service
 from services.optimizer_service import optimize_schedule
-from services.constraint_service import add_all_constraints
-from services.solution_service import process_solution
 
-__all__ = ['optimize_schedule', 'add_all_constraints', 'process_solution']
+__all__ = ['optimize_schedule']

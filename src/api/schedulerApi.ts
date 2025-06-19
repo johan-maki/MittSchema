@@ -1,26 +1,82 @@
 
 import { SCHEDULER_API } from "@/config/api";
 
+interface GurobiScheduleRequest {
+  start_date: string;
+  end_date: string;
+  department?: string;
+  random_seed?: number;
+  optimizer?: string;
+  min_staff_per_shift?: number;
+  min_experience_per_shift?: number;
+  include_weekends?: boolean;
+}
+
+interface GurobiScheduleResponse {
+  schedule: Array<{
+    employee_id: string;
+    employee_name: string;
+    date: string;
+    shift_type: string;
+    start_time: string;
+    end_time: string;
+    is_weekend: boolean;
+    department: string;
+  }>;
+  coverage_stats: {
+    total_shifts: number;
+    filled_shifts: number;
+    coverage_percentage: number;
+  };
+  employee_stats: Record<string, {
+    name: string;
+    total_shifts: number;
+    day_shifts: number;
+    evening_shifts: number;
+    night_shifts: number;
+    weekend_shifts: number;
+  }>;
+  fairness_stats: {
+    min_shifts_per_employee: number;
+    max_shifts_per_employee: number;
+    avg_shifts_per_employee: number;
+    shift_distribution_range: number;
+  };
+  optimizer: string;
+  optimization_status: string;
+  objective_value?: number;
+  message: string;
+}
+
 export const schedulerApi = {
-  generateSchedule: async (startDate: string, endDate: string, department: string, timestamp?: number, retries = 3) => {
-    const url = `${SCHEDULER_API.BASE_URL}${SCHEDULER_API.ENDPOINTS.OPTIMIZE_SCHEDULE}`;
+  generateSchedule: async (
+    startDate: string, 
+    endDate: string, 
+    department: string = "Akutmottagning",
+    minStaffPerShift: number = 1,
+    minExperiencePerShift: number = 1,
+    includeWeekends: boolean = true,
+    timestamp?: number, 
+    retries = 3
+  ): Promise<GurobiScheduleResponse> => {
+    // Use local Gurobi API instead of cloud
+    const url = "http://localhost:8081/optimize-schedule";
     
     // Ensure we always have a random seed for different results
     const random_seed = timestamp || Math.floor(Math.random() * 1000000);
     
-    const requestBody = {
+    const requestBody: GurobiScheduleRequest = {
       start_date: startDate,
       end_date: endDate,
       department: department,
       random_seed: random_seed,
-      constraints: {
-        max_consecutive_days: 5,
-        min_rest_hours: 11,
-        max_shifts_per_day: 1  // Explicitly limit to one shift per day
-      }
+      optimizer: "gurobi",
+      min_staff_per_shift: minStaffPerShift,
+      min_experience_per_shift: minExperiencePerShift,
+      include_weekends: includeWeekends
     };
     
-    console.log("Calling scheduler API with:", requestBody);
+    console.log("🚀 Calling Gurobi scheduler API with:", requestBody);
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {

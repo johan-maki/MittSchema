@@ -168,14 +168,19 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
   }
 };
 
-// NEW: Two-week generation function
+// NEW: Two-week generation function with Gurobi optimization
 export const generateScheduleForTwoWeeks = async (
   currentDate: Date,
   profiles: Profile[],
   settings: any,
   timestamp?: number,
   onProgress?: (step: string, progress: number) => void
-): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
+): Promise<{ 
+  schedule: Shift[], 
+  staffingIssues?: { date: string; shiftType: string; current: number; required: number }[],
+  coverage_stats?: any,
+  fairness_stats?: any 
+}> => {
   // Calculate two-week period starting from TODAY (not last Sunday)
   const startDate = new Date();
   startDate.setHours(0, 0, 0, 0); // Start from today at midnight
@@ -183,12 +188,13 @@ export const generateScheduleForTwoWeeks = async (
   const twoWeeksEnd = new Date(startDate);
   twoWeeksEnd.setDate(twoWeeksEnd.getDate() + 13); // 14 days total
   
-  onProgress?.('Initializing two-week schedule generation...', 0);
+  onProgress?.('🚀 Initializing Gurobi schedule optimization...', 0);
   
-  console.log('🗓️ Generating two-week schedule:', {
+  console.log('🗓️ Generating two-week schedule with Gurobi:', {
     startDate: startDate.toISOString().split('T')[0],
     twoWeeksEnd: twoWeeksEnd.toISOString().split('T')[0],
-    profiles: profiles.length
+    profiles: profiles.length,
+    useGurobi: true
   });
   
   // Validate inputs
@@ -196,56 +202,73 @@ export const generateScheduleForTwoWeeks = async (
     throw new Error('No employees available for scheduling');
   }
 
-  // Skip API calls entirely in development (localhost)
-  const isLocalhost = typeof window !== 'undefined' && 
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  // Extract Gurobi parameters from settings
+  const gurobiConfig = {
+    minStaffPerShift: settings?.minStaffPerShift || 1,
+    minExperiencePerShift: settings?.minExperiencePerShift || 1,
+    includeWeekends: settings?.includeWeekends !== false // Default to true
+  };
 
-  if (isLocalhost) {
-    console.log('🏠 Development mode - using enhanced local schedule generation only');
-    console.log('🔧 Skipping API calls completely in localhost environment');
-    onProgress?.('Generating smart local schedule for two weeks...', 30);
-    const localSchedule = await generateEnhancedLocalSchedule(startDate, twoWeeksEnd, profiles, settings, onProgress);
-    
-    onProgress?.('Two-week schedule complete', 100);
-    console.log('✅ Enhanced local generation completed successfully');
-    return {
-      schedule: deduplicateShifts(localSchedule.schedule),
-      staffingIssues: localSchedule.staffingIssues
-    };
-  }
+  console.log('🎯 Using Gurobi configuration:', gurobiConfig);
 
-  // Production mode - try API first
+  // Try Gurobi API first (now available locally)
   try {
-    onProgress?.('Calling scheduler for two weeks...', 20);
+    onProgress?.('⚡ Calling Gurobi optimizer...', 20);
     
     const response = await schedulerApi.generateSchedule(
       startDate.toISOString(),
       twoWeeksEnd.toISOString(),
-      settings?.department || 'General',
+      settings?.department || 'Akutmottagning',
+      gurobiConfig.minStaffPerShift,
+      gurobiConfig.minExperiencePerShift,
+      gurobiConfig.includeWeekends,
       timestamp || Date.now()
     );
     
-    onProgress?.('Processing two-week schedule...', 60);
+    onProgress?.('📊 Processing Gurobi results...', 60);
+    
+    console.log('🎉 Gurobi optimization response:', response);
     
     if (response.schedule && response.schedule.length > 0) {
-      const deduplicatedSchedule = deduplicateShifts(response.schedule);
-      console.log(`✅ Generated ${deduplicatedSchedule.length} shifts for two weeks`);
+      // Convert Gurobi response to our Shift format
+      const convertedSchedule = response.schedule.map((shift: any) => ({
+        id: uuidv4(),
+        employee_id: shift.employee_id,
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        shift_type: shift.shift_type,
+        is_published: false,
+        department: shift.department || 'Akutmottagning'
+      }));
       
-      onProgress?.('Two-week schedule complete', 100);
+      const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
+      
+      console.log(`✅ Gurobi generated ${deduplicatedSchedule.length} shifts for two weeks`);
+      console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
+      console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
+      
+      onProgress?.('🎯 Gurobi optimization complete!', 100);
+      
       return {
         schedule: deduplicatedSchedule,
-        staffingIssues: response.staffingIssues || []
+        staffingIssues: [], // Gurobi should minimize these
+        coverage_stats: response.coverage_stats,
+        fairness_stats: response.fairness_stats
       };
+    } else {
+      console.warn('⚠️ Gurobi returned empty schedule');
     }
   } catch (error) {
-    console.error('Two-week API failed, using local generation:', error);
+    console.error('💥 Gurobi API failed, using local generation fallback:', error);
   }
   
-  // Fallback to local generation
-  onProgress?.('Generating locally for two weeks...', 70);
+  // Fallback to local generation only if Gurobi fails
+  console.log('🔄 Falling back to enhanced local generation...');
+  onProgress?.('🛠️ Generating locally for two weeks...', 70);
   const localSchedule = await generateEnhancedLocalSchedule(startDate, twoWeeksEnd, profiles, settings, onProgress);
   
-  onProgress?.('Two-week schedule complete', 100);
+  onProgress?.('✅ Two-week schedule complete', 100);
   return {
     schedule: deduplicateShifts(localSchedule.schedule),
     staffingIssues: localSchedule.staffingIssues

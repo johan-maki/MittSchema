@@ -1,5 +1,6 @@
 
 from datetime import datetime, timedelta
+from typing import Optional
 from supabase import create_client, Client
 from fastapi import HTTPException
 from config import SUPABASE_URL, SUPABASE_KEY, logger

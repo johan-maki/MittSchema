@@ -58,12 +58,15 @@ async def handle_optimization_request(request: ScheduleRequest):
         
         # Call the scheduler service to optimize the schedule
         result = optimize_schedule(
-            employees, 
-            start_date, 
-            end_date, 
+            employees=employees, 
+            start_date=start_date, 
+            end_date=end_date, 
             department=request.department, 
             random_seed=random_seed,
-            settings=settings
+            optimizer=request.optimizer or "gurobi",
+            min_staff_per_shift=request.min_staff_per_shift or 1,
+            min_experience_per_shift=request.min_experience_per_shift or 1,
+            include_weekends=request.include_weekends if request.include_weekends is not None else True
         )
         
         return {
