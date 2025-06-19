@@ -63,7 +63,14 @@ export const schedulerApi = {
     const url = `${SCHEDULER_API.BASE_URL}${SCHEDULER_API.ENDPOINTS.OPTIMIZE_SCHEDULE}`;
     
     // Ensure we always have a random seed for different results
-    const random_seed = timestamp || Math.floor(Math.random() * 1000000);
+    // Convert large timestamps to smaller values suitable for Gurobi
+    let random_seed: number;
+    if (timestamp) {
+      // If timestamp is provided, convert it to a smaller value (0-999999)
+      random_seed = timestamp % 1000000;
+    } else {
+      random_seed = Math.floor(Math.random() * 1000000);
+    }
     
     const requestBody: GurobiScheduleRequest = {
       start_date: startDate,
