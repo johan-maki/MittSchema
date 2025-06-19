@@ -36,6 +36,7 @@ class GurobiScheduleOptimizer:
         self.shifts = {}
         self.employees = []
         self.dates = []
+        self.scheduled_days = []  # Track which days need coverage
         self.shift_types = ["day", "evening", "night"]
         
         # Shift time mappings
@@ -171,7 +172,8 @@ class GurobiScheduleOptimizer:
                     name=f"max_5_days_per_week_{emp['id']}_week_{week_start}"
                 )
         
-        # 3. Minimum staff coverage per shift
+        # 3. Minimum staff coverage per shift - store which days need coverage for later calculation
+        self.scheduled_days = []
         for d in range(len(self.dates)):
             date = self.dates[d]
             
@@ -179,6 +181,8 @@ class GurobiScheduleOptimizer:
             if not include_weekends and date.weekday() >= 5:  # Saturday=5, Sunday=6
                 continue
                 
+            self.scheduled_days.append(d)
+            
             for shift in self.shift_types:
                 # Ensure minimum staff per shift
                 total_staff = gp.quicksum(
@@ -286,9 +290,9 @@ class GurobiScheduleOptimizer:
                         if date.weekday() >= 5:  # Weekend
                             employee_stats[emp['id']]["weekend_shifts"] += 1
         
-        # Calculate total possible shifts
-        working_days = len([d for d in self.dates if d.weekday() < 5])  # Weekdays only for now
-        coverage_stats["total_shifts"] = working_days * len(self.shift_types)
+        # Calculate total possible shifts (only count days we're actually scheduling)
+        # Use the tracked scheduled_days from constraint creation
+        coverage_stats["total_shifts"] = len(getattr(self, 'scheduled_days', self.dates)) * len(self.shift_types)
         
         if coverage_stats["total_shifts"] > 0:
             coverage_stats["coverage_percentage"] = round(
