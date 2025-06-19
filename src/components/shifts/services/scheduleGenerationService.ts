@@ -44,10 +44,25 @@ export const generateScheduleForMonth = async (
   );
   
   onProgress?.('Processing Gurobi API response...', 40);
-  console.log('Gurobi schedule optimization response:', response);
+  console.log('🔍 DEBUG: Raw Gurobi schedule optimization response:', response);
+  console.log('🔍 DEBUG: Response type:', typeof response);
+  console.log('🔍 DEBUG: Response schedule:', response?.schedule);
+  console.log('🔍 DEBUG: Schedule length:', response?.schedule?.length);
+  console.log('🔍 DEBUG: Coverage stats:', response?.coverage_stats);
   
   // Check if Gurobi returned a valid schedule
-  if (!response.schedule || response.schedule.length === 0) {
+  if (!response) {
+    console.error('❌ No response from Gurobi API');
+    throw new Error('No response from Gurobi optimizer. Please check your connection and try again.');
+  }
+  
+  if (!response.schedule) {
+    console.error('❌ No schedule property in response:', response);
+    throw new Error('Gurobi optimizer returned invalid response format. Please try again.');
+  }
+  
+  if (response.schedule.length === 0) {
+    console.error('❌ Empty schedule array:', response);
     throw new Error('Gurobi optimizer returned no schedule. Please check constraints and try again.');
   }
   
@@ -223,10 +238,15 @@ export const generateScheduleForTwoWeeks = async (
   
   onProgress?.('🎯 Gurobi optimization complete!', 100);
   
-  return {
+  const finalResult = {
     schedule: deduplicatedSchedule,
     staffingIssues: [], // Gurobi should minimize these
     coverage_stats: response.coverage_stats,
     fairness_stats: response.fairness_stats
   };
+  
+  console.log('🔍 DEBUG: Final result from generateScheduleForTwoWeeks:', finalResult);
+  console.log('🔍 DEBUG: Final result schedule length:', finalResult.schedule.length);
+  
+  return finalResult;
 };

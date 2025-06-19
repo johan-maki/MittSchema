@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Shift } from "@/types/shift";
@@ -87,6 +86,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     setIsGenerating(true);
     try {
       console.log("🚀 Calling generateScheduleForTwoWeeks for better coverage");
+      console.log("🔍 DEBUG: Current date:", currentDate);
+      console.log("🔍 DEBUG: Profiles count:", profiles.length);
       
       // Simplified settings for basic scheduling
       const effectiveSettings = config ? {
@@ -130,12 +131,38 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         onProgress
       );
 
-      console.log("Two-week schedule generation result:", generatedSchedule);
+      console.log("🔍 DEBUG: Two-week schedule generation result:", generatedSchedule);
+      console.log("🔍 DEBUG: generatedSchedule type:", typeof generatedSchedule);
+      console.log("🔍 DEBUG: generatedSchedule truthy:", !!generatedSchedule);
+      console.log("🔍 DEBUG: generatedSchedule.schedule:", generatedSchedule?.schedule);
+      console.log("🔍 DEBUG: generatedSchedule.schedule type:", typeof generatedSchedule?.schedule);
+      console.log("🔍 DEBUG: generatedSchedule.schedule length:", generatedSchedule?.schedule?.length);
       
-      if (!generatedSchedule || (!generatedSchedule.schedule || generatedSchedule.schedule.length === 0)) {
+      if (!generatedSchedule) {
+        console.error("❌ No generatedSchedule returned");
         toast({
           title: "Kunde inte generera schema",
-          description: "Det gick inte att hitta en giltig schemaläggning. Försök igen.",
+          description: "Ingen respons från schemagenereringen. Försök igen.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!generatedSchedule.schedule) {
+        console.error("❌ No schedule property in generatedSchedule:", generatedSchedule);
+        toast({
+          title: "Kunde inte generera schema", 
+          description: "Felaktigt format från schemagenereringen. Försök igen.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (generatedSchedule.schedule.length === 0) {
+        console.error("❌ Empty schedule array in generatedSchedule:", generatedSchedule);
+        toast({
+          title: "Kunde inte generera schema",
+          description: "Inga skift genererade. Kontrollera begränsningar och försök igen.",
           variant: "destructive",
         });
         return false;
