@@ -82,23 +82,27 @@ class GurobiScheduleOptimizer:
             logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, include_weekends={include_weekends}")
             
             # Check if we have enough employees for basic coverage
-            total_shift_requirements = len(self.dates) * len(self.shift_types) * min_staff_per_shift
             if include_weekends:
                 working_days = len(self.dates)
             else:
                 working_days = sum(1 for date in self.dates if date.weekday() < 5)
             
             actual_shift_requirements = working_days * len(self.shift_types) * min_staff_per_shift
-            max_possible_shifts = len(employees) * 5  # Max 5 days per week per employee
             
+            # Calculate max possible shifts correctly: 5 shifts per week per employee
+            total_weeks = len(self.dates) / 7.0  # Convert days to weeks (can be fractional)
+            max_shifts_per_employee = int(total_weeks * 5)  # 5 shifts per week maximum
+            max_possible_shifts = len(employees) * max_shifts_per_employee
+            
+            logger.info(f"Period: {len(self.dates)} days ({total_weeks:.1f} weeks)")
             logger.info(f"Shift requirements: {actual_shift_requirements} shifts needed")
-            logger.info(f"Employee capacity: {max_possible_shifts} shifts possible (max 5 days/week per employee)")
+            logger.info(f"Employee capacity: {max_possible_shifts} shifts possible ({max_shifts_per_employee} shifts/employee over {total_weeks:.1f} weeks)")
             
             if actual_shift_requirements > max_possible_shifts:
                 logger.error(f"Impossible to fulfill requirements: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible")
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Not enough employees: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible with {len(employees)} employees"
+                    detail=f"Not enough employees: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible with {len(employees)} employees over {total_weeks:.1f} weeks"
                 )
             
             # Create Gurobi model
@@ -234,6 +238,13 @@ class GurobiScheduleOptimizer:
                     total_staff >= min_staff_per_shift,
                     name=f"min_staff_{d}_{shift}"
                 )
+                
+                # Ensure maximum staff per shift (exactly what's needed, no overstaffing)
+                # For most healthcare scenarios, we want exactly min_staff_per_shift people
+                self.model.addConstr(
+                    total_staff <= min_staff_per_shift,
+                    name=f"max_staff_{d}_{shift}"
+                )
         
         logger.info(f"Scheduling {len(self.scheduled_days)} days out of {len(self.dates)} total days")
         logger.info("All constraints added successfully")
@@ -312,7 +323,7 @@ class GurobiScheduleOptimizer:
                 date = self.dates[d]
                     
                 for shift in self.shift_types:
-                    if self.shifts[(emp['id'], d, shift)].X > 0.5:  # Binary variable is 1
+                    if self.shifts[(emp['id'], d, shift)].x > 0.5:  # Binary variable is 1
                         # Create shift assignment
                         shift_start, shift_end = self.shift_times[shift]
                         
@@ -350,7 +361,15 @@ class GurobiScheduleOptimizer:
         
         return {
             "schedule": schedule,
-            "coverage_stats": coverage_stats,
+            "statistics": {
+                "coverage": coverage_stats,
+                "fairness": {
+                    "min_shifts": min(emp_data["total_shifts"] for emp_data in employee_stats.values()) if employee_stats else 0,
+                    "max_shifts": max(emp_data["total_shifts"] for emp_data in employee_stats.values()) if employee_stats else 0,
+                    "avg_shifts": sum(emp_data["total_shifts"] for emp_data in employee_stats.values()) / len(employee_stats) if employee_stats else 0,
+                    "distribution_range": max(emp_data["total_shifts"] for emp_data in employee_stats.values()) - min(emp_data["total_shifts"] for emp_data in employee_stats.values()) if employee_stats else 0
+                }
+            },
             "employee_stats": employee_stats,
             "optimizer": "gurobi",
             "objective_value": self.model.objVal if self.model.status in [GRB.OPTIMAL, GRB.SUBOPTIMAL] else None
