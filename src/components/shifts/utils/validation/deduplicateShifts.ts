@@ -17,28 +17,45 @@ export const deduplicateShifts = (shifts: Shift[]): Shift[] => {
   const sortedShifts = [...shifts].sort((a, b) => 
     new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
-  
-  // First pass: Collect shifts by employee and date
+   // First pass: Collect shifts by employee and date
   sortedShifts.forEach(shift => {
-    const shiftDate = new Date(shift.start_time);
-    const dateStr = format(shiftDate, 'yyyy-MM-dd');
-    const employeeId = shift.employee_id;
+    console.log('🔍 DEBUG: Processing shift in deduplicateShifts:', {
+      start_time: shift.start_time,
+      start_time_type: typeof shift.start_time,
+      employee_id: shift.employee_id
+    });
     
-    if (!employeeShiftsByDay.has(employeeId)) {
-      employeeShiftsByDay.set(employeeId, new Map<string, Shift>());
+    try {
+      const shiftDate = new Date(shift.start_time);
+      console.log('🔍 DEBUG: Parsed date:', shiftDate, 'isValid:', !isNaN(shiftDate.getTime()));
+      
+      if (isNaN(shiftDate.getTime())) {
+        console.error('❌ Invalid date value:', shift.start_time);
+        return; // Skip this shift
+      }
+      
+      const dateStr = format(shiftDate, 'yyyy-MM-dd');
+      const employeeId = shift.employee_id;
+      
+      if (!employeeShiftsByDay.has(employeeId)) {
+        employeeShiftsByDay.set(employeeId, new Map<string, Shift>());
+      }
+      
+      const employeeDays = employeeShiftsByDay.get(employeeId)!;
+      
+      // If this employee already has a shift on this day, skip this one
+      // This ensures one shift per day per employee
+      if (employeeDays.has(dateStr)) {
+        console.log(`Skipping duplicate shift for employee ${employeeId} on ${dateStr} - already assigned`);
+        return;
+      }
+      
+      // Otherwise, record this shift
+      employeeDays.set(dateStr, shift);
+    } catch (error) {
+      console.error('❌ Error processing shift date:', error, 'shift:', shift);
+      return; // Skip this shift
     }
-    
-    const employeeDays = employeeShiftsByDay.get(employeeId)!;
-    
-    // If this employee already has a shift on this day, skip this one
-    // This ensures one shift per day per employee
-    if (employeeDays.has(dateStr)) {
-      console.log(`Skipping duplicate shift for employee ${employeeId} on ${dateStr} - already assigned`);
-      return;
-    }
-    
-    // Otherwise, record this shift
-    employeeDays.set(dateStr, shift);
   });
   
   // Second pass: Check for consecutive working days and apply the constraint

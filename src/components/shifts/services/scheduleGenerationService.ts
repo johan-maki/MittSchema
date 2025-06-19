@@ -69,15 +69,25 @@ export const generateScheduleForMonth = async (
   onProgress?.('Converting Gurobi response to shifts...', 60);
   
   // Convert Gurobi response to our Shift format
-  const convertedSchedule: Shift[] = response.schedule.map((shift: any) => ({
-    id: uuidv4(),
-    employee_id: shift.employee_id,
-    start_time: shift.start_time,
-    end_time: shift.end_time,
-    shift_type: shift.shift_type,
-    department: shift.department || 'General',
-    is_published: false
-  }));
+  console.log('🔍 DEBUG: First shift from Gurobi:', response.schedule[0]);
+  const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
+    console.log(`🔍 DEBUG: Converting shift ${index}:`, {
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      start_time_type: typeof shift.start_time,
+      end_time_type: typeof shift.end_time
+    });
+    
+    return {
+      id: uuidv4(),
+      employee_id: shift.employee_id,
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      shift_type: shift.shift_type,
+      department: shift.department || 'General',
+      is_published: false
+    };
+  });
   
   onProgress?.('Deduplicating shifts...', 80);
   
