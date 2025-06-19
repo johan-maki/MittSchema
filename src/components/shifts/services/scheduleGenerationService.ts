@@ -37,6 +37,9 @@ export const generateScheduleForMonth = async (
     monthStart.toISOString(),
     monthEnd.toISOString(),
     settings?.department || 'General',
+    1, // minStaffPerShift
+    1, // minExperiencePerShift  
+    true, // includeWeekends
     timestamp || Date.now() // Ensure we always have a timestamp
   );
   
