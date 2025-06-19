@@ -8,7 +8,7 @@ export const environment = {
   
   // API configuration
   api: {
-    schedulerUrl: import.meta.env.VITE_SCHEDULER_API_URL || "https://scheduler3-723515091945.europe-north2.run.app",
+    schedulerUrl: import.meta.env.VITE_SCHEDULER_API_URL || "http://localhost:8080",
   },
   
   // Development flags

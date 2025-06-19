@@ -7,7 +7,7 @@ class ScheduleRequest(BaseModel):
     end_date: str
     department: Optional[str] = None
     random_seed: Optional[int] = None
-    optimizer: Optional[str] = Field(default="gurobi", description="Optimizer to use: 'gurobi' or 'ortools'")
+    optimizer: Optional[str] = Field(default="gurobi", description="Optimizer to use: 'gurobi' only")
     min_staff_per_shift: Optional[int] = Field(default=1, description="Minimum staff required per shift")
     min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience level required")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")

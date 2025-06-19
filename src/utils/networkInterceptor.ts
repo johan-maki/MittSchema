@@ -13,11 +13,10 @@ if (typeof window !== 'undefined') {
     window.fetch = function(...args) {
       const [url] = args;
       
-      // Block any calls to Supabase domains AND external scheduler API
+      // Block any calls to Supabase domains (allow localhost scheduler API)
       if (typeof url === 'string' && (
         url.includes('supabase.co') || 
-        url.includes('supabase.com') ||
-        url.includes('scheduler3-723515091945.europe-north2.run.app')
+        url.includes('supabase.com')
       )) {
         console.warn('🚫 BLOCKED external API call:', url);
         return Promise.reject(new Error('External network calls are disabled in development - using local generation'));
@@ -31,8 +30,7 @@ if (typeof window !== 'undefined') {
     XMLHttpRequest.prototype.open = function(method, url, ...args) {
       if (typeof url === 'string' && (
         url.includes('supabase.co') || 
-        url.includes('supabase.com') ||
-        url.includes('scheduler3-723515091945.europe-north2.run.app')
+        url.includes('supabase.com')
       )) {
         console.warn('🚫 BLOCKED external XHR call:', url);
         throw new Error('External network calls are disabled in development - using local generation');

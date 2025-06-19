@@ -1,10 +1,10 @@
 # Vårdschema - AI-Driven Employee Scheduling System
 
-A complete, production-ready healthcare staff scheduling application built with React, TypeScript, Supabase, and Python FastAPI with OR-Tools optimization.
+A complete, production-ready healthcare staff scheduling application built with React, TypeScript, Supabase, and Python FastAPI with Gurobi optimization.
 
 ## 🚀 Features
 
-- **AI-Powered Scheduling**: Uses Google OR-Tools for constraint-based optimization
+- **AI-Powered Scheduling**: Uses Gurobi for mathematical optimization
 - **Real-time Updates**: Supabase integration for live data synchronization
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 - **User Authentication**: Secure login with Supabase Auth
@@ -28,7 +28,7 @@ A complete, production-ready healthcare staff scheduling application built with 
 
 ### Backend (Python FastAPI)
 - **API Framework**: FastAPI
-- **Optimization**: Google OR-Tools
+- **Optimization**: Gurobi Mathematical Optimizer
 - **Database**: Supabase (PostgreSQL)
 - **Deployment**: Google Cloud Run
 - **CORS**: Enabled for cross-origin requests
