@@ -84,6 +84,19 @@ export const schedulerApi = {
     };
     
     console.log("🚀 Calling Gurobi scheduler API with:", requestBody);
+    console.log("🌍 Environment:", {
+      isProduction: import.meta.env.PROD,
+      schedulerUrl: SCHEDULER_API.BASE_URL,
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown'
+    });
+    
+    // In production, if we're on Vercel and trying to connect to localhost, show a helpful error
+    if (import.meta.env.PROD && typeof window !== 'undefined' && 
+        window.location.hostname.includes('vercel.app') && 
+        SCHEDULER_API.BASE_URL.includes('localhost')) {
+      console.error('❌ Production deployment trying to connect to localhost backend');
+      throw new Error('Backend not available in production. Please deploy the Gurobi backend to a cloud service or test locally.');
+    }
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
