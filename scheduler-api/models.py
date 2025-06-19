@@ -26,7 +26,23 @@ class StaffingIssue(BaseModel):
     current: int
     required: int
 
+class CoverageStats(BaseModel):
+    total_shifts: int
+    filled_shifts: int
+    coverage_percentage: float
+
+class FairnessStats(BaseModel):
+    min_shifts_per_employee: int
+    max_shifts_per_employee: int
+    avg_shifts_per_employee: float
+    shift_distribution_range: int
+
 class ScheduleResponse(BaseModel):
     schedule: List[Dict[str, Any]]
-    staffingIssues: Optional[List[StaffingIssue]] = None
-    message: Optional[str] = None
+    coverage_stats: CoverageStats
+    employee_stats: Dict[str, Any]
+    fairness_stats: FairnessStats
+    optimizer: str
+    optimization_status: str
+    objective_value: Optional[float] = None
+    message: str

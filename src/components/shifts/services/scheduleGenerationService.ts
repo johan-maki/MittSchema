@@ -1,6 +1,5 @@
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
-import { generateBasicSchedule, generateEnhancedLocalSchedule } from "../utils/localScheduleGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
@@ -17,95 +16,65 @@ export const generateScheduleForMonth = async (
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
-  onProgress?.('Initializing schedule generation...', 0);
+  onProgress?.('Initializing Gurobi schedule generation...', 0);
   
   // Validate inputs
   if (!profiles || profiles.length === 0) {
     throw new Error('No employees available for scheduling');
   }
   
-  console.log('Calling optimization API with dates:', {
+  console.log('Calling Gurobi optimization API with dates:', {
     startDate: monthStart.toISOString(),
     endDate: monthEnd.toISOString(),
     timestamp: timestamp || Date.now(),
     profiles: profiles.length
   });
 
-  try {
-    onProgress?.('Calling schedule optimization API...', 20);
-    
-    // Call the Scheduler API directly with timestamp to ensure randomization
-    const response = await schedulerApi.generateSchedule(
-      monthStart.toISOString(),
-      monthEnd.toISOString(),
-      settings?.department || 'General',
-      timestamp || Date.now() // Ensure we always have a timestamp
-    );
-    
-    onProgress?.('Processing API response...', 40);
-    console.log('Schedule optimization response:', response);
-    
-    // If the API returned an empty schedule, fall back to local generation
-    if (!response.schedule || response.schedule.length === 0) {
-      console.log('API returned empty schedule, falling back to local generation');
-      onProgress?.('Falling back to local generation...', 60);
-      return generateBasicSchedule(monthStart, monthEnd, profiles, settings);
-    }
-    
-    onProgress?.('Deduplicating shifts...', 80);
-    
-    // Pre-deduplicate before applying strict constraints
-    const preDeduplicatedSchedule = preDeduplicateShifts(response.schedule || []);
-    
-    // Apply strict deduplication to enforce all constraints
-    const deduplicatedSchedule = deduplicateShifts(preDeduplicatedSchedule);
-    console.log(`Deduplicated schedule from ${response.schedule?.length || 0} to ${deduplicatedSchedule.length} shifts`);
-    
-    onProgress?.('Schedule generation complete', 100);
-    
-    // Ensure the response includes staffing issues if available
-    return {
-      schedule: deduplicatedSchedule,
-      staffingIssues: response.staffingIssues || []
-    };
-  } catch (error) {
-    console.error('API call failed:', error);
-    
-    onProgress?.('API failed, falling back to local generation...', 60);
-    
-    // Fallback to local generation if the API fails
-    console.log('Falling back to local schedule generation');
-    const localSchedule = await generateBasicSchedule(monthStart, monthEnd, profiles, settings);
-    
-    // Deduplicate locally generated shifts too
-    const deduplicatedLocalSchedule = {
-      schedule: deduplicateShifts(localSchedule.schedule),
-      staffingIssues: localSchedule.staffingIssues
-    };
-    
-    return deduplicatedLocalSchedule;
+  onProgress?.('Calling Gurobi schedule optimization API...', 20);
+  
+  // Call the Gurobi Scheduler API
+  const response = await schedulerApi.generateSchedule(
+    monthStart.toISOString(),
+    monthEnd.toISOString(),
+    settings?.department || 'General',
+    timestamp || Date.now() // Ensure we always have a timestamp
+  );
+  
+  onProgress?.('Processing Gurobi API response...', 40);
+  console.log('Gurobi schedule optimization response:', response);
+  
+  // Check if Gurobi returned a valid schedule
+  if (!response.schedule || response.schedule.length === 0) {
+    throw new Error('Gurobi optimizer returned no schedule. Please check constraints and try again.');
   }
+  
+  onProgress?.('Converting Gurobi response to shifts...', 60);
+  
+  // Convert Gurobi response to our Shift format
+  const convertedSchedule: Shift[] = response.schedule.map((shift: any) => ({
+    id: uuidv4(),
+    employee_id: shift.employee_id,
+    start_time: shift.start_time,
+    end_time: shift.end_time,
+    shift_type: shift.shift_type,
+    department: shift.department || 'General',
+    is_published: false
+  }));
+  
+  onProgress?.('Deduplicating shifts...', 80);
+  
+  // Apply deduplication to enforce constraints
+  const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
+  console.log(`Gurobi generated and deduplicated ${deduplicatedSchedule.length} shifts from ${response.schedule.length} raw shifts`);
+  
+  onProgress?.('Gurobi schedule generation complete', 100);
+  
+  // Return the schedule with empty staffing issues (Gurobi should handle coverage)
+  return {
+    schedule: deduplicatedSchedule,
+    staffingIssues: []
+  };
 };
-
-/**
- * Simple pre-deduplication to ensure one shift per employee per day
- */
-function preDeduplicateShifts(shifts: Shift[]): Shift[] {
-  const uniqueEmployeeShifts = new Map<string, Shift>();
-  
-  for (const shift of shifts) {
-    const shiftDate = new Date(shift.start_time);
-    const dateStr = format(shiftDate, 'yyyy-MM-dd');
-    const key = `${shift.employee_id}-${dateStr}`;
-    
-    // Only keep one shift per employee per day (first one encountered)
-    if (!uniqueEmployeeShifts.has(key)) {
-      uniqueEmployeeShifts.set(key, shift);
-    }
-  }
-  
-  return Array.from(uniqueEmployeeShifts.values());
-}
 
 // Save generated shifts to Supabase
 export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> => {
@@ -168,7 +137,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
   }
 };
 
-// NEW: Two-week generation function with Gurobi optimization
+// Gurobi-only two-week generation function
 export const generateScheduleForTwoWeeks = async (
   currentDate: Date,
   profiles: Profile[],
@@ -211,66 +180,50 @@ export const generateScheduleForTwoWeeks = async (
 
   console.log('🎯 Using Gurobi configuration:', gurobiConfig);
 
-  // Try Gurobi API first (now available locally)
-  try {
-    onProgress?.('⚡ Calling Gurobi optimizer...', 20);
-    
-    const response = await schedulerApi.generateSchedule(
-      startDate.toISOString(),
-      twoWeeksEnd.toISOString(),
-      settings?.department || 'Akutmottagning',
-      gurobiConfig.minStaffPerShift,
-      gurobiConfig.minExperiencePerShift,
-      gurobiConfig.includeWeekends,
-      timestamp || Date.now()
-    );
-    
-    onProgress?.('📊 Processing Gurobi results...', 60);
-    
-    console.log('🎉 Gurobi optimization response:', response);
-    
-    if (response.schedule && response.schedule.length > 0) {
-      // Convert Gurobi response to our Shift format
-      const convertedSchedule = response.schedule.map((shift: any) => ({
-        id: uuidv4(),
-        employee_id: shift.employee_id,
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        shift_type: shift.shift_type,
-        is_published: false,
-        department: shift.department || 'Akutmottagning'
-      }));
-      
-      const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
-      
-      console.log(`✅ Gurobi generated ${deduplicatedSchedule.length} shifts for two weeks`);
-      console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
-      console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
-      
-      onProgress?.('🎯 Gurobi optimization complete!', 100);
-      
-      return {
-        schedule: deduplicatedSchedule,
-        staffingIssues: [], // Gurobi should minimize these
-        coverage_stats: response.coverage_stats,
-        fairness_stats: response.fairness_stats
-      };
-    } else {
-      console.warn('⚠️ Gurobi returned empty schedule');
-    }
-  } catch (error) {
-    console.error('💥 Gurobi API failed, using local generation fallback:', error);
+  onProgress?.('⚡ Calling Gurobi optimizer...', 20);
+  
+  const response = await schedulerApi.generateSchedule(
+    startDate.toISOString(),
+    twoWeeksEnd.toISOString(),
+    settings?.department || 'Akutmottagning',
+    gurobiConfig.minStaffPerShift,
+    gurobiConfig.minExperiencePerShift,
+    gurobiConfig.includeWeekends,
+    timestamp || Date.now()
+  );
+  
+  onProgress?.('📊 Processing Gurobi results...', 60);
+  
+  console.log('🎉 Gurobi optimization response:', response);
+  
+  if (!response.schedule || response.schedule.length === 0) {
+    throw new Error('Gurobi optimizer returned no schedule. Please check constraints and employee availability.');
   }
   
-  // Fallback to local generation only if Gurobi fails
-  console.log('🔄 Falling back to enhanced local generation...');
-  onProgress?.('🛠️ Generating locally for two weeks...', 70);
-  const localSchedule = await generateEnhancedLocalSchedule(startDate, twoWeeksEnd, profiles, settings, onProgress);
+  // Convert Gurobi response to our Shift format
+  const convertedSchedule = response.schedule.map((shift: any) => ({
+    id: uuidv4(),
+    employee_id: shift.employee_id,
+    date: shift.date,
+    start_time: shift.start_time,
+    end_time: shift.end_time,
+    shift_type: shift.shift_type,
+    is_published: false,
+    department: shift.department || 'Akutmottagning'
+  }));
   
-  onProgress?.('✅ Two-week schedule complete', 100);
+  const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
+  
+  console.log(`✅ Gurobi generated ${deduplicatedSchedule.length} shifts for two weeks`);
+  console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
+  console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
+  
+  onProgress?.('🎯 Gurobi optimization complete!', 100);
+  
   return {
-    schedule: deduplicateShifts(localSchedule.schedule),
-    staffingIssues: localSchedule.staffingIssues
+    schedule: deduplicatedSchedule,
+    staffingIssues: [], // Gurobi should minimize these
+    coverage_stats: response.coverage_stats,
+    fairness_stats: response.fairness_stats
   };
 };

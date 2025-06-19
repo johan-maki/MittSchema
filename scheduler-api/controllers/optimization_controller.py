@@ -74,16 +74,29 @@ async def handle_optimization_request(request: ScheduleRequest):
         if "statistics" in result:
             logger.info(f"🔍 Statistics keys: {list(result['statistics'].keys())}")
         
+        # Extract statistics for API response structure
+        statistics = result.get("statistics", {})
+        coverage_data = statistics.get("coverage", {})
+        fairness_data = statistics.get("fairness", {})
+        
         return {
             "schedule": result["schedule"],
-            "statistics": result.get("statistics", {}),
+            "coverage_stats": {
+                "total_shifts": coverage_data.get("total_shifts", 0),
+                "filled_shifts": coverage_data.get("filled_shifts", 0),
+                "coverage_percentage": coverage_data.get("coverage_percentage", 0.0)
+            },
             "employee_stats": result.get("employee_stats", {}),
-            "fairness_stats": result.get("fairness_stats", {}),  # Legacy compatibility
-            "coverage_stats": result.get("statistics", {}).get("coverage", {}),  # Legacy compatibility
-            "staffing_issues": result.get("staffing_issues", []),
-            "message": result.get("message", "Schedule optimized successfully"),
+            "fairness_stats": {
+                "min_shifts_per_employee": fairness_data.get("min_shifts", 0),
+                "max_shifts_per_employee": fairness_data.get("max_shifts", 0),
+                "avg_shifts_per_employee": fairness_data.get("avg_shifts", 0.0),
+                "shift_distribution_range": fairness_data.get("distribution_range", 0)
+            },
             "optimizer": result.get("optimizer", "gurobi"),
-            "objective_value": result.get("objective_value")
+            "optimization_status": "optimal" if result.get("objective_value") is not None else "unknown",
+            "objective_value": result.get("objective_value"),
+            "message": result.get("message", "Schedule optimized successfully")
         }
     except HTTPException:
         # Re-raise HTTP exceptions without modification

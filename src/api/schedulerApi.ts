@@ -59,8 +59,8 @@ export const schedulerApi = {
     timestamp?: number, 
     retries = 3
   ): Promise<GurobiScheduleResponse> => {
-    // Use local Gurobi API instead of cloud
-    const url = "http://localhost:8081/optimize-schedule";
+    // Use local Gurobi API from environment config
+    const url = `${SCHEDULER_API.BASE_URL}${SCHEDULER_API.ENDPOINTS.OPTIMIZE_SCHEDULE}`;
     
     // Ensure we always have a random seed for different results
     const random_seed = timestamp || Math.floor(Math.random() * 1000000);
