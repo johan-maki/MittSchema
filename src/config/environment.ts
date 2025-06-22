@@ -18,7 +18,6 @@ export const environment = {
   // Feature flags
   features: {
     enableSchedulerAPI: import.meta.env.VITE_ENABLE_SCHEDULER_API !== 'false',
-    enableLocalFallback: import.meta.env.VITE_ENABLE_LOCAL_FALLBACK !== 'false',
   }
 };
 

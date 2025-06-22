@@ -4,7 +4,7 @@ import type { Shift } from "@/types/shift";
 import { useScheduleSettings } from "./useScheduleSettings";
 import { useProfileData } from "./useProfileData";
 import { validateConstraints } from "../utils/schedulingConstraints";
-import { generateScheduleForMonth, generateScheduleForTwoWeeks, saveScheduleToSupabase } from "../services/scheduleGenerationService";
+import { generateScheduleForTwoWeeks, saveScheduleToSupabase } from "../services/scheduleGenerationService";
 import { useStaffingIssues } from "./useStaffingIssues";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,9 +207,29 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       return false;
     } catch (error) {
       console.error('Error generating schedule:', error);
+      
+      // More specific error messages for Gurobi connection issues
+      let errorMessage = "Ett oväntat fel uppstod vid schemagenerering.";
+      let errorTitle = "Schemagenerering misslyckades";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Unable to connect to Gurobi')) {
+          errorTitle = "Kan inte ansluta till Gurobi";
+          errorMessage = "Kunde inte ansluta till Gurobi-optimeraren. Kontrollera internetanslutning och försök igen.";
+        } else if (error.message.includes('Gurobi optimizer could not generate')) {
+          errorTitle = "Schemagenerering misslyckades";
+          errorMessage = "Gurobi kunde inte generera ett schema med nuvarande begränsningar. Kontrollera personalens tillgänglighet och försök igen.";
+        } else if (error.message.includes('No employees available')) {
+          errorTitle = "Inga medarbetare tillgängliga";
+          errorMessage = "Det finns inga medarbetare tillgängliga för schemaläggning. Lägg till medarbetare först.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Ett fel uppstod",
-        description: "Kunde inte generera schema. Kontrollera begränsningar och försök igen.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

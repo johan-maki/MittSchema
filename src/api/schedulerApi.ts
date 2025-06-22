@@ -123,13 +123,19 @@ export const schedulerApi = {
         const result = await response.json();
         console.log("API response:", result);
         
-        // Return the result even if schedule is empty - we'll handle fallback in the service
+        // Return the result - if empty, the service layer will handle the error appropriately
         return result;
       } catch (error) {
         console.error(`Error calling schedule API (attempt ${attempt}):`, error);
         
         if (attempt === retries || (error instanceof Error && error.name === 'AbortError')) {
-          throw error;
+          if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error('Unable to connect to Gurobi optimizer - request timed out. Please check your connection and try again.');
+          }
+          if (error instanceof TypeError && error.message.includes('fetch')) {
+            throw new Error('Unable to connect to Gurobi optimizer - server is not available. Please check the service status and try again.');
+          }
+          throw new Error(`Unable to connect to Gurobi optimizer: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your connection and try again.`);
         }
         
         // Wait before retrying with exponential backoff
@@ -137,6 +143,6 @@ export const schedulerApi = {
       }
     }
     
-    throw new Error('Maximum retry attempts exceeded');
+    throw new Error('Unable to connect to Gurobi optimizer after multiple attempts. Please check the service status and try again.');
   }
 };

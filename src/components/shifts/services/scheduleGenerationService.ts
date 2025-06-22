@@ -1,4 +1,4 @@
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
@@ -6,103 +6,7 @@ import type { Shift } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
 import { deduplicateShifts } from "../utils/validation";
 
-export const generateScheduleForMonth = async (
-  currentDate: Date,
-  profiles: Profile[],
-  settings: any,
-  timestamp?: number,
-  onProgress?: (step: string, progress: number) => void
-): Promise<{ schedule: Shift[], staffingIssues?: { date: string; shiftType: string; current: number; required: number }[] }> => {
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  
-  onProgress?.('Initializing Gurobi schedule generation...', 0);
-  
-  // Validate inputs
-  if (!profiles || profiles.length === 0) {
-    throw new Error('No employees available for scheduling');
-  }
-  
-  console.log('Calling Gurobi optimization API with dates:', {
-    startDate: monthStart.toISOString(),
-    endDate: monthEnd.toISOString(),
-    timestamp: timestamp || Date.now(),
-    profiles: profiles.length
-  });
 
-  onProgress?.('Calling Gurobi schedule optimization API...', 20);
-  
-  // Call the Gurobi Scheduler API
-  const response = await schedulerApi.generateSchedule(
-    monthStart.toISOString(),
-    monthEnd.toISOString(),
-    settings?.department || 'General',
-    1, // minStaffPerShift
-    1, // minExperiencePerShift  
-    true, // includeWeekends
-    timestamp || Date.now() // Ensure we always have a timestamp
-  );
-  
-  onProgress?.('Processing Gurobi API response...', 40);
-  console.log('🔍 DEBUG: Raw Gurobi schedule optimization response:', response);
-  console.log('🔍 DEBUG: Response type:', typeof response);
-  console.log('🔍 DEBUG: Response schedule:', response?.schedule);
-  console.log('🔍 DEBUG: Schedule length:', response?.schedule?.length);
-  console.log('🔍 DEBUG: Coverage stats:', response?.coverage_stats);
-  
-  // Check if Gurobi returned a valid schedule
-  if (!response) {
-    console.error('❌ No response from Gurobi API');
-    throw new Error('No response from Gurobi optimizer. Please check your connection and try again.');
-  }
-  
-  if (!response.schedule) {
-    console.error('❌ No schedule property in response:', response);
-    throw new Error('Gurobi optimizer returned invalid response format. Please try again.');
-  }
-  
-  if (response.schedule.length === 0) {
-    console.error('❌ Empty schedule array:', response);
-    throw new Error('Gurobi optimizer returned no schedule. Please check constraints and try again.');
-  }
-  
-  onProgress?.('Converting Gurobi response to shifts...', 60);
-  
-  // Convert Gurobi response to our Shift format
-  console.log('🔍 DEBUG: First shift from Gurobi:', response.schedule[0]);
-  const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
-    console.log(`🔍 DEBUG: Converting shift ${index}:`, {
-      start_time: shift.start_time,
-      end_time: shift.end_time,
-      start_time_type: typeof shift.start_time,
-      end_time_type: typeof shift.end_time
-    });
-    
-    return {
-      id: uuidv4(),
-      employee_id: shift.employee_id,
-      start_time: shift.start_time,
-      end_time: shift.end_time,
-      shift_type: shift.shift_type,
-      department: shift.department || 'General',
-      is_published: false
-    };
-  });
-  
-  onProgress?.('Deduplicating shifts...', 80);
-  
-  // Apply deduplication to enforce constraints
-  const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
-  console.log(`Gurobi generated and deduplicated ${deduplicatedSchedule.length} shifts from ${response.schedule.length} raw shifts`);
-  
-  onProgress?.('Gurobi schedule generation complete', 100);
-  
-  // Return the schedule with empty staffing issues (Gurobi should handle coverage)
-  return {
-    schedule: deduplicatedSchedule,
-    staffingIssues: []
-  };
-};
 
 // Save generated shifts to Supabase
 export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> => {
@@ -225,7 +129,7 @@ export const generateScheduleForTwoWeeks = async (
   console.log('🎉 Gurobi optimization response:', response);
   
   if (!response.schedule || response.schedule.length === 0) {
-    throw new Error('Gurobi optimizer returned no schedule. Please check constraints and employee availability.');
+    throw new Error('Gurobi optimizer could not generate a schedule with the current constraints. Please review employee availability and constraints, then try again.');
   }
   
   // Convert Gurobi response to our Shift format
