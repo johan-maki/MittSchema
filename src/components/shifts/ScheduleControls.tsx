@@ -34,17 +34,26 @@ export const ScheduleControls = () => {
   };
 
   const handleClearUnpublished = async () => {
+    // Add confirmation dialog for safety
+    const confirmed = window.confirm(
+      "Är du säker på att du vill rensa hela schemat? Detta kan inte ångras."
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+    
     try {
       const { error: deleteError } = await supabase
         .from('shifts')
         .delete()
-        .filter('is_published', 'is', null);
+        .eq('is_published', false); // Use eq instead of filter for better performance
 
       if (deleteError) throw deleteError;
 
       toast({
         title: "Schema rensat",
-        description: "Alla opublicerade pass har tagits bort.",
+        description: "Hela schemat har rensats och är nu tomt.",
       });
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error) {
@@ -74,7 +83,7 @@ export const ScheduleControls = () => {
         onClick={handleClearUnpublished}
       >
         <Ban className="mr-2 h-4 w-4" />
-        Rensa opublicerat
+        Rensa schema
       </Button>
     </>
   );
