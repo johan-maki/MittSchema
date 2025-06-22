@@ -134,14 +134,12 @@ export const generateScheduleForTwoWeeks = async (
       start_time: shift.start_time,
       end_time: shift.end_time,
       start_time_type: typeof shift.start_time,
-      end_time_type: typeof shift.end_time,
-      date: shift.date
+      end_time_type: typeof shift.end_time
     });
     
     return {
       id: uuidv4(),
       employee_id: shift.employee_id,
-      date: shift.date,
       start_time: shift.start_time,
       end_time: shift.end_time,
       shift_type: shift.shift_type,
@@ -152,6 +150,11 @@ export const generateScheduleForTwoWeeks = async (
   
   console.log('🔍 DEBUG: Before saving - sample shift:', convertedSchedule[0]);
   console.log('🔍 DEBUG: Gurobi generated schedule length:', convertedSchedule.length);
+  console.log('🔍 DEBUG: All converted shifts:', convertedSchedule.map(s => ({
+    employee_id: s.employee_id,
+    start_time: s.start_time,
+    shift_type: s.shift_type
+  })));
   
   console.log(`✅ Gurobi generated ${convertedSchedule.length} shifts for two weeks`);
   console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
