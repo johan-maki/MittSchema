@@ -39,8 +39,20 @@ def fetch_settings(supabase: Client, department: str = "General"):
 
 def create_date_list(start_date: datetime, end_date: datetime):
     """Create list of dates between start_date and end_date, inclusive"""
-    date_range = (end_date - start_date).days + 1
-    return [start_date + timedelta(days=i) for i in range(date_range)]
+    # Ensure we work with date objects only to avoid time zone issues
+    start_date_only = start_date.date()
+    end_date_only = end_date.date()
+    
+    # Calculate the actual number of days including both start and end date
+    date_range = (end_date_only - start_date_only).days + 1
+    
+    # Generate datetime objects for each date (preserving original time for start_date)
+    dates = []
+    for i in range(date_range):
+        date = datetime.combine(start_date_only, start_date.time()) + timedelta(days=i)
+        dates.append(date)
+    
+    return dates
 
 def format_shift_times(date: datetime, start_hour: int, end_hour: int):
     """Format shift start and end times based on shift configuration"""

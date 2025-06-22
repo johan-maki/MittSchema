@@ -6,6 +6,7 @@ export type Role = 'Läkare' | 'Sjuksköterska' | 'Undersköterska';
 export type Shift = {
   id: string;
   employee_id: string;
+  date?: string; // Add date field for proper scheduling
   start_time: string;
   end_time: string;
   shift_type: ShiftType;

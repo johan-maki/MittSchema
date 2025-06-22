@@ -27,6 +27,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     const BATCH_SIZE = 10;
     const shiftsToInsert = shifts.map(shift => ({
       id: shift.id || uuidv4(), // Generate proper UUIDs for new shifts
+      date: shift.date, // Include the date field from Gurobi
       start_time: shift.start_time,
       end_time: shift.end_time,
       shift_type: shift.shift_type,
@@ -144,6 +145,7 @@ export const generateScheduleForNextMonth = async (
   console.log('🔍 DEBUG: First shift from Gurobi:', response.schedule[0]);
   const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
     console.log(`🔍 DEBUG: Converting shift ${index}:`, {
+      date: shift.date,
       start_time: shift.start_time,
       end_time: shift.end_time,
       start_time_type: typeof shift.start_time,
@@ -153,6 +155,7 @@ export const generateScheduleForNextMonth = async (
     return {
       id: uuidv4(),
       employee_id: shift.employee_id,
+      date: shift.date, // Include date from Gurobi response
       start_time: shift.start_time,
       end_time: shift.end_time,
       shift_type: shift.shift_type,
