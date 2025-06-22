@@ -229,18 +229,31 @@ export const generateScheduleForTwoWeeks = async (
   }
   
   // Convert Gurobi response to our Shift format
-  const convertedSchedule = response.schedule.map((shift: any) => ({
-    id: uuidv4(),
-    employee_id: shift.employee_id,
-    date: shift.date,
-    start_time: shift.start_time,
-    end_time: shift.end_time,
-    shift_type: shift.shift_type,
-    is_published: false,
-    department: shift.department || 'Akutmottagning'
-  }));
+  console.log('🔍 DEBUG: First shift from Gurobi:', response.schedule[0]);
+  const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
+    console.log(`🔍 DEBUG: Converting shift ${index}:`, {
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      start_time_type: typeof shift.start_time,
+      end_time_type: typeof shift.end_time,
+      date: shift.date
+    });
+    
+    return {
+      id: uuidv4(),
+      employee_id: shift.employee_id,
+      date: shift.date,
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      shift_type: shift.shift_type,
+      is_published: false,
+      department: shift.department || 'Akutmottagning'
+    };
+  });
   
+  console.log('🔍 DEBUG: Before deduplication - sample shift:', convertedSchedule[0]);
   const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
+  console.log('🔍 DEBUG: After deduplication - schedule length:', deduplicatedSchedule.length);
   
   console.log(`✅ Gurobi generated ${deduplicatedSchedule.length} shifts for two weeks`);
   console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
