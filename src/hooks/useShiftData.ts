@@ -42,7 +42,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         .from('shifts')
         .select(`
           *,
-          profiles:employee_id (
+          profiles:employees!shifts_employee_id_fkey (
             first_name,
             last_name,
             experience_level
