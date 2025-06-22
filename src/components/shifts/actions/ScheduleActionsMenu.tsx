@@ -29,7 +29,7 @@ export const ScheduleActionsMenu = ({
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onClearClick} className="text-red-600">
           <Ban className="mr-2 h-4 w-4" />
-          Rensa opublicerat
+          Rensa schema
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onSettingsClick} className="text-gray-600">
           <Settings className="mr-2 h-4 w-4" />

@@ -32,6 +32,15 @@ export const useSchedulePublishing = () => {
   };
 
   const handleClearUnpublished = async () => {
+    // Add confirmation dialog for safety
+    const confirmed = window.confirm(
+      "Är du säker på att du vill rensa hela schemat? Detta kan inte ångras."
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+    
     try {
       const { error: deleteError } = await supabase
         .from('shifts')
@@ -42,7 +51,7 @@ export const useSchedulePublishing = () => {
 
       toast({
         title: "Schema rensat",
-        description: "Alla opublicerade pass har tagits bort.",
+        description: "Hela schemat har rensats och är nu tomt.",
       });
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
     } catch (error) {
