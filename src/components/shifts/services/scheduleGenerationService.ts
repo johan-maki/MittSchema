@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
-import { deduplicateShifts } from "../utils/validation";
 
 
 
@@ -16,15 +15,11 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       return false;
     }
     
-    // Apply one more round of deduplication before saving to ensure constraints are met
-    const finalShifts = deduplicateShifts(shifts);
-    console.log(`Final deduplication: from ${shifts.length} to ${finalShifts.length} shifts`);
-    
-    console.log(`Saving ${finalShifts.length} shifts to Supabase`);
+    console.log(`Saving ${shifts.length} shifts to Supabase (Gurobi optimized - no deduplication)`);
     
     // Process shifts in smaller batches to avoid timeouts
     const BATCH_SIZE = 10;
-    const shiftsToInsert = finalShifts.map(shift => ({
+    const shiftsToInsert = shifts.map(shift => ({
       id: shift.id || uuidv4(), // Generate proper UUIDs for new shifts
       start_time: shift.start_time,
       end_time: shift.end_time,
@@ -155,18 +150,17 @@ export const generateScheduleForTwoWeeks = async (
     };
   });
   
-  console.log('🔍 DEBUG: Before deduplication - sample shift:', convertedSchedule[0]);
-  const deduplicatedSchedule = deduplicateShifts(convertedSchedule);
-  console.log('🔍 DEBUG: After deduplication - schedule length:', deduplicatedSchedule.length);
+  console.log('🔍 DEBUG: Before saving - sample shift:', convertedSchedule[0]);
+  console.log('🔍 DEBUG: Gurobi generated schedule length:', convertedSchedule.length);
   
-  console.log(`✅ Gurobi generated ${deduplicatedSchedule.length} shifts for two weeks`);
+  console.log(`✅ Gurobi generated ${convertedSchedule.length} shifts for two weeks`);
   console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
   
   onProgress?.('🎯 Gurobi optimization complete!', 100);
   
   const finalResult = {
-    schedule: deduplicatedSchedule,
+    schedule: convertedSchedule, // Use Gurobi result directly without deduplication
     staffingIssues: [], // Gurobi should minimize these
     coverage_stats: response.coverage_stats,
     fairness_stats: response.fairness_stats
