@@ -18,14 +18,18 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       // Determine the date range based on the view
       if (currentView === 'day') {
         startDate = new Date(currentDate);
+        startDate.setHours(0, 0, 0, 0); // Set to start of day
         endDate = new Date(currentDate);
+        endDate.setHours(23, 59, 59, 999); // Set to end of day
       } else if (currentView === 'week') {
         // Start from Monday of the current week
         const dayOfWeek = currentDate.getDay();
         startDate = new Date(currentDate);
         startDate.setDate(currentDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        startDate.setHours(0, 0, 0, 0); // Set to start of day
         endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6); // End on Sunday
+        endDate.setHours(23, 59, 59, 999); // Set to end of day
       } else { // month
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
@@ -73,9 +77,9 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       })));
       
       if (currentView === 'week') {
-        // Log Monday shifts specifically
-        const mondayShifts = shifts?.filter(s => s.start_time.startsWith('2025-06-23')) || [];
-        console.log('🔍 DEBUG: Monday 2025-06-23 shifts:', mondayShifts.map(s => ({
+        // Log Monday shifts specifically for July week
+        const mondayShifts = shifts?.filter(s => s.start_time.startsWith('2025-07-07')) || [];
+        console.log('🔍 DEBUG: Monday 2025-07-07 shifts:', mondayShifts.map(s => ({
           shift_type: s.shift_type,
           employee: s.profiles ? `${s.profiles.first_name} ${s.profiles.last_name}` : 'NO PROFILE',
           start_time: s.start_time
