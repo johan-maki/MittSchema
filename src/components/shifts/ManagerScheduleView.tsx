@@ -437,33 +437,46 @@ export const ManagerScheduleView = ({
                               {shifts.map((shift) => {
                                 const employee = getEmployeeById(shift.employee_id);
                                 const roleGradient = employee ? ROLE_COLORS[employee.role as keyof typeof ROLE_COLORS] : 'from-gray-400 to-gray-500';
+                                const isPublished = shift.is_published;
                                 
                                 return (
                                   <motion.div
                                     key={shift.id}
                                     whileHover={{ scale: 1.02 }}
-                                    className={`${config.bgColor} border rounded-lg p-2 cursor-pointer hover:shadow-sm transition-all`}
+                                    className={`
+                                      ${config.bgColor} border rounded-lg p-2 cursor-pointer hover:shadow-sm transition-all relative
+                                      ${isPublished 
+                                        ? 'ring-1 ring-green-200 bg-opacity-100' 
+                                        : 'border-dashed border-amber-300 bg-opacity-70'
+                                      }
+                                    `}
                                     onClick={() => onShiftClick?.(shift)}
                                   >
+                                    {/* Publication status indicator */}
+                                    {isPublished && (
+                                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white" />
+                                    )}
+                                    
                                     {viewMode === 'detailed' ? (
                                       <div className="flex items-center gap-2">
-                                        <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${roleGradient} flex items-center justify-center`}>
+                                        <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${roleGradient} flex items-center justify-center ${!isPublished ? 'opacity-80' : ''}`}>
                                           <span className="text-xs font-medium text-white">
                                             {getEmployeeInitials(employee)}
                                           </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-medium truncate">
+                                          <p className={`text-xs font-medium truncate ${!isPublished ? 'text-amber-700' : ''}`}>
                                             {employee ? `${employee.first_name} ${employee.last_name}` : 'Okänd'}
                                           </p>
-                                          <p className="text-xs text-muted-foreground truncate">
+                                          <p className={`text-xs truncate ${!isPublished ? 'text-amber-600' : 'text-muted-foreground'}`}>
                                             {employee?.role}
+                                            {!isPublished && <span className="ml-1 italic">(utkast)</span>}
                                           </p>
                                         </div>
                                       </div>
                                     ) : (
                                       <div className="flex items-center justify-center">
-                                        <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${roleGradient} flex items-center justify-center`}>
+                                        <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${roleGradient} flex items-center justify-center ${!isPublished ? 'opacity-80' : ''}`}>
                                           <span className="text-xs font-medium text-white">
                                             {getEmployeeInitials(employee)}
                                           </span>
@@ -491,7 +504,7 @@ export const ManagerScheduleView = ({
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Status:</span>
+              <span className="text-sm font-medium">Bemanning:</span>
               <div className="flex items-center gap-1">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <span className="text-xs">Fullbemannat</span>
@@ -503,6 +516,20 @@ export const ManagerScheduleView = ({
               <div className="flex items-center gap-1">
                 <UserX className="h-4 w-4 text-red-500" />
                 <span className="text-xs">Obemannat</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Publicering:</span>
+              <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded-full border border-white"></div>
+                  <span className="text-xs">Publicerat</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 border border-dashed border-amber-400 rounded-full bg-amber-100"></div>
+                <span className="text-xs">Utkast</span>
               </div>
             </div>
             

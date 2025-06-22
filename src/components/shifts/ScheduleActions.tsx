@@ -9,6 +9,7 @@ import { ScheduleActionsMenu } from "./actions/ScheduleActionsMenu";
 import { GenerateButton } from "./actions/GenerateButton";
 import { useSchedulePublishing } from "./actions/useSchedulePublishing";
 import { ScheduleSummaryModal } from "@/components/ui/ScheduleSummaryModal";
+import { PublicationStatus } from "./PublicationStatus";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -53,6 +54,7 @@ export const ScheduleActions = ({
 
   // Check if there are any published shifts
   const hasPublishedShifts = shifts.some(shift => shift.is_published);
+  const hasAnyShifts = shifts.length > 0;
 
   const handleCancelPreview = () => {
     setShowPreview(false);
@@ -60,7 +62,12 @@ export const ScheduleActions = ({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
+      <PublicationStatus 
+        hasPublishedShifts={hasPublishedShifts}
+        hasAnyShifts={hasAnyShifts}
+      />
+      
       <GenerateButton
         isGenerating={isGenerating}
         isLoadingSettings={isLoadingSettings}

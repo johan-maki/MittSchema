@@ -65,6 +65,34 @@ export const useSchedulePublishing = () => {
   };
 
   const handleClearUnpublished = async () => {
+    // Check if there are any published shifts first
+    try {
+      const { data: publishedShifts, error: checkError } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('is_published', true)
+        .limit(1);
+        
+      if (checkError) throw checkError;
+        
+      if (publishedShifts && publishedShifts.length > 0) {
+        toast({
+          title: "Kan inte rensa publicerat schema",
+          description: "Du måste först avpublicera schemat innan du kan rensa det.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking published shifts:', error);
+      toast({
+        title: "Ett fel uppstod",
+        description: "Kunde inte kontrollera schemastatus. Försök igen.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Add confirmation dialog for safety
     const confirmed = window.confirm(
       "Är du säker på att du vill rensa hela schemat? Detta kan inte ångras."
