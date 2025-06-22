@@ -16,6 +16,12 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     }
     
     console.log(`Saving ${shifts.length} shifts to Supabase (Gurobi optimized - no deduplication)`);
+    console.log('🔍 DEBUG: First 3 shifts to save:', shifts.slice(0, 3).map(s => ({
+      employee_id: s.employee_id,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      shift_type: s.shift_type
+    })));
     
     // Process shifts in smaller batches to avoid timeouts
     const BATCH_SIZE = 10;
@@ -28,6 +34,9 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       employee_id: shift.employee_id,
       is_published: false
     }));
+    
+    console.log('🔍 DEBUG: shiftsToInsert prepared, count:', shiftsToInsert.length);
+    console.log('🔍 DEBUG: Sample shiftsToInsert:', shiftsToInsert.slice(0, 2));
     
     // Clear all existing unpublished shifts first
     const { error: clearError } = await supabase
