@@ -31,6 +31,39 @@ export const useSchedulePublishing = () => {
     }
   };
 
+  const handleUnpublishSchedule = async () => {
+    // Add confirmation dialog for safety
+    const confirmed = window.confirm(
+      "Är du säker på att du vill avpublicera schemat? Det kommer att bli redigerbart igen."
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    try {
+      const { error: updateError } = await supabase
+        .from('shifts')
+        .update({ is_published: false })
+        .eq('is_published', true);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Schema avpublicerat",
+        description: "Schemat är nu redigerbart igen.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+    } catch (error) {
+      console.error('Error unpublishing schedule:', error);
+      toast({
+        title: "Ett fel uppstod",
+        description: "Kunde inte avpublicera schemat. Försök igen.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleClearUnpublished = async () => {
     // Add confirmation dialog for safety
     const confirmed = window.confirm(
@@ -66,6 +99,7 @@ export const useSchedulePublishing = () => {
 
   return {
     handlePublishSchedule,
+    handleUnpublishSchedule,
     handleClearUnpublished,
   };
 };

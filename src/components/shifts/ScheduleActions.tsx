@@ -47,8 +47,12 @@ export const ScheduleActions = ({
   
   const {
     handlePublishSchedule,
+    handleUnpublishSchedule,
     handleClearUnpublished
   } = useSchedulePublishing();
+
+  // Check if there are any published shifts
+  const hasPublishedShifts = shifts.some(shift => shift.is_published);
 
   const handleCancelPreview = () => {
     setShowPreview(false);
@@ -95,8 +99,10 @@ export const ScheduleActions = ({
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <ScheduleActionsMenu
           onPublishClick={handlePublishSchedule}
+          onUnpublishClick={handleUnpublishSchedule}
           onClearClick={handleClearUnpublished}
           onSettingsClick={handleSettingsClick}
+          hasPublishedShifts={hasPublishedShifts}
         />
         <DialogContent>
           <ShiftForm
