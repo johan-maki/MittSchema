@@ -3,7 +3,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Shift } from "@/types/shift";
-import { deduplicateShifts, validateShiftConstraints } from "../utils/validation";
+import { validateShiftConstraints } from "../utils/validation";
 
 export const useScheduleApplier = () => {
   const { toast } = useToast();
@@ -22,18 +22,12 @@ export const useScheduleApplier = () => {
     }
     
     try {
-      // First deduplicate shifts based on employee ID, day, and shift type
-      const uniqueShifts = deduplicateShifts(generatedShifts);
-      
-      if (uniqueShifts.length < generatedShifts.length) {
-        console.log(`Removed ${generatedShifts.length - uniqueShifts.length} duplicate shifts`);
-      }
-      
-      console.log("Preparing to insert", uniqueShifts.length, "shifts");
+      // Use Gurobi optimized shifts directly without deduplication
+      console.log("Preparing to insert", generatedShifts.length, "Gurobi-optimized shifts");
       
       // Process shifts in smaller batches to avoid timeouts
       const BATCH_SIZE = 10; // Reducing to even smaller batch size for better reliability
-      const shiftsToInsert = uniqueShifts.map(shift => ({
+      const shiftsToInsert = generatedShifts.map(shift => ({
         id: shift.id || `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate an ID if not present
         start_time: shift.start_time,
         end_time: shift.end_time,
