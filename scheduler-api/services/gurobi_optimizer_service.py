@@ -255,9 +255,10 @@ class GurobiScheduleOptimizer:
         
         Objective components:
         1. Maximize total shift coverage (primary goal)
-        2. Minimize unfairness in shift distribution (secondary goal)
+        2. Minimize unfairness in total shift distribution (secondary goal)
+        3. Minimize unfairness in shift type distribution (tertiary goal)
         """
-        logger.info("Setting objective function...")
+        logger.info("Setting enhanced objective function with shift type fairness...")
         
         # Primary objective: Maximize total assigned shifts (coverage)
         total_coverage = gp.quicksum(
@@ -267,8 +268,7 @@ class GurobiScheduleOptimizer:
             for shift in self.shift_types
         )
         
-        # Secondary objective: Minimize unfairness in shift distribution
-        # Calculate variance in total shifts per employee
+        # Secondary objective: Minimize unfairness in total shift distribution
         emp_total_shifts = []
         for emp in self.employees:
             emp_total = gp.quicksum(
@@ -278,23 +278,47 @@ class GurobiScheduleOptimizer:
             )
             emp_total_shifts.append(emp_total)
         
-        # For simplicity, minimize the maximum difference between any two employees
-        max_shifts = self.model.addVar(vtype=GRB.CONTINUOUS, name="max_shifts")
-        min_shifts = self.model.addVar(vtype=GRB.CONTINUOUS, name="min_shifts")
+        # Total shift fairness variables
+        max_total_shifts = self.model.addVar(vtype=GRB.CONTINUOUS, name="max_total_shifts")
+        min_total_shifts = self.model.addVar(vtype=GRB.CONTINUOUS, name="min_total_shifts")
         
         for emp_shifts in emp_total_shifts:
-            self.model.addConstr(max_shifts >= emp_shifts)
-            self.model.addConstr(min_shifts <= emp_shifts)
+            self.model.addConstr(max_total_shifts >= emp_shifts)
+            self.model.addConstr(min_total_shifts <= emp_shifts)
         
-        unfairness = max_shifts - min_shifts
+        total_unfairness = max_total_shifts - min_total_shifts
         
-        # Combined objective: prioritize coverage, then fairness
+        # Tertiary objective: Minimize unfairness in shift type distribution
+        shift_type_unfairness = 0
+        for shift_type in self.shift_types:
+            emp_shift_type_counts = []
+            for emp in self.employees:
+                emp_shift_type_total = gp.quicksum(
+                    self.shifts[(emp['id'], d, shift_type)]
+                    for d in range(len(self.dates))
+                )
+                emp_shift_type_counts.append(emp_shift_type_total)
+            
+            # Shift type fairness variables
+            max_shift_type = self.model.addVar(vtype=GRB.CONTINUOUS, name=f"max_{shift_type}_shifts")
+            min_shift_type = self.model.addVar(vtype=GRB.CONTINUOUS, name=f"min_{shift_type}_shifts")
+            
+            for emp_shift_count in emp_shift_type_counts:
+                self.model.addConstr(max_shift_type >= emp_shift_count)
+                self.model.addConstr(min_shift_type <= emp_shift_count)
+            
+            shift_type_unfairness += (max_shift_type - min_shift_type)
+        
+        # Combined objective with balanced weights:
+        # - Coverage is most important (weight: 100)
+        # - Total fairness is important (weight: 10) 
+        # - Shift type fairness is also important (weight: 5)
         self.model.setObjective(
-            1000 * total_coverage - unfairness,  # Weight coverage much higher than fairness
+            100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness,
             GRB.MAXIMIZE
         )
         
-        logger.info("Objective function set: Maximize coverage, minimize unfairness")
+        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (10x), Shift type fairness (5x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
@@ -369,16 +393,39 @@ class GurobiScheduleOptimizer:
         logger.info(f"Schedule generated with {coverage_stats['coverage_percentage']}% coverage")
         logger.info(f"Filled {coverage_stats['filled_shifts']} out of {coverage_stats['total_shifts']} shifts")
         
+        # Calculate shift type fairness statistics
+        shift_type_stats = {}
+        for shift_type in self.shift_types:
+            shift_counts = [emp_data[f"{shift_type}_shifts"] for emp_data in employee_stats.values()]
+            if shift_counts:
+                shift_type_stats[shift_type] = {
+                    "min": min(shift_counts),
+                    "max": max(shift_counts),
+                    "avg": round(sum(shift_counts) / len(shift_counts), 1),
+                    "range": max(shift_counts) - min(shift_counts)
+                }
+        
+        # Overall fairness calculations
+        total_shifts_per_employee = [emp_data["total_shifts"] for emp_data in employee_stats.values()]
+        fairness_stats = {
+            "total_shifts": {
+                "min": min(total_shifts_per_employee) if total_shifts_per_employee else 0,
+                "max": max(total_shifts_per_employee) if total_shifts_per_employee else 0,
+                "avg": round(sum(total_shifts_per_employee) / len(total_shifts_per_employee), 1) if total_shifts_per_employee else 0,
+                "range": max(total_shifts_per_employee) - min(total_shifts_per_employee) if total_shifts_per_employee else 0
+            },
+            "shift_types": shift_type_stats
+        }
+        
+        logger.info(f"Fairness - Total shifts range: {fairness_stats['total_shifts']['range']}")
+        for shift_type, stats in shift_type_stats.items():
+            logger.info(f"Fairness - {shift_type} shifts range: {stats['range']}")
+        
         return {
             "schedule": schedule,
             "statistics": {
                 "coverage": coverage_stats,
-                "fairness": {
-                    "min_shifts": min(emp_data["total_shifts"] for emp_data in employee_stats.values()) if employee_stats else 0,
-                    "max_shifts": max(emp_data["total_shifts"] for emp_data in employee_stats.values()) if employee_stats else 0,
-                    "avg_shifts": sum(emp_data["total_shifts"] for emp_data in employee_stats.values()) / len(employee_stats) if employee_stats else 0,
-                    "distribution_range": max(emp_data["total_shifts"] for emp_data in employee_stats.values()) - min(emp_data["total_shifts"] for emp_data in employee_stats.values()) if employee_stats else 0
-                }
+                "fairness": fairness_stats
             },
             "employee_stats": employee_stats,
             "optimizer": "gurobi",
