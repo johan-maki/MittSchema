@@ -73,8 +73,8 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
   }
 };
 
-// Gurobi-only two-week generation function
-export const generateScheduleForTwoWeeks = async (
+// Gurobi-only next month generation function
+export const generateScheduleForNextMonth = async (
   currentDate: Date,
   profiles: Profile[],
   settings: any,
@@ -86,20 +86,24 @@ export const generateScheduleForTwoWeeks = async (
   coverage_stats?: any,
   fairness_stats?: any 
 }> => {
-  // Calculate two-week period starting from TODAY (not last Sunday)
-  const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0); // Start from today at midnight
+  // Calculate next full calendar month
+  const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); // First day of next month
+  const startDate = new Date(nextMonth);
+  startDate.setHours(0, 0, 0, 0);
   
-  const twoWeeksEnd = new Date(startDate);
-  twoWeeksEnd.setDate(twoWeeksEnd.getDate() + 13); // 14 days total
+  // Last day of next month
+  const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+  endDate.setHours(23, 59, 59, 999);
   
   onProgress?.('🚀 Initializing Gurobi schedule optimization...', 0);
   
-  console.log('🗓️ Generating two-week schedule with Gurobi:', {
+  console.log('🗓️ Generating next month schedule with Gurobi:', {
     startDate: startDate.toISOString().split('T')[0],
-    twoWeeksEnd: twoWeeksEnd.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
     profiles: profiles.length,
-    useGurobi: true
+    useGurobi: true,
+    daysInMonth: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
   });
   
   // Validate inputs
@@ -120,7 +124,7 @@ export const generateScheduleForTwoWeeks = async (
   
   const response = await schedulerApi.generateSchedule(
     startDate.toISOString(),
-    twoWeeksEnd.toISOString(),
+    endDate.toISOString(),
     settings?.department || 'Akutmottagning',
     gurobiConfig.minStaffPerShift,
     gurobiConfig.minExperiencePerShift,
@@ -165,7 +169,7 @@ export const generateScheduleForTwoWeeks = async (
     shift_type: s.shift_type
   })));
   
-  console.log(`✅ Gurobi generated ${convertedSchedule.length} shifts for two weeks`);
+  console.log(`✅ Gurobi generated ${convertedSchedule.length} shifts for next month`);
   console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
   
@@ -178,7 +182,7 @@ export const generateScheduleForTwoWeeks = async (
     fairness_stats: response.fairness_stats
   };
   
-  console.log('🔍 DEBUG: Final result from generateScheduleForTwoWeeks:', finalResult);
+  console.log('🔍 DEBUG: Final result from generateScheduleForNextMonth:', finalResult);
   console.log('🔍 DEBUG: Final result schedule length:', finalResult.schedule.length);
   
   return finalResult;

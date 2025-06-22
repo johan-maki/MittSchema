@@ -57,7 +57,7 @@ export const GenerateButton = ({
         onClick={handleButtonClick}
         disabled={isGenerating || isLoadingSettings}
         className="bg-violet-500 hover:bg-violet-600 text-white"
-        title="Konfigurera och generera schema"
+        title="Konfigurera och generera schema för nästa månad"
       >
         {isGenerating ? (
           <>
@@ -67,7 +67,7 @@ export const GenerateButton = ({
         ) : (
           <>
             <Wand2 className="mr-2 h-4 w-4" />
-            Generera schema
+            Generera schema (nästa månad)
           </>
         )}
       </Button>

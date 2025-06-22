@@ -77,7 +77,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <p className="mt-2 text-blue-100">Enkla inställningar för schemagenereringen</p>
+          <p className="mt-2 text-blue-100">Enkla inställningar för schemagenereringen (nästa månad)</p>
         </div>
 
         {/* Content */}

@@ -36,6 +36,13 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       const endDateStr = endDate.toISOString();
       
       console.log(`Fetching shifts from ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
+      console.log('🔍 DEBUG: Date calculation details:', {
+        currentDate: currentDate.toISOString(),
+        currentView,
+        dayOfWeek: currentView === 'week' ? currentDate.getDay() : 'N/A',
+        startDate: startDateStr,
+        endDate: endDateStr
+      });
       
       // Get shifts from Supabase
       const { data: shifts, error } = await supabase
@@ -58,9 +65,27 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       }
       
       console.log(`Retrieved ${shifts?.length || 0} shifts from Supabase`);
+      console.log('🔍 DEBUG: First 3 shifts:', shifts?.slice(0, 3).map(s => ({
+        id: s.id,
+        start_time: s.start_time,
+        shift_type: s.shift_type,
+        employee: s.profiles ? `${s.profiles.first_name} ${s.profiles.last_name}` : 'NO PROFILE'
+      })));
+      
+      if (currentView === 'week') {
+        // Log Monday shifts specifically
+        const mondayShifts = shifts?.filter(s => s.start_time.startsWith('2025-06-23')) || [];
+        console.log('🔍 DEBUG: Monday 2025-06-23 shifts:', mondayShifts.map(s => ({
+          shift_type: s.shift_type,
+          employee: s.profiles ? `${s.profiles.first_name} ${s.profiles.last_name}` : 'NO PROFILE',
+          start_time: s.start_time
+        })));
+      }
       
       return shifts || [];
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 0, // Force fresh data
+    refetchOnWindowFocus: true
   });
 };

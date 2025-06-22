@@ -4,7 +4,7 @@ import type { Shift } from "@/types/shift";
 import { useScheduleSettings } from "./useScheduleSettings";
 import { useProfileData } from "./useProfileData";
 import { validateConstraints } from "../utils/schedulingConstraints";
-import { generateScheduleForTwoWeeks, saveScheduleToSupabase } from "../services/scheduleGenerationService";
+import { generateScheduleForNextMonth, saveScheduleToSupabase } from "../services/scheduleGenerationService";
 import { useStaffingIssues } from "./useStaffingIssues";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +38,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     onProgress?: (step: string, progress: number) => void
   ) => {
     console.log('🎯 === GENERATE SCHEDULE FUNCTION CALLED ===');
-    console.log('🚀 Starting two-week schedule generation');
+    console.log('🚀 Starting next month schedule generation');
     console.log('📊 Current state:', {
       isLoadingSettings,
       profilesCount: profiles?.length || 0,
@@ -85,7 +85,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
 
     setIsGenerating(true);
     try {
-      console.log("🚀 Calling generateScheduleForTwoWeeks for better coverage");
+      console.log("🚀 Calling generateScheduleForNextMonth for better coverage");
       console.log("🔍 DEBUG: Current date:", currentDate);
       console.log("🔍 DEBUG: Profiles count:", profiles.length);
       
@@ -123,7 +123,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       
       // Add timestamp to ensure different results each time
       const timestamp = Date.now();
-      const generatedSchedule = await generateScheduleForTwoWeeks(
+      const generatedSchedule = await generateScheduleForNextMonth(
         currentDate, 
         profiles, 
         effectiveSettings, 
@@ -131,7 +131,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         onProgress
       );
 
-      console.log("🔍 DEBUG: Two-week schedule generation result:", generatedSchedule);
+      console.log("🔍 DEBUG: Next month schedule generation result:", generatedSchedule);
       console.log("🔍 DEBUG: generatedSchedule type:", typeof generatedSchedule);
       console.log("🔍 DEBUG: generatedSchedule truthy:", !!generatedSchedule);
       console.log("🔍 DEBUG: generatedSchedule.schedule:", generatedSchedule?.schedule);
@@ -168,16 +168,21 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         return false;
       }
       
-      console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts for two weeks");
+      console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts for next month");
       
       // Save shifts directly to Supabase
       const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
       
       if (saveResult) {
-        // Calculate date range for summary - from today for 2 weeks
-        const summaryStartDate = new Date();
+        // Calculate date range for summary - next full calendar month
+        const today = new Date();
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); // First day of next month
+        const summaryStartDate = new Date(nextMonth);
         summaryStartDate.setHours(0, 0, 0, 0);
-        const summaryEndDate = addDays(summaryStartDate, 13);
+        
+        // Last day of next month
+        const summaryEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+        summaryEndDate.setHours(23, 59, 59, 999);
         
         // Set summary data and show modal
         setSummaryData({
@@ -190,7 +195,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         
         toast({
           title: "Schema sparat",
-          description: `${generatedSchedule.schedule.length} arbetspass har lagts till i schemat.`,
+          description: `${generatedSchedule.schedule.length} arbetspass har lagts till i schemat för nästa månad.`,
         });
         
         // Invalidate shifts query to refresh the calendar
