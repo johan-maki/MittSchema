@@ -54,25 +54,25 @@ interface ManagerScheduleViewProps {
   onAddShift?: (day: Date, role: string) => void;
 }
 
-// Modern shift type configuration
+// Modern shift type configuration with distinct colors
 const SHIFT_TYPES = {
   day: {
     icon: Sun,
     label: 'Dag',
     time: '08:00-16:00',
-    color: 'from-amber-400 to-orange-500',
-    bgColor: 'bg-amber-50 border-amber-200',
-    textColor: 'text-amber-900',
-    badgeColor: 'bg-amber-100 text-amber-800'
+    color: 'from-yellow-400 to-amber-500',
+    bgColor: 'bg-yellow-50 border-yellow-300',
+    textColor: 'text-yellow-900',
+    badgeColor: 'bg-yellow-100 text-yellow-800'
   },
   evening: {
     icon: Sunrise,
     label: 'Kväll',
     time: '16:00-00:00',
-    color: 'from-orange-400 to-red-500',
-    bgColor: 'bg-orange-50 border-orange-200',
-    textColor: 'text-orange-900',
-    badgeColor: 'bg-orange-100 text-orange-800'
+    color: 'from-rose-400 to-pink-500',
+    bgColor: 'bg-rose-50 border-rose-300',
+    textColor: 'text-rose-900',
+    badgeColor: 'bg-rose-100 text-rose-800'
   },
   night: {
     icon: Moon,

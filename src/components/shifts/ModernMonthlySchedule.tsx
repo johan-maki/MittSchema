@@ -94,14 +94,14 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
   const weeks = chunks(calendarDays, 7);
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-purple-50/30 to-blue-50/30 min-h-[calc(100vh-200px)]">
+    <div className="space-y-6 p-4 bg-gradient-to-br from-purple-50/30 to-blue-50/30 max-h-[calc(100vh-150px)] overflow-y-auto">
       {/* Enhanced Month Header */}
-      <div className="text-center bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-purple-100">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent mb-2">
+      <div className="text-center bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-purple-100 sticky top-0 z-10">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent mb-2">
           {format(date, 'MMMM yyyy', { locale: sv })}
         </h1>
-        <p className="text-xl text-gray-600 mb-4">Översikt för hela månaden</p>
-        <div className="flex items-center justify-center space-x-6">
+        <p className="text-lg text-gray-600 mb-3">Översikt för hela månaden</p>
+        <div className="flex items-center justify-center space-x-4">
           <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-purple-200">
             <Calendar className="h-4 w-4 text-purple-600" />
             <span className="font-medium">{shifts.length} pass denna månad</span>
@@ -141,7 +141,7 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`min-h-[140px] p-3 border-r last:border-r-0 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+                    className={`min-h-[120px] p-2 border-r last:border-r-0 cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-lg ${
                       !isCurrentMonthDay 
                         ? 'bg-gray-50 text-gray-400' 
                         : isTodayDate 
@@ -190,7 +190,7 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                         const Icon = shiftTypeIcons[shiftType as keyof typeof shiftTypeIcons];
                         const colors = {
                           day: 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200',
-                          evening: 'bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 border border-orange-200', 
+                          evening: 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-800 border border-rose-200', 
                           night: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200'
                         };
 
@@ -203,21 +203,31 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                                   e.stopPropagation();
                                   handleShiftClick(shift);
                                 }}
-                                className={`group flex items-center space-x-2 p-2 rounded-lg text-xs font-medium ${colors[shiftType as keyof typeof colors]} hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105`}
+                                className={`group flex items-center space-x-2 p-2 rounded-lg text-xs font-medium ${colors[shiftType as keyof typeof colors]} hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 relative ${
+                                  shift.is_published 
+                                    ? 'ring-1 ring-green-200' 
+                                    : 'border border-dashed border-amber-300 bg-opacity-70'
+                                }`}
                               >
+                                {/* Publication status indicator */}
+                                {shift.is_published && (
+                                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                                )}
+                                
                                 <div className="flex-shrink-0">
                                   <Icon className="h-3 w-3" />
                                 </div>
                                 <Avatar className="h-5 w-5 ring-1 ring-white">
-                                  <AvatarFallback className="text-xs bg-white/80 font-bold">
+                                  <AvatarFallback className={`text-xs bg-white/80 font-bold ${!shift.is_published ? 'opacity-80' : ''}`}>
                                     {getEmployeeInitials(shift)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="truncate font-medium">
+                                <span className={`truncate font-medium ${!shift.is_published ? 'text-amber-700' : ''}`}>
                                   {shift.profiles ? 
                                     `${shift.profiles.first_name}` : 
                                     'Okänd'
                                   }
+                                  {!shift.is_published && <span className="ml-1 text-xs opacity-75">(utkast)</span>}
                                 </span>
                               </div>
                             ))}
