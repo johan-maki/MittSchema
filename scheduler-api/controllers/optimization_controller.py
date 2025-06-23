@@ -70,23 +70,14 @@ async def handle_optimization_request(request: ScheduleRequest):
         )
         
         # Debug: log what we got from optimizer
-        logger.info(f"🔍 Result keys from optimizer: {list(result.keys())}")
-        if "statistics" in result:
-            logger.info(f"🔍 Statistics keys: {list(result['statistics'].keys())}")
-            fairness_raw = result['statistics'].get('fairness', {})
-            logger.info(f"🔍 Fairness raw: {fairness_raw}")
-        
-        # Extract statistics for API response structure
         statistics = result.get("statistics", {})
         coverage_data = statistics.get("coverage", {})
         fairness_data = statistics.get("fairness", {})
-        logger.info(f"🔍 Extracted fairness_data: {fairness_data}")
         
         # Calculate total cost from schedule
         total_cost = sum(shift.get('cost', 0) for shift in result["schedule"])
-        logger.info(f"🔍 Calculated total_cost: {total_cost} from {len(result['schedule'])} shifts")
         
-        return {
+        response_data = {
             "schedule": result["schedule"],
             "coverage_stats": {
                 "total_shifts": coverage_data.get("total_shifts", 0),
@@ -110,6 +101,8 @@ async def handle_optimization_request(request: ScheduleRequest):
             "objective_value": result.get("objective_value"),
             "message": result.get("message", "Schedule optimized successfully")
         }
+        
+        return response_data
     except HTTPException:
         # Re-raise HTTP exceptions without modification
         raise

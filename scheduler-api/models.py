@@ -42,6 +42,7 @@ class ScheduleResponse(BaseModel):
     coverage_stats: CoverageStats
     employee_stats: Dict[str, Any]
     fairness_stats: FairnessStats
+    total_cost: Optional[float] = None
     optimizer: str
     optimization_status: str
     objective_value: Optional[float] = None
