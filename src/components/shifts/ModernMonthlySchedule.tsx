@@ -17,7 +17,8 @@ import {
   Clock,
   Sun,
   Sunset,
-  Moon
+  Moon,
+  DollarSign
 } from "lucide-react";
 
 interface ModernMonthlyScheduleProps {
@@ -91,6 +92,16 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
     return result;
   };
 
+  // Calculate total cost for the month
+  const totalCost = shifts.reduce((sum, shift) => {
+    if (shift.profiles) {
+      const hours = 8; // All shifts are 8 hours
+      const hourlyRate = (shift.profiles as any).hourly_rate || 1000; // Default 1000 SEK
+      return sum + (hours * hourlyRate);
+    }
+    return sum;
+  }, 0);
+
   const weeks = chunks(calendarDays, 7);
 
   return (
@@ -101,7 +112,7 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
           {format(date, 'MMMM yyyy', { locale: sv })}
         </h1>
         <p className="text-lg text-gray-600 mb-3">Översikt för hela månaden</p>
-        <div className="flex items-center justify-center space-x-4">
+        <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
           <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-purple-200">
             <Calendar className="h-4 w-4 text-purple-600" />
             <span className="font-medium">{shifts.length} pass denna månad</span>
@@ -111,6 +122,10 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
             <span className="font-medium">
               {new Set(shifts.filter(s => s.profiles).map(s => s.profiles.first_name + s.profiles.last_name)).size} medarbetare
             </span>
+          </Badge>
+          <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-orange-200">
+            <DollarSign className="h-4 w-4 text-orange-600" />
+            <span className="font-medium">{totalCost.toLocaleString('sv-SE')} SEK</span>
           </Badge>
         </div>
       </div>

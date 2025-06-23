@@ -217,16 +217,19 @@ class GurobiScheduleOptimizer:
                     name=f"max_5_days_per_week_{emp['id']}_week_{week_start}"
                 )
         
-        # 3. Minimum staff coverage per shift - store which days need coverage for later calculation
-        self.scheduled_days = []
+        # 3. Minimum staff coverage per shift - ensure all days are scheduled
+        self.scheduled_days = list(range(len(self.dates)))  # Schedule all days
+        
         for d in range(len(self.dates)):
             date = self.dates[d]
             
-            # Skip weekends if not included
+            # Determine required staff based on weekend setting
             if not include_weekends and date.weekday() >= 5:  # Saturday=5, Sunday=6
-                continue
-                
-            self.scheduled_days.append(d)  # Store the day index
+                # For weekends when not included, allow 0 staff (optional coverage)
+                required_staff = 0
+            else:
+                # Regular days require minimum staff
+                required_staff = min_staff_per_shift
             
             for shift in self.shift_types:
                 # Ensure minimum staff per shift
@@ -234,13 +237,13 @@ class GurobiScheduleOptimizer:
                     self.shifts[(emp['id'], d, shift)] for emp in self.employees
                 )
                 
-                self.model.addConstr(
-                    total_staff >= min_staff_per_shift,
-                    name=f"min_staff_{d}_{shift}"
-                )
+                if required_staff > 0:
+                    self.model.addConstr(
+                        total_staff >= required_staff,
+                        name=f"min_staff_{d}_{shift}"
+                    )
                 
-                # Ensure maximum staff per shift (exactly what's needed, no overstaffing)
-                # For most healthcare scenarios, we want exactly min_staff_per_shift people
+                # Ensure exact staff per shift (no overstaffing)
                 self.model.addConstr(
                     total_staff <= min_staff_per_shift,
                     name=f"max_staff_{d}_{shift}"
@@ -334,15 +337,15 @@ class GurobiScheduleOptimizer:
         
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
+        # - Weekend fairness is high priority (weight: 15) - increased for better fairness
         # - Total fairness is important (weight: 10) 
         # - Shift type fairness is also important (weight: 5)
-        # - Weekend fairness is higher priority (weight: 4)
         self.model.setObjective(
-            100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness - 4 * weekend_unfairness,
+            100 * total_coverage - 15 * weekend_unfairness - 10 * total_unfairness - 5 * shift_type_unfairness,
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (10x), Shift type fairness (5x), Weekend fairness (4x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Weekend fairness (15x), Total fairness (10x), Shift type fairness (5x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
@@ -403,6 +406,8 @@ class GurobiScheduleOptimizer:
                             "cost": shift_cost
                         }
                         
+                        logger.info(f"🔍 Created shift with cost: {shift_cost} for {emp.get('first_name', '')} {emp.get('last_name', '')}")
+                        
                         schedule.append(shift_assignment)
                         
                         # Update statistics
@@ -413,8 +418,8 @@ class GurobiScheduleOptimizer:
                         if date.weekday() >= 5:  # Weekend
                             employee_stats[emp['id']]["weekend_shifts"] += 1
         
-        # Calculate total possible shifts (only count days we're actually scheduling)
-        coverage_stats["total_shifts"] = len(scheduled_days) * len(self.shift_types)
+        # Calculate total possible shifts (all days, all shifts)
+        coverage_stats["total_shifts"] = len(self.dates) * len(self.shift_types)
         
         if coverage_stats["total_shifts"] > 0:
             coverage_stats["coverage_percentage"] = round(

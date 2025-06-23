@@ -82,6 +82,10 @@ async def handle_optimization_request(request: ScheduleRequest):
         fairness_data = statistics.get("fairness", {})
         logger.info(f"🔍 Extracted fairness_data: {fairness_data}")
         
+        # Calculate total cost from schedule
+        total_cost = sum(shift.get('cost', 0) for shift in result["schedule"])
+        logger.info(f"🔍 Calculated total_cost: {total_cost} from {len(result['schedule'])} shifts")
+        
         return {
             "schedule": result["schedule"],
             "coverage_stats": {
@@ -100,6 +104,7 @@ async def handle_optimization_request(request: ScheduleRequest):
                 "avg_shifts_per_employee": fairness_data.get("total_shifts", {}).get("avg", 0.0),
                 "shift_distribution_range": fairness_data.get("total_shifts", {}).get("range", 0)
             },
+            "total_cost": total_cost,
             "optimizer": result.get("optimizer", "gurobi"),
             "optimization_status": "optimal" if result.get("objective_value") is not None else "unknown",
             "objective_value": result.get("objective_value"),

@@ -237,9 +237,13 @@ export const ManagerScheduleView = ({
                   <TrendingUp className="h-4 w-4 text-purple-500" />
                   <span className="text-sm font-medium">{stats.coverage}% täckning</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-orange-500" />
-                  <span className="text-sm font-medium">{stats.totalCost.toLocaleString('sv-SE')} SEK</span>
+                {/* Prominent cost display */}
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                  <DollarSign className="h-5 w-5 text-orange-600" />
+                  <div>
+                    <span className="text-sm font-bold text-orange-900">{stats.totalCost.toLocaleString('sv-SE')} SEK</span>
+                    <div className="text-xs text-orange-700">Veckokostnad</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -321,11 +325,11 @@ export const ManagerScheduleView = ({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-orange-500" />
+            <div className="flex items-center gap-2 bg-orange-50 rounded-lg p-2">
+              <DollarSign className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-sm font-medium">{stats.totalCost.toLocaleString('sv-SE')}</p>
-                <p className="text-xs text-muted-foreground">SEK</p>
+                <p className="text-sm font-bold text-orange-900">{stats.totalCost.toLocaleString('sv-SE')}</p>
+                <p className="text-xs text-orange-700">SEK</p>
               </div>
             </div>
           </CardContent>
