@@ -384,6 +384,11 @@ class GurobiScheduleOptimizer:
                             next_date = date + timedelta(days=1)
                             shift_end_datetime = f"{next_date.strftime('%Y-%m-%d')}T{shift_end_time}:00"
                         
+                        # Calculate shift duration and cost
+                        shift_hours = 8.0  # All shifts are 8 hours
+                        hourly_rate = emp.get('hourly_rate', 1000.0)  # Default 1000 SEK if not set
+                        shift_cost = shift_hours * hourly_rate
+                        
                         shift_assignment = {
                             "employee_id": emp['id'],
                             "employee_name": f"{emp.get('first_name', '')} {emp.get('last_name', '')}",
@@ -392,7 +397,10 @@ class GurobiScheduleOptimizer:
                             "start_time": shift_start_datetime,
                             "end_time": shift_end_datetime,
                             "is_weekend": date.weekday() >= 5,
-                            "department": emp.get('department', 'General')
+                            "department": emp.get('department', 'General'),
+                            "hours": shift_hours,
+                            "hourly_rate": hourly_rate,
+                            "cost": shift_cost
                         }
                         
                         schedule.append(shift_assignment)

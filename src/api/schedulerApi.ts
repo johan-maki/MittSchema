@@ -22,6 +22,9 @@ interface GurobiScheduleResponse {
     end_time: string;
     is_weekend: boolean;
     department: string;
+    hours?: number;
+    hourly_rate?: number;
+    cost?: number;
   }>;
   coverage_stats: {
     total_shifts: number;
@@ -35,12 +38,29 @@ interface GurobiScheduleResponse {
     evening_shifts: number;
     night_shifts: number;
     weekend_shifts: number;
+    total_hours?: number;
+    total_cost?: number;
   }>;
   fairness_stats: {
     min_shifts_per_employee: number;
     max_shifts_per_employee: number;
     avg_shifts_per_employee: number;
     shift_distribution_range: number;
+  };
+  cost_stats?: {
+    total_cost: number;
+    total_hours: number;
+    average_hourly_rate: number;
+    cost_by_shift_type: {
+      day: number;
+      evening: number;
+      night: number;
+    };
+    cost_by_employee: Record<string, {
+      name: string;
+      hours: number;
+      cost: number;
+    }>;
   };
   optimizer: string;
   optimization_status: string;

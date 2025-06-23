@@ -56,7 +56,8 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
           profiles:employees!shifts_employee_id_fkey (
             first_name,
             last_name,
-            experience_level
+            experience_level,
+            hourly_rate
           )
         `)
         .gte('start_time', startDateStr)

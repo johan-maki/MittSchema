@@ -9,9 +9,11 @@ interface FormFieldProps {
   type?: string;
   min?: string;
   max?: string;
+  step?: string;
   disabled?: boolean;
   error?: string;
   placeholder?: string;
+  helperText?: string;
 }
 
 export const FormField = ({ 
@@ -22,9 +24,11 @@ export const FormField = ({
   type = "text", 
   min, 
   max,
+  step,
   disabled = false,
   error = "",
-  placeholder
+  placeholder,
+  helperText
 }: FormFieldProps) => (
   <div className="space-y-2">
     <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
@@ -36,6 +40,7 @@ export const FormField = ({
       type={type}
       min={min}
       max={max}
+      step={step}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
@@ -44,6 +49,9 @@ export const FormField = ({
       }`}
       disabled={disabled}
     />
+    {helperText && !error && (
+      <p className="text-gray-500 text-sm">{helperText}</p>
+    )}
     {error && (
       <p className="text-red-500 text-sm flex items-center gap-1">
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

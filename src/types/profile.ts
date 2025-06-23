@@ -9,6 +9,7 @@ export interface Profile {
   department: string | null;
   phone: string | null;
   experience_level: number;
+  hourly_rate?: number; // SEK per hour
   created_at: string;
   updated_at: string;
   work_preferences?: WorkPreferences;
@@ -21,6 +22,7 @@ export type NewProfile = {
   department: string | null;
   phone: string | null;
   experience_level: number;
+  hourly_rate?: number; // SEK per hour
 };
 
 export type InsertProfile = {
@@ -31,6 +33,7 @@ export type InsertProfile = {
   department?: string | null;
   phone?: string | null;
   experience_level?: number;
+  hourly_rate?: number; // SEK per hour
 };
 
 export interface WorkPreferences {

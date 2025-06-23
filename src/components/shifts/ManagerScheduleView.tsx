@@ -25,7 +25,8 @@ import {
   Eye,
   MoreHorizontal,
   UserCheck,
-  UserX
+  UserX,
+  DollarSign
 } from "lucide-react";
 import { 
   format, 
@@ -117,6 +118,12 @@ export const ManagerScheduleView = ({
     totalShifts: weekShifts.length,
     totalHours: weekShifts.reduce((sum, shift) => {
       return sum + differenceInHours(parseISO(shift.end_time), parseISO(shift.start_time));
+    }, 0),
+    totalCost: weekShifts.reduce((sum, shift) => {
+      const hours = differenceInHours(parseISO(shift.end_time), parseISO(shift.start_time));
+      // Use the employee's hourly rate if available, otherwise default to 1000 SEK
+      const hourlyRate = shift.profiles?.hourly_rate || 1000;
+      return sum + (hours * hourlyRate);
     }, 0),
     staffedDays: weekDays.filter(day => 
       weekShifts.some(shift => isSameDay(parseISO(shift.start_time), day))
@@ -230,6 +237,10 @@ export const ManagerScheduleView = ({
                   <TrendingUp className="h-4 w-4 text-purple-500" />
                   <span className="text-sm font-medium">{stats.coverage}% täckning</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-orange-500" />
+                  <span className="text-sm font-medium">{stats.totalCost.toLocaleString('sv-SE')} SEK</span>
+                </div>
               </div>
             </div>
 
@@ -274,7 +285,7 @@ export const ManagerScheduleView = ({
       </Card>
 
       {/* Statistics cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:hidden">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -304,6 +315,17 @@ export const ManagerScheduleView = ({
               <div>
                 <p className="text-sm font-medium">{stats.coverage}%</p>
                 <p className="text-xs text-muted-foreground">Täckning</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-orange-500" />
+              <div>
+                <p className="text-sm font-medium">{stats.totalCost.toLocaleString('sv-SE')}</p>
+                <p className="text-xs text-muted-foreground">SEK</p>
               </div>
             </div>
           </CardContent>
