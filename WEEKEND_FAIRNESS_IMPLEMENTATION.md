@@ -13,7 +13,7 @@ The optimizer uses a multi-objective approach with the following priority order:
 1. **Primary (Weight: 100)**: Maximize total shift coverage
 2. **Secondary (Weight: 10)**: Minimize unfairness in total shift distribution  
 3. **Tertiary (Weight: 5)**: Minimize unfairness in shift type distribution
-4. **Quaternary (Weight: 2)**: Minimize unfairness in weekend shift distribution
+4. **Quaternary (Weight: 4)**: Minimize unfairness in weekend shift distribution
 
 ### Technical Implementation
 
@@ -54,7 +54,7 @@ weekend_unfairness = max_weekend_shifts - min_weekend_shifts
 #### 3. Updated Objective Function
 ```python
 self.model.setObjective(
-    100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness - 2 * weekend_unfairness,
+    100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness - 4 * weekend_unfairness,
     GRB.MAXIMIZE
 )
 ```
@@ -109,9 +109,9 @@ Range: 0 shifts (Perfect fairness!)
 
 ## Configuration
 
-The weekend fairness objective is automatically enabled when using the Gurobi optimizer. The relative weight (2) balances weekend fairness against other objectives:
+The weekend fairness objective is automatically enabled when using the Gurobi optimizer. The relative weight (4) balances weekend fairness against other objectives:
 
 - **Higher weight**: More emphasis on weekend fairness
 - **Lower weight**: Less emphasis on weekend fairness
 
-The current weight of 2 provides good weekend distribution without compromising shift coverage or critical fairness requirements.
+The current weight of 4 provides excellent weekend distribution while maintaining optimal coverage and fairness requirements.

@@ -257,7 +257,7 @@ class GurobiScheduleOptimizer:
         1. Maximize total shift coverage (primary goal, weight: 100)
         2. Minimize unfairness in total shift distribution (secondary goal, weight: 10)
         3. Minimize unfairness in shift type distribution (tertiary goal, weight: 5)
-        4. Minimize unfairness in weekend shift distribution (quaternary goal, weight: 2)
+        4. Minimize unfairness in weekend shift distribution (quaternary goal, weight: 4)
         """
         logger.info("Setting enhanced objective function with shift type fairness...")
         
@@ -336,13 +336,13 @@ class GurobiScheduleOptimizer:
         # - Coverage is most important (weight: 100)
         # - Total fairness is important (weight: 10) 
         # - Shift type fairness is also important (weight: 5)
-        # - Weekend fairness is lower priority (weight: 2)
+        # - Weekend fairness is higher priority (weight: 4)
         self.model.setObjective(
-            100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness - 2 * weekend_unfairness,
+            100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness - 4 * weekend_unfairness,
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (10x), Shift type fairness (5x), Weekend fairness (2x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (10x), Shift type fairness (5x), Weekend fairness (4x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
