@@ -13,6 +13,14 @@
 - **Frontend**: Professional cost display in schedule summary and monthly view
 - **Formatting**: Swedish number formatting (1 000 SEK) with orange dollar icon
 - **Mobile**: Responsive cost display for mobile devices
+- **API Fix**: Added total_cost field to ScheduleResponse model for proper JSON serialization
+
+### ✅ Total Cost API Integration (Latest Fix)
+- **Issue**: Backend calculated total_cost but field was missing from API response
+- **Root Cause**: Pydantic ScheduleResponse model didn't include total_cost field
+- **Solution**: Added `total_cost: Optional[float] = None` to ScheduleResponse model
+- **Verification**: API now properly returns total_cost in JSON response
+- **Status**: ✅ Complete - committed and pushed (commit c5799b3)
 
 ### ✅ Schedule Optimization Fixes
 - **Perfect Weekend Fairness**: Increased Gurobi weight → all employees get exactly same weekend shifts (range=0)
@@ -48,6 +56,8 @@
 ### Backend (Python)
 - `scheduler-api/services/gurobi_optimizer_service.py` - Cost calculation & fairness
 - `scheduler-api/controllers/optimization_controller.py` - API response formatting
+- `scheduler-api/models.py` - Added total_cost field to ScheduleResponse model
+- `scheduler-api/routes/schedule_routes.py` - Cleaned up test endpoints
 - `scheduler-api/utils.py` - Database queries with salary
 
 ### Frontend (TypeScript/React)
