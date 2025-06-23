@@ -253,10 +253,11 @@ class GurobiScheduleOptimizer:
         """
         Set the objective function to maximize coverage and minimize unfairness.
         
-        Objective components:
-        1. Maximize total shift coverage (primary goal)
-        2. Minimize unfairness in total shift distribution (secondary goal)
-        3. Minimize unfairness in shift type distribution (tertiary goal)
+        Objective components (in order of priority):
+        1. Maximize total shift coverage (primary goal, weight: 100)
+        2. Minimize unfairness in total shift distribution (secondary goal, weight: 10)
+        3. Minimize unfairness in shift type distribution (tertiary goal, weight: 5)
+        4. Minimize unfairness in weekend shift distribution (quaternary goal, weight: 2)
         """
         logger.info("Setting enhanced objective function with shift type fairness...")
         
@@ -309,16 +310,39 @@ class GurobiScheduleOptimizer:
             
             shift_type_unfairness += (max_shift_type - min_shift_type)
         
+        # Quaternary objective: Minimize unfairness in weekend shift distribution
+        # This ensures weekend work is distributed fairly among employees
+        emp_weekend_counts = []
+        for emp in self.employees:
+            emp_weekend_total = gp.quicksum(
+                self.shifts[(emp['id'], d, shift)]
+                for d in range(len(self.dates))
+                for shift in self.shift_types
+                if self._is_weekend(self.dates[d])
+            )
+            emp_weekend_counts.append(emp_weekend_total)
+        
+        # Weekend fairness variables
+        max_weekend_shifts = self.model.addVar(vtype=GRB.CONTINUOUS, name="max_weekend_shifts")
+        min_weekend_shifts = self.model.addVar(vtype=GRB.CONTINUOUS, name="min_weekend_shifts")
+        
+        for emp_weekend_count in emp_weekend_counts:
+            self.model.addConstr(max_weekend_shifts >= emp_weekend_count)
+            self.model.addConstr(min_weekend_shifts <= emp_weekend_count)
+        
+        weekend_unfairness = max_weekend_shifts - min_weekend_shifts
+        
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Total fairness is important (weight: 10) 
         # - Shift type fairness is also important (weight: 5)
+        # - Weekend fairness is lower priority (weight: 2)
         self.model.setObjective(
-            100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness,
+            100 * total_coverage - 10 * total_unfairness - 5 * shift_type_unfairness - 2 * weekend_unfairness,
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (10x), Shift type fairness (5x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (10x), Shift type fairness (5x), Weekend fairness (2x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
@@ -407,6 +431,8 @@ class GurobiScheduleOptimizer:
         
         # Overall fairness calculations
         total_shifts_per_employee = [emp_data["total_shifts"] for emp_data in employee_stats.values()]
+        weekend_shifts_per_employee = [emp_data["weekend_shifts"] for emp_data in employee_stats.values()]
+        
         fairness_stats = {
             "total_shifts": {
                 "min": min(total_shifts_per_employee) if total_shifts_per_employee else 0,
@@ -414,12 +440,19 @@ class GurobiScheduleOptimizer:
                 "avg": round(sum(total_shifts_per_employee) / len(total_shifts_per_employee), 1) if total_shifts_per_employee else 0,
                 "range": max(total_shifts_per_employee) - min(total_shifts_per_employee) if total_shifts_per_employee else 0
             },
-            "shift_types": shift_type_stats
+            "shift_types": shift_type_stats,
+            "weekend_shifts": {
+                "min": min(weekend_shifts_per_employee) if weekend_shifts_per_employee else 0,
+                "max": max(weekend_shifts_per_employee) if weekend_shifts_per_employee else 0,
+                "avg": round(sum(weekend_shifts_per_employee) / len(weekend_shifts_per_employee), 1) if weekend_shifts_per_employee else 0,
+                "range": max(weekend_shifts_per_employee) - min(weekend_shifts_per_employee) if weekend_shifts_per_employee else 0
+            }
         }
         
         logger.info(f"Fairness - Total shifts range: {fairness_stats['total_shifts']['range']}")
         for shift_type, stats in shift_type_stats.items():
             logger.info(f"Fairness - {shift_type} shifts range: {stats['range']}")
+        logger.info(f"Fairness - Weekend shifts range: {fairness_stats['weekend_shifts']['range']}")
         
         return {
             "schedule": schedule,
@@ -431,6 +464,12 @@ class GurobiScheduleOptimizer:
             "optimizer": "gurobi",
             "objective_value": self.model.objVal if self.model.status in [GRB.OPTIMAL, GRB.SUBOPTIMAL] else None
         }
+    
+    def _is_weekend(self, date):
+        """Check if a given date is a weekend (Saturday or Sunday)."""
+        # weekday() returns 0-6 where Monday=0, Sunday=6
+        # So Saturday=5, Sunday=6
+        return date.weekday() >= 5
 
 
 def optimize_schedule_with_gurobi(

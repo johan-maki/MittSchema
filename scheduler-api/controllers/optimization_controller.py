@@ -73,11 +73,14 @@ async def handle_optimization_request(request: ScheduleRequest):
         logger.info(f"🔍 Result keys from optimizer: {list(result.keys())}")
         if "statistics" in result:
             logger.info(f"🔍 Statistics keys: {list(result['statistics'].keys())}")
+            fairness_raw = result['statistics'].get('fairness', {})
+            logger.info(f"🔍 Fairness raw: {fairness_raw}")
         
         # Extract statistics for API response structure
         statistics = result.get("statistics", {})
         coverage_data = statistics.get("coverage", {})
         fairness_data = statistics.get("fairness", {})
+        logger.info(f"🔍 Extracted fairness_data: {fairness_data}")
         
         return {
             "schedule": result["schedule"],
@@ -88,10 +91,14 @@ async def handle_optimization_request(request: ScheduleRequest):
             },
             "employee_stats": result.get("employee_stats", {}),
             "fairness_stats": {
-                "min_shifts_per_employee": fairness_data.get("min_shifts", 0),
-                "max_shifts_per_employee": fairness_data.get("max_shifts", 0),
-                "avg_shifts_per_employee": fairness_data.get("avg_shifts", 0.0),
-                "shift_distribution_range": fairness_data.get("distribution_range", 0)
+                "total_shifts": fairness_data.get("total_shifts", {}),
+                "shift_types": fairness_data.get("shift_types", {}),
+                "weekend_shifts": fairness_data.get("weekend_shifts", {}),
+                # Legacy fields for backward compatibility
+                "min_shifts_per_employee": fairness_data.get("total_shifts", {}).get("min", 0),
+                "max_shifts_per_employee": fairness_data.get("total_shifts", {}).get("max", 0),
+                "avg_shifts_per_employee": fairness_data.get("total_shifts", {}).get("avg", 0.0),
+                "shift_distribution_range": fairness_data.get("total_shifts", {}).get("range", 0)
             },
             "optimizer": result.get("optimizer", "gurobi"),
             "optimization_status": "optimal" if result.get("objective_value") is not None else "unknown",
