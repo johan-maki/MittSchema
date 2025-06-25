@@ -22,7 +22,7 @@ console.log('📊 Generating schedule for July 2025...');
 console.log('Test parameters:', testData);
 
 try {
-  const response = await fetch('http://localhost:8080/optimize-schedule', {
+  const response = await fetch('https://mittschema-gurobi-backend.onrender.com/optimize-schedule', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -3,7 +3,7 @@
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = 'https://mittschema-gurobi-backend.onrender.com';
 
 async function debugLastDay() {
   try {

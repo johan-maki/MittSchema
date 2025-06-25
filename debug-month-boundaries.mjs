@@ -55,7 +55,7 @@ if (error) {
 console.log('\n🔧 Testing backend date generation for July 2025...');
 
 try {
-  const response = await fetch('http://localhost:8080/test-dates', {
+  const response = await fetch('https://mittschema-gurobi-backend.onrender.com/optimize-schedule', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

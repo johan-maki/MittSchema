@@ -21,7 +21,7 @@ const testData = {
 try {
   // Step 1: Get schedule from Gurobi
   console.log('📞 Calling Gurobi API...');
-  const response = await fetch('http://localhost:8080/optimize-schedule', {
+  const response = await fetch('https://mittschema-gurobi-backend.onrender.com/optimize-schedule', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(testData)

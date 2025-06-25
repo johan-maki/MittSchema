@@ -41,7 +41,7 @@ async function testGurobiScheduleGeneration() {
     console.log(`👥 Found ${employees.length} employees`)
     
     // Call Gurobi API
-    const response = await fetch('http://localhost:8080/optimize-schedule', {
+    const response = await fetch('https://mittschema-gurobi-backend.onrender.com/optimize-schedule', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

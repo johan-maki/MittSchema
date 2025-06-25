@@ -8,7 +8,7 @@ export const environment = {
   
   // API configuration
   api: {
-    schedulerUrl: import.meta.env.VITE_SCHEDULER_API_URL || "http://localhost:8080",
+    schedulerUrl: import.meta.env.VITE_SCHEDULER_API_URL || "https://mittschema-gurobi-backend.onrender.com",
   },
   
   // Development flags
