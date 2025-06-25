@@ -89,44 +89,27 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       console.log("🔍 DEBUG: Current date:", currentDate);
       console.log("🔍 DEBUG: Profiles count:", profiles.length);
       
-      // Simplified settings for basic scheduling
-      const effectiveSettings = config ? {
-        max_consecutive_days: 5, // Fixed for simplicity
-        min_rest_hours: 11, // Fixed for simplicity
-        min_weekly_rest_hours: 36,
-        department: 'Akutmottagning', // All employees work here now
-        include_weekends: config.includeWeekends ?? true,
-        morning_shift: { 
-          min_staff: config.minStaffPerShift || 1, 
-          min_experience_sum: config.minExperiencePerShift || 1 
-        },
-        afternoon_shift: { 
-          min_staff: config.minStaffPerShift || 1, 
-          min_experience_sum: config.minExperiencePerShift || 1 
-        },
-        night_shift: { 
-          min_staff: config.minStaffPerShift || 1, 
-          min_experience_sum: config.minExperiencePerShift || 1 
-        }
+      // Pass the actual config from user directly instead of transforming it
+      const scheduleConfig = config ? {
+        minStaffPerShift: config.minStaffPerShift || 2,
+        minExperiencePerShift: config.minExperiencePerShift || 1,
+        includeWeekends: config.includeWeekends ?? true,
+        department: 'Akutmottagning'
       } : {
-        max_consecutive_days: 5,
-        min_rest_hours: 11,
-        min_weekly_rest_hours: 36,
-        department: 'Akutmottagning',
-        include_weekends: true,
-        morning_shift: { min_staff: 1, min_experience_sum: 1 },
-        afternoon_shift: { min_staff: 1, min_experience_sum: 1 },
-        night_shift: { min_staff: 1, min_experience_sum: 1 }
+        minStaffPerShift: 2, // Default to 2 staff per shift
+        minExperiencePerShift: 1,
+        includeWeekends: true,
+        department: 'Akutmottagning'
       };
       
-      console.log("📊 Using settings:", effectiveSettings);
+      console.log("📊 Using schedule config for Gurobi:", scheduleConfig);
       
       // Add timestamp to ensure different results each time
       const timestamp = Date.now();
       const generatedSchedule = await generateScheduleForNextMonth(
         currentDate, 
         profiles, 
-        effectiveSettings, 
+        scheduleConfig, 
         timestamp,
         onProgress
       );

@@ -114,9 +114,9 @@ export const generateScheduleForNextMonth = async (
 
   // Extract Gurobi parameters from settings
   const gurobiConfig = {
-    minStaffPerShift: settings?.minStaffPerShift || 1,
-    minExperiencePerShift: settings?.minExperiencePerShift || 1,
-    includeWeekends: settings?.includeWeekends !== false // Default to true
+    minStaffPerShift: settings?.min_staff_per_shift || settings?.minStaffPerShift || 2, // Default to 2!
+    minExperiencePerShift: settings?.min_experience_per_shift || settings?.minExperiencePerShift || 1,
+    includeWeekends: settings?.include_weekends !== false && settings?.includeWeekends !== false // Default to true
   };
 
   console.log('🎯 Using Gurobi configuration:', gurobiConfig);
