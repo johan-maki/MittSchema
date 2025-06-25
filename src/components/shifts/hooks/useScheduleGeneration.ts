@@ -34,6 +34,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       minStaffPerShift?: number;
       minExperiencePerShift?: number;
       includeWeekends?: boolean;
+      weekendPenalty?: number;
     },
     onProgress?: (step: string, progress: number) => void
   ) => {
@@ -128,7 +129,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         profiles, 
         effectiveSettings, 
         timestamp,
-        onProgress
+        onProgress,
+        config?.weekendPenalty
       );
 
       console.log("🔍 DEBUG: Next month schedule generation result:", generatedSchedule);

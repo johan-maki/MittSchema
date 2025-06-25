@@ -5,12 +5,10 @@ import { Wand2 } from "lucide-react";
 import { ScheduleConfigModal } from "@/components/ui/ScheduleConfigModal";
 
 interface ScheduleConfig {
-  minStaffPerDay: number;
-  minExperiencePerDay: number;
-  maxConsecutiveDays: number;
-  minRestHours: number;
+  minStaffPerShift: number;
+  minExperiencePerShift: number;
   includeWeekends: boolean;
-  prioritizeExperience: boolean;
+  weekendPenalty: number;
 }
 
 interface GenerateButtonProps {
@@ -77,12 +75,10 @@ export const GenerateButton = ({
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfigConfirm}
         currentConfig={{
-          minStaffPerDay: 3,
-          minExperiencePerDay: 8,
-          maxConsecutiveDays: 5,
-          minRestHours: 11,
+          minStaffPerShift: 2,
+          minExperiencePerShift: 1,
           includeWeekends: true,
-          prioritizeExperience: false,
+          weekendPenalty: 1000,
         }}
       />
     </>
