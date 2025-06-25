@@ -79,10 +79,9 @@ export const schedulerApi = {
     startDate: string, 
     endDate: string, 
     department: string = "Akutmottagning",
-    minStaffPerShift: number = 1,
+    minStaffPerShift: number = 2,
     minExperiencePerShift: number = 1,
     includeWeekends: boolean = true,
-    weekendPenalty: number = 1000,
     timestamp?: number, 
     retries = 3
   ): Promise<GurobiScheduleResponse> => {
@@ -99,6 +98,10 @@ export const schedulerApi = {
       random_seed = Math.floor(Math.random() * 1000000);
     }
     
+    // Beräkna automatisk weekend penalty baserat på antal anställda och staffing requirements
+    // Högre penalty för bättre rättvisa, justerat för antal personer som behövs
+    const automaticWeekendPenalty = Math.max(1500, minStaffPerShift * 750);
+    
     const requestBody: GurobiScheduleRequest = {
       start_date: startDate,
       end_date: endDate,
@@ -110,8 +113,8 @@ export const schedulerApi = {
       staff_constraint: "strict", // Framtvinga strict compliance
       min_experience_per_shift: minExperiencePerShift,
       include_weekends: includeWeekends,
-      weekend_penalty_weight: weekendPenalty, // Använd värdet från frontend
-      fairness_weight: 0.8, // Fokusera på rättvis fördelning
+      weekend_penalty_weight: automaticWeekendPenalty, // Automatisk beräkning för rättvisa
+      fairness_weight: 1.0, // Maximal fokus på rättvis fördelning
       balance_workload: true, // Balansera arbetsbördan
       max_hours_per_nurse: 40 // Maximal arbetstid per sjuksköterska
     };

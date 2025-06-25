@@ -78,7 +78,6 @@ export const GenerateButton = ({
           minStaffPerShift: 2,
           minExperiencePerShift: 1,
           includeWeekends: true,
-          weekendPenalty: 1000,
         }}
       />
     </>

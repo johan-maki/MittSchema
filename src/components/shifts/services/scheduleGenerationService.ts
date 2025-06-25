@@ -80,8 +80,7 @@ export const generateScheduleForNextMonth = async (
   profiles: Profile[],
   settings: any,
   timestamp?: number,
-  onProgress?: (step: string, progress: number) => void,
-  weekendPenalty?: number
+  onProgress?: (step: string, progress: number) => void
 ): Promise<{ 
   schedule: Shift[], 
   staffingIssues?: { date: string; shiftType: string; current: number; required: number }[],
@@ -131,7 +130,6 @@ export const generateScheduleForNextMonth = async (
     gurobiConfig.minStaffPerShift,
     gurobiConfig.minExperiencePerShift,
     gurobiConfig.includeWeekends,
-    weekendPenalty || 1000,
     timestamp || Date.now()
   );
   
