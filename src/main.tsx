@@ -1,7 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import './debug/env-check.ts'
 
 // Add global error handler
 window.addEventListener('error', (event) => {
@@ -12,10 +11,7 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
 });
 
-console.log('🚀 MittSchema starting with full functionality...');
-console.log('Environment:', import.meta.env.MODE);
-console.log('Development mode:', import.meta.env.DEV);
-console.log('Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'server-side');
+console.log('🚀 MittSchema starting...');
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

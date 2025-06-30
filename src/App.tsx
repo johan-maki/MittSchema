@@ -36,17 +36,19 @@ function App() {
     MODE: import.meta.env.MODE
   });
   
-  // Seed Supabase data on app start
-  console.log('🌱 Seeding Supabase data...');
-  seedSupabaseData().then(result => {
-    if (result.success) {
-      console.log('✅ Data seeding result:', result.message);
-    } else {
-      console.warn('⚠️ Data seeding failed:', result.error);
-    }
-  }).catch(error => {
-    console.error('💥 Data seeding error:', error);
-  });
+  // Seed data only in development
+  if (import.meta.env.DEV) {
+    console.log('🌱 Development mode: Seeding Supabase data...');
+    seedSupabaseData().then(result => {
+      if (result.success) {
+        console.log('✅ Data seeding result:', result.message);
+      } else {
+        console.warn('⚠️ Data seeding failed:', result.error);
+      }
+    }).catch(error => {
+      console.error('💥 Data seeding error:', error);
+    });
+  }
 
   console.log('🔧 Rendering App component...');
   return (

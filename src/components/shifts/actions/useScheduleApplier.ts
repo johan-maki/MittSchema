@@ -3,7 +3,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Shift } from "@/types/shift";
-import { validateShiftConstraints } from "../utils/validation";
 
 export const useScheduleApplier = () => {
   const { toast } = useToast();
@@ -36,9 +35,6 @@ export const useScheduleApplier = () => {
         employee_id: shift.employee_id,
         is_published: false
       }));
-      
-      // Validate the shifts (but don't block insertion)
-      validateShiftConstraints(shiftsToInsert as Shift[]);
       
       // Insert shifts in batches
       for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {

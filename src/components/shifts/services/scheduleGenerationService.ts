@@ -5,9 +5,10 @@ import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
 
-
-
-// Save generated shifts to Supabase
+/**
+ * Save generated shifts to Supabase database
+ * Clears existing unpublished shifts and inserts new ones in batches
+ */
 export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> => {
   try {
     if (!shifts || shifts.length === 0) {
@@ -15,19 +16,13 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       return false;
     }
     
-    console.log(`Saving ${shifts.length} shifts to Supabase (Gurobi optimized - no deduplication)`);
-    console.log('🔍 DEBUG: First 3 shifts to save:', shifts.slice(0, 3).map(s => ({
-      employee_id: s.employee_id,
-      start_time: s.start_time,
-      end_time: s.end_time,
-      shift_type: s.shift_type
-    })));
+    console.log(`Saving ${shifts.length} Gurobi-optimized shifts to database`);
     
-    // Process shifts in smaller batches to avoid timeouts
+    // Process shifts in batches to avoid database timeouts
     const BATCH_SIZE = 10;
     const shiftsToInsert = shifts.map(shift => ({
-      id: shift.id || uuidv4(), // Generate proper UUIDs for new shifts
-      date: shift.date, // Include the date field from Gurobi
+      id: shift.id || uuidv4(),
+      date: shift.date,
       start_time: shift.start_time,
       end_time: shift.end_time,
       shift_type: shift.shift_type,
@@ -36,10 +31,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       is_published: false
     }));
     
-    console.log('🔍 DEBUG: shiftsToInsert prepared, count:', shiftsToInsert.length);
-    console.log('🔍 DEBUG: Sample shiftsToInsert:', shiftsToInsert.slice(0, 2));
-    
-    // Clear all existing unpublished shifts first
+    // Clear existing unpublished shifts first
     const { error: clearError } = await supabase
       .from('shifts')
       .delete()
@@ -74,7 +66,15 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
   }
 };
 
-// Gurobi-only next month generation function
+/**
+ * Generate optimized schedule for the next full calendar month using Gurobi
+ * @param currentDate - Reference date (not used, kept for API compatibility)
+ * @param profiles - Available employees
+ * @param settings - Scheduling configuration
+ * @param timestamp - Optional timestamp for tracking
+ * @param onProgress - Progress callback function
+ * @returns Generated schedule with statistics
+ */
 export const generateScheduleForNextMonth = async (
   currentDate: Date,
   profiles: Profile[],
@@ -89,7 +89,7 @@ export const generateScheduleForNextMonth = async (
 }> => {
   // Calculate next full calendar month
   const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); // First day of next month
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   const startDate = new Date(nextMonth);
   startDate.setHours(0, 0, 0, 0);
   
@@ -102,8 +102,7 @@ export const generateScheduleForNextMonth = async (
   console.log('🗓️ Generating next month schedule with Gurobi:', {
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
-    profiles: profiles.length,
-    useGurobi: true,
+    employeeCount: profiles.length,
     daysInMonth: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
   });
   

@@ -1,8 +1,6 @@
 import { AppLayout } from "@/components/AppLayout";
 import { Link as ScrollLink } from "react-scroll";
 import { Separator } from "@/components/ui/separator";
-import { SystemStatus } from "@/components/system/SystemStatus";
-import { DatabaseResetPanel } from "@/components/system/DatabaseResetPanel";
 import { 
   Calendar, 
   Navigation2, 
@@ -12,8 +10,7 @@ import {
   LogOut,
   Settings,
   Users,
-  User,
-  Database
+  User
 } from "lucide-react";
 
 const Help = () => {
@@ -196,27 +193,6 @@ const Help = () => {
             </div>
           </section>
 
-          <Separator />
-
-          {/* System Status */}
-          <section className="flex justify-center">
-            <SystemStatus />
-          </section>
-
-          <Separator />
-
-          {/* Database Reset Panel */}
-          <section className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-              <Database className="h-6 w-6" />
-              Återställ databas
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Om du behöver återställa databasen till dess ursprungliga tillstånd, vänligen använd knappen nedan. 
-              Observera att detta kommer att radera all befintlig data och återställa standardinställningarna.
-            </p>
-            <DatabaseResetPanel />
-          </section>
         </div>
       </div>
     </AppLayout>

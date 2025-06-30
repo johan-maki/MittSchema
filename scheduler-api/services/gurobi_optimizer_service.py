@@ -90,8 +90,16 @@ class GurobiScheduleOptimizer:
             actual_shift_requirements = working_days * len(self.shift_types) * min_staff_per_shift
             
             # Calculate max possible shifts correctly: 5 shifts per week per employee
+            # BUT ensure that for short periods (< 1 week), we allow at least 1 shift per day per employee
             total_weeks = len(self.dates) / 7.0  # Convert days to weeks (can be fractional)
-            max_shifts_per_employee = int(total_weeks * 5)  # 5 shifts per week maximum
+            
+            if total_weeks < 1.0:
+                # For periods shorter than a week, allow 1 shift per day per employee
+                max_shifts_per_employee = len(self.dates)  # 1 shift per day maximum for short periods
+            else:
+                # For longer periods, use the weekly constraint
+                max_shifts_per_employee = int(total_weeks * 5)  # 5 shifts per week maximum
+            
             max_possible_shifts = len(employees) * max_shifts_per_employee
             
             logger.info(f"Period: {len(self.dates)} days ({total_weeks:.1f} weeks)")
@@ -199,23 +207,33 @@ class GurobiScheduleOptimizer:
                 )
         
         # 2. Each employee works at most 5 days per week (legal constraint)
-        for emp in self.employees:
-            # Split dates into weeks
-            for week_start in range(0, len(self.dates), 7):
-                week_end = min(week_start + 7, len(self.dates))
-                week_days = list(range(week_start, week_end))
-                
-                # Sum all shifts for this employee in this week
-                weekly_shifts = gp.quicksum(
-                    self.shifts[(emp['id'], d, shift)]
-                    for d in week_days
-                    for shift in self.shift_types
-                )
-                
-                self.model.addConstr(
-                    weekly_shifts <= 5,
-                    name=f"max_5_days_per_week_{emp['id']}_week_{week_start}"
-                )
+        # Only apply this constraint for periods longer than a few days
+        total_weeks = len(self.dates) / 7.0
+        
+        if total_weeks >= 0.7:  # Only apply weekly constraint for periods 5+ days
+            for emp in self.employees:
+                # Split dates into weeks
+                for week_start in range(0, len(self.dates), 7):
+                    week_end = min(week_start + 7, len(self.dates))
+                    week_days = list(range(week_start, week_end))
+                    
+                    # For partial weeks, adjust the limit proportionally
+                    days_in_week = len(week_days)
+                    max_shifts_this_week = min(5, days_in_week)  # Max 5 or all days if fewer
+                    
+                    # Sum all shifts for this employee in this week
+                    weekly_shifts = gp.quicksum(
+                        self.shifts[(emp['id'], d, shift)]
+                        for d in week_days
+                        for shift in self.shift_types
+                    )
+                    
+                    self.model.addConstr(
+                        weekly_shifts <= max_shifts_this_week,
+                        name=f"max_{max_shifts_this_week}_days_per_week_{emp['id']}_week_{week_start}"
+                    )
+        else:
+            logger.info(f"Skipping weekly constraint for short period ({len(self.dates)} days)")
         
         # 3. Minimum staff coverage per shift - ensure all days are scheduled
         self.scheduled_days = list(range(len(self.dates)))  # Schedule all days
