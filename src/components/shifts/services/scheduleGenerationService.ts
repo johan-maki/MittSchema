@@ -252,6 +252,11 @@ export const generateScheduleForNextMonth = async (
   
   onProgress?.('🔄 Bearbetar personalschema med samtliga restriktioner...', 55);
   
+  // Add intermediate progress steps during API call
+  setTimeout(() => onProgress?.('🔍 Gurobi analyserar personaldata och constraints...', 60), 500);
+  setTimeout(() => onProgress?.('⚙️ Kör matematisk optimering för schemaläggning...', 65), 1000);
+  setTimeout(() => onProgress?.('🧮 Balanserar rättvisa och effektivitet...', 70), 1500);
+  
   const response = await schedulerApi.generateSchedule(
     startDate.toISOString(),
     endDate.toISOString(),

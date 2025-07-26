@@ -19,7 +19,7 @@ import { Shift } from "@/types/shift";
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
