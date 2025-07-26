@@ -44,12 +44,9 @@ const toJsonObject = (preferences: WorkPreferencesType): Record<string, Json> =>
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-    const [workPreferences, setWorkPreferences] = useState<WorkPreferencesType>(() => ({
+  
+  const [preferences, setPreferences] = useState<WorkPreferencesType>(() => ({
     ...defaultPreferences,
-    ...employee.work_preferences,
-    // Säkerställ att de nya fälten finns
-    available_days_strict: employee.work_preferences?.available_days_strict ?? false,
-    preferred_shifts_strict: employee.work_preferences?.preferred_shifts_strict ?? false,
   }));
 
   const { data: profile } = useQuery({
@@ -64,7 +61,13 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       if (error) throw error;
       
       const workPreferences = convertWorkPreferences(data.work_preferences);
-      setPreferences(workPreferences);
+      setPreferences({
+        ...defaultPreferences,
+        ...workPreferences,
+        // Säkerställ att de nya fälten finns
+        available_days_strict: workPreferences.available_days_strict ?? false,
+        preferred_shifts_strict: workPreferences.preferred_shifts_strict ?? false,
+      });
       
       return {
         work_preferences: workPreferences
