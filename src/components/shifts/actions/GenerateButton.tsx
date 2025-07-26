@@ -107,7 +107,7 @@ export const GenerateButton = ({
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfigConfirm}
         currentConfig={{
-          minStaffPerShift: 2,
+          minStaffPerShift: 1,
           minExperiencePerShift: 1,
           includeWeekends: true,
         }}

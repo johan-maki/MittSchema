@@ -101,12 +101,12 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       
       // Pass the actual config from user directly instead of transforming it
       const scheduleConfig = config ? {
-        minStaffPerShift: config.minStaffPerShift || 2,
+        minStaffPerShift: config.minStaffPerShift || 1,
         minExperiencePerShift: config.minExperiencePerShift || 1,
         includeWeekends: config.includeWeekends ?? true,
         department: 'Akutmottagning'
       } : {
-        minStaffPerShift: 2, // Default to 2 staff per shift
+        minStaffPerShift: 1, // Default to 1 staff per shift
         minExperiencePerShift: 1,
         includeWeekends: true,
         department: 'Akutmottagning'

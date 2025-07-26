@@ -92,7 +92,7 @@ export const schedulerApi = {
     startDate: string, 
     endDate: string, 
     department: string = "Akutmottagning",
-    minStaffPerShift: number = 2,
+    minStaffPerShift: number = 1,
     minExperiencePerShift: number = 1,
     includeWeekends: boolean = true,
     timestamp?: number, 

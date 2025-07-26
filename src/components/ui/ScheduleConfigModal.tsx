@@ -22,7 +22,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
   currentConfig = {}
 }) => {
   const [config, setConfig] = useState<ScheduleConfig>({
-    minStaffPerShift: currentConfig.minStaffPerShift || 2,
+    minStaffPerShift: currentConfig.minStaffPerShift || 1,
     minExperiencePerShift: currentConfig.minExperiencePerShift || 1,
     includeWeekends: currentConfig.includeWeekends ?? true,
   });

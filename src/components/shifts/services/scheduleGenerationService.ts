@@ -151,7 +151,7 @@ export const generateScheduleForNextMonth = async (
 
   // Extract Gurobi parameters from settings
   const gurobiConfig = {
-    minStaffPerShift: settings?.min_staff_per_shift || settings?.minStaffPerShift || 2, // Default to 2!
+    minStaffPerShift: settings?.min_staff_per_shift || settings?.minStaffPerShift || 1, // Default to 1
     minExperiencePerShift: settings?.min_experience_per_shift || settings?.minExperiencePerShift || 1,
     includeWeekends: settings?.include_weekends !== false && settings?.includeWeekends !== false // Default to true
   };
