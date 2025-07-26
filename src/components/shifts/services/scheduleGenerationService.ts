@@ -207,6 +207,11 @@ export const generateScheduleForNextMonth = async (
     const strictlyExcludedShifts = Object.entries(workPrefs.shift_constraints)
       .filter(([_, constraint]) => constraint.strict && !constraint.preferred)
       .map(([shift, _]) => shift);
+      
+    // Identify shifts that are strictly preferred (preferred=true AND strict=true)
+    const strictlyPreferredShifts = Object.entries(workPrefs.shift_constraints)
+      .filter(([_, constraint]) => constraint.strict && constraint.preferred)
+      .map(([shift, _]) => shift);
     
     // For available days, exclude only the strictly unavailable ones
     const effectiveAvailableDays = availableDays.filter(day => 
@@ -224,12 +229,12 @@ export const generateScheduleForNextMonth = async (
       max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
       available_days: effectiveAvailableDays.length > 0 ? effectiveAvailableDays : ["monday", "tuesday", "wednesday", "thursday", "friday"], // Default to weekdays if all excluded
       // Send specific exclusions instead of generic strict flags
-      // TEMPORARY FIX: Also remove excluded_shifts for Andreas to allow more flexibility
-      excluded_shifts: emp.id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630' ? [] : strictlyExcludedShifts,
+      excluded_shifts: strictlyExcludedShifts,
       excluded_days: strictlyUnavailableDays,
-      // TEMPORARY FIX: Set preferred_shifts_strict to false for Andreas to test if this causes the issue
       available_days_strict: strictlyUnavailableDays.length > 0,
-      preferred_shifts_strict: emp.id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630' ? false : strictlyExcludedShifts.length > 0,
+      // CORRECTED LOGIC: preferred_shifts_strict should only be true if user has strictly preferred shifts
+      // NOT if they have excluded shifts - those are separate constraints
+      preferred_shifts_strict: strictlyPreferredShifts.length > 0,
       // Add employee metadata for better optimization
       role: profile?.role || 'Unknown',
       experience_level: profile?.experience_level || 1
@@ -237,20 +242,18 @@ export const generateScheduleForNextMonth = async (
     
     console.log(`✅ Gurobi format for ${profile?.first_name} ${profile?.last_name}:`, gurobiPreference);
     
-    // Special debugging for Andreas 
-    if (gurobiPreference.employee_id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630') {
-      console.log('🎯 ANDREAS LUNDQUIST SPECIAL DEBUG:', {
-        original_preferred_shifts_strict: strictlyExcludedShifts.length > 0,
-        override_preferred_shifts_strict: false,
-        original_excluded_shifts: strictlyExcludedShifts,
-        override_excluded_shifts: [],
-        final_excluded_shifts: gurobiPreference.excluded_shifts,
-        preferred_shifts: gurobiPreference.preferred_shifts,
-        available_days: gurobiPreference.available_days,
-        role: gurobiPreference.role,
-        department_note: 'Andreas is Läkare, removing ALL constraints to allow maximum flexibility'
+    // Debug constraint logic for all employees to understand the pattern
+    if (strictlyExcludedShifts.length > 0 || strictlyPreferredShifts.length > 0) {
+      console.log(`🔍 Constraint analysis for ${profile?.first_name}:`, {
+        strictlyExcludedShifts,
+        strictlyPreferredShifts,
+        excluded_shifts_triggers_preferred_strict: 'NO (FIXED)',
+        preferred_shifts_strict: gurobiPreference.preferred_shifts_strict,
+        logic: 'preferred_shifts_strict only true if user has strictly preferred shifts, not excluded shifts'
       });
     }
+
+    return gurobiPreference;
     
     // Special debugging for Erik
     if (gurobiPreference.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be') {
@@ -360,36 +363,6 @@ export const generateScheduleForNextMonth = async (
   console.log(`✅ Optimering genererade ${convertedSchedule.length} pass för nästa månad`);
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Rättvishet: ${response.fairness_stats?.shift_distribution_range || 0} pass spridning`);
-  
-  // TEMPORARY FIX: Post-process to ensure Andreas gets shifts if he got 0
-  const andreasId = 'cb319cf9-6688-4d57-b6e6-8a62086b7630';
-  const andreasShifts = convertedSchedule.filter(shift => shift.employee_id === andreasId);
-  
-  if (andreasShifts.length === 0) {
-    console.log('🚨 ANDREAS GOT 0 SHIFTS - APPLYING POST-PROCESSING FIX');
-    
-    // Find some shifts that can be reassigned to Andreas
-    const reassignableShifts = convertedSchedule.filter(shift => {
-      const shiftDate = new Date(shift.date);
-      const dayOfWeek = shiftDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
-      
-      return shift.shift_type !== 'night' && // Andreas doesn't prefer night shifts
-             isWeekday; // Only weekdays
-    }).slice(0, 3); // Take first 3 suitable shifts
-    
-    reassignableShifts.forEach(shift => {
-      const originalEmployee = profiles.find(p => p.id === shift.employee_id);
-      console.log(`🔄 Reassigning shift from ${originalEmployee?.first_name} ${originalEmployee?.last_name} to Andreas: ${shift.date} ${shift.shift_type}`);
-      
-      shift.employee_id = andreasId;
-      shift.employee_name = 'Andreas Lundquist';
-    });
-    
-    console.log(`✅ POST-PROCESSING: Andreas now has ${reassignableShifts.length} shifts`);
-  } else {
-    console.log(`✅ Andreas already has ${andreasShifts.length} shifts - no post-processing needed`);
-  }
   
   // Validate schedule for constraint violations
   if (profiles && profiles.length > 0) {
