@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,18 +80,27 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       const workPreferences = convertWorkPreferences(data.work_preferences);
       console.log('🔄 Converted preferences:', workPreferences);
       
-      // Update state synchronously after conversion
-      setPreferences({
-        ...defaultPreferences,
-        ...workPreferences,
-      });
-      
       return {
         work_preferences: workPreferences
       };
     },
+    // Prevent automatic refetch that could reset local state
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes - keep data fresh but don't refetch too often
     enabled: !!employeeId // Only run query when employeeId exists
   });
+
+  // Only update local state when data first loads, not on every refetch
+  useEffect(() => {
+    if (profile?.work_preferences && !profileLoading) {
+      console.log('📥 Setting preferences from database:', profile.work_preferences);
+      setPreferences({
+        ...defaultPreferences,
+        ...profile.work_preferences,
+      });
+    }
+  }, [profile, profileLoading]);
 
   const handleSave = async () => {
     setIsSaving(true);

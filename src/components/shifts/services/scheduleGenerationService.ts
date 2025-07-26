@@ -187,14 +187,14 @@ export const generateScheduleForNextMonth = async (
       .filter(([_, constraint]) => constraint.preferred)
       .map(([shift, _]) => shift);
     
-    // Check if any unavailable day has strict constraint enabled
-    // This means the employee CANNOT work those days (hard constraint)
+    // Check if any day has strict constraint enabled (either available or unavailable)
+    // This means the constraints are hard and must be respected
     const availableDaysStrict = Object.entries(workPrefs.day_constraints)
-      .some(([_, constraint]) => !constraint.available && constraint.strict);
+      .some(([_, constraint]) => constraint.strict);
       
-    // Check if any non-preferred shift has strict constraint enabled  
+    // Check if any shift has strict constraint enabled (either preferred or non-preferred)
     const preferredShiftsStrict = Object.entries(workPrefs.shift_constraints)
-      .some(([_, constraint]) => !constraint.preferred && constraint.strict);
+      .some(([_, constraint]) => constraint.strict);
     
     const gurobiPreference = {
       employee_id: emp.id,
@@ -207,6 +207,16 @@ export const generateScheduleForNextMonth = async (
     };
     
     console.log(`✅ Gurobi format for ${emp.id}:`, gurobiPreference);
+    
+    // Special debugging for Erik
+    if (gurobiPreference.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be') {
+      console.log('🚨 ERIK ERIKSSON CONSTRAINTS TO GUROBI:', {
+        available_days: gurobiPreference.available_days,
+        available_days_strict: gurobiPreference.available_days_strict,
+        day_constraints: workPrefs.day_constraints,
+        message: 'Erik should NOT get Saturday/Sunday shifts if available_days_strict=true and available_days excludes weekends'
+      });
+    }
     
     return gurobiPreference;
   }) || [];
