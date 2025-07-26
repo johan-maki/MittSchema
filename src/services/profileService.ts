@@ -14,6 +14,25 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
     // Based on database constraint found in error messages
     const experience = Math.min(Math.max(profileData.experience_level || 1, 0), 10);
     
+    // Default work preferences for all new employees
+    const defaultWorkPreferences = {
+      max_shifts_per_week: 5,
+      day_constraints: {
+        monday: { available: true, strict: false },
+        tuesday: { available: true, strict: false },
+        wednesday: { available: true, strict: false },
+        thursday: { available: true, strict: false },
+        friday: { available: true, strict: false },
+        saturday: { available: true, strict: false },
+        sunday: { available: true, strict: false }
+      },
+      shift_constraints: {
+        day: { preferred: true, strict: false },
+        evening: { preferred: true, strict: false },
+        night: { preferred: true, strict: false }
+      }
+    };
+    
     const insertData = {
       id: uuidv4(),
       first_name: profileData.first_name,
@@ -22,7 +41,9 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
       department: profileData.department || null,
       phone: profileData.phone || null,
       experience_level: experience,
-      is_manager: false
+      hourly_rate: profileData.hourly_rate || 1000,
+      is_manager: false,
+      work_preferences: defaultWorkPreferences
     };
 
     const { data, error } = await supabase
