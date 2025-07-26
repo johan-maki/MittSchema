@@ -139,6 +139,11 @@ export const generateScheduleForNextMonth = async (
   const employeePreferences = employeeData?.map(emp => {
     const workPrefs = convertWorkPreferences(emp.work_preferences);
     
+    console.log(`🔍 Converting preferences for ${emp.id}:`, {
+      rawPrefs: emp.work_preferences,
+      convertedPrefs: workPrefs
+    });
+    
     // Convert granular constraints back to legacy format for Gurobi API
     const availableDays = Object.entries(workPrefs.day_constraints)
       .filter(([_, constraint]) => constraint.available)
@@ -148,15 +153,16 @@ export const generateScheduleForNextMonth = async (
       .filter(([_, constraint]) => constraint.preferred)
       .map(([shift, _]) => shift);
     
-    // Check if any day has strict constraint enabled
-    const availableDaysStrict = Object.values(workPrefs.day_constraints)
-      .some(constraint => constraint.strict);
+    // Check if any unavailable day has strict constraint enabled
+    // This means the employee CANNOT work those days (hard constraint)
+    const availableDaysStrict = Object.entries(workPrefs.day_constraints)
+      .some(([_, constraint]) => !constraint.available && constraint.strict);
       
-    // Check if any shift has strict constraint enabled  
-    const preferredShiftsStrict = Object.values(workPrefs.shift_constraints)
-      .some(constraint => constraint.strict);
+    // Check if any non-preferred shift has strict constraint enabled  
+    const preferredShiftsStrict = Object.entries(workPrefs.shift_constraints)
+      .some(([_, constraint]) => !constraint.preferred && constraint.strict);
     
-    return {
+    const gurobiPreference = {
       employee_id: emp.id,
       preferred_shifts: preferredShifts.length > 0 ? preferredShifts : ["day", "evening", "night"],
       max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
@@ -165,6 +171,10 @@ export const generateScheduleForNextMonth = async (
       available_days_strict: availableDaysStrict,
       preferred_shifts_strict: preferredShiftsStrict
     };
+    
+    console.log(`✅ Gurobi format for ${emp.id}:`, gurobiPreference);
+    
+    return gurobiPreference;
   }) || [];
   
   console.log('👥 Employee preferences loaded:', employeePreferences);
@@ -181,6 +191,20 @@ export const generateScheduleForNextMonth = async (
   console.log('  Start date:', startDate.toISOString());
   console.log('  End date:', endDate.toISOString());
   console.log('  Employee preferences count:', employeePreferences.length);
+  console.log('  🎯 CRITICAL - Full employee preferences being sent to Gurobi:', JSON.stringify(employeePreferences, null, 2));
+  
+  // Find Erik specifically
+  const erikPrefs = employeePreferences.find(pref => pref.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be');
+  if (erikPrefs) {
+    console.log('🚨 ERIK ERIKSSON PREFERENCES TO GUROBI:', erikPrefs);
+    console.log('🚨 ERIK HAS WEEKENDS?', {
+      saturday: erikPrefs.available_days.includes('saturday'),
+      sunday: erikPrefs.available_days.includes('sunday'),
+      available_days_strict: erikPrefs.available_days_strict
+    });
+  } else {
+    console.error('❌ ERIK NOT FOUND IN EMPLOYEE PREFERENCES!');
+  }
   
   onProgress?.('🔄 Bearbetar personalschema med samtliga restriktioner...', 55);
   
