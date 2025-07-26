@@ -34,15 +34,7 @@ export const ScheduleControls = () => {
   };
 
   const handleClearUnpublished = async () => {
-    // Add confirmation dialog for safety
-    const confirmed = window.confirm(
-      "Är du säker på att du vill rensa hela schemat? Detta kan inte ångras."
-    );
-    
-    if (!confirmed) {
-      return;
-    }
-    
+    // Confirmation dialog temporarily removed - clear schedule directly
     try {
       const { error: deleteError } = await supabase
         .from('shifts')
