@@ -114,7 +114,7 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
   
   // Handle new granular constraint format (with possible mixed day formats)
   if (jsonObj.day_constraints && jsonObj.shift_constraints) {
-    const dayConstraints = jsonObj.day_constraints as Record<string, any>;
+    const dayConstraints = jsonObj.day_constraints as Record<string, Record<string, unknown>>;
     const convertedDayConstraints: Record<string, DayConstraint> = {};
     
     // Handle each day, supporting both old {available, strict} and new {day, evening, night} formats

@@ -70,13 +70,13 @@ export function DirectoryControls() {
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       setIsDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding profile:', error);
       
       let errorMessage = "Kunde inte lägga till profilen";
       
       // Handle specific errors related to experience_level
-      if (error.message && (
+      if (error instanceof Error && error.message && (
         error.message.includes("experience_level") || 
         error.message.includes("profiles_experience_level_check")
       )) {

@@ -167,7 +167,7 @@ const DayView = ({ date, shifts }: DayViewProps) => {
                               {getEmployeeName(shift)}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {shift.profiles?.role || 'Medarbetare'}
+                              Medarbetare
                             </p>
                           </div>
                         </div>
@@ -198,9 +198,6 @@ const DayView = ({ date, shifts }: DayViewProps) => {
               </CardContent>
             </Card>
           );
-        })}
-      </div>
-
         })}
       </div>
 

@@ -139,11 +139,11 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         console.log('🔍 Verification - data in database:', verifyData.work_preferences);
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error saving preferences:', error);
       toast({
         title: "Ett fel uppstod",
-        description: error.message || "Kunde inte spara inställningarna",
+        description: error instanceof Error ? error.message : "Kunde inte spara inställningarna",
         variant: "destructive",
       });
     } finally {

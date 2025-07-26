@@ -1,6 +1,8 @@
 
 "use client"
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import createGlobe, { COBEOptions } from "cobe"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
@@ -72,11 +74,11 @@ export function Globe({
     [r],
   )
 
-  const onResize = () => {
+  const onResize = useCallback(() => {
     if (canvasRef.current) {
       width = canvasRef.current.offsetWidth
     }
-  }
+  }, [])
 
   useEffect(() => {
     window.addEventListener("resize", onResize)
@@ -99,7 +101,7 @@ export function Globe({
       clearTimeout(timeoutId)
       globe.destroy()
     }
-  }, [])
+  }, [config, onRender, onResize, width])
 
   return (
     <div

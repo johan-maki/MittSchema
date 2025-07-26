@@ -2,9 +2,43 @@ import { format } from "date-fns";
 import { schedulerApi } from "@/api/schedulerApi";
 import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
-import type { Shift } from "@/types/shift";
+import type { Shift, ShiftType } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
 import { convertWorkPreferences } from "@/types/profile";
+
+// Type definitions for schedule generation
+interface ScheduleSettings {
+  department?: string;
+  min_staff_per_shift?: number;
+  minStaffPerShift?: number;
+  min_experience_per_shift?: number;
+  minExperiencePerShift?: number;
+  include_weekends?: boolean;
+  includeWeekends?: boolean;
+  [key: string]: unknown;
+}
+
+interface CoverageStats {
+  [key: string]: unknown;
+}
+
+interface FairnessStats {
+  [key: string]: unknown;
+}
+
+interface GurobiShift {
+  employee_id: string;
+  employee_name: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  shift_type: string;
+  is_weekend: boolean;
+  department: string;
+  hours?: number;
+  hourly_rate?: number;
+  cost?: number;
+}
 
 /**
  * Save generated shifts to Supabase database
@@ -79,14 +113,14 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
 export const generateScheduleForNextMonth = async (
   currentDate: Date,
   profiles: Profile[],
-  settings: any,
+  settings: ScheduleSettings,
   timestamp?: number,
   onProgress?: (step: string, progress: number) => void
 ): Promise<{ 
   schedule: Shift[], 
   staffingIssues?: { date: string; shiftType: string; current: number; required: number }[],
-  coverage_stats?: any,
-  fairness_stats?: any 
+  coverage_stats?: CoverageStats,
+  fairness_stats?: FairnessStats 
 }> => {
   // Calculate next full calendar month
   const today = new Date();
@@ -230,7 +264,7 @@ export const generateScheduleForNextMonth = async (
   onProgress?.('🔧 Formaterar och validerar schemaresultat...', 85);
 
   // Convert Gurobi response to our Shift format
-  const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
+  const convertedSchedule: Shift[] = response.schedule.map((shift: GurobiShift, index: number) => {
     
     return {
       id: uuidv4(),
@@ -238,7 +272,7 @@ export const generateScheduleForNextMonth = async (
       date: shift.date, // Include date from Gurobi response
       start_time: shift.start_time,
       end_time: shift.end_time,
-      shift_type: shift.shift_type,
+      shift_type: shift.shift_type as ShiftType,
       is_published: false,
       department: shift.department || 'Akutmottagning'
     };

@@ -117,11 +117,11 @@ export function useProfileDirectory() {
       
       setIsDeleteDialogOpen(false);
       setProfileToDelete(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting profile:', error);
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte ta bort medarbetaren",
+        description: error instanceof Error ? error.message : "Kunde inte ta bort medarbetaren",
         variant: "destructive",
       });
     } finally {
@@ -164,11 +164,11 @@ export function useProfileDirectory() {
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       setIsEditDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating profile:', error);
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte uppdatera profilen",
+        description: error instanceof Error ? error.message : "Kunde inte uppdatera profilen",
         variant: "destructive",
       });
     } finally {
