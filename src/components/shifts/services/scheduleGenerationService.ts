@@ -172,9 +172,15 @@ export const generateScheduleForNextMonth = async (
   
   // Convert employee preferences to format expected by Gurobi API
   const employeePreferences = employeeData?.map(emp => {
+    const profile = profiles.find(p => p.id === emp.id);
+    if (!profile) {
+      console.warn(`Profile not found for employee ${emp.id}`);
+      return null;
+    }
+    
     const workPrefs = convertWorkPreferences(emp.work_preferences);
     
-    console.log(`🔍 Converting preferences for ${emp.id}:`, {
+    console.log(`🔍 Converting preferences for ${profile?.first_name} ${profile?.last_name} (${emp.id}):`, {
       rawPrefs: emp.work_preferences,
       convertedPrefs: workPrefs
     });
@@ -188,26 +194,47 @@ export const generateScheduleForNextMonth = async (
       .filter(([_, constraint]) => constraint.preferred)
       .map(([shift, _]) => shift);
     
-    // Check if any day has strict constraint enabled (either available or unavailable)
-    // This means the constraints are hard and must be respected
-    const availableDaysStrict = Object.entries(workPrefs.day_constraints)
-      .some(([_, constraint]) => constraint.strict);
+    // ⚠️ IMPROVED STRICT CONSTRAINT HANDLING
+    // Instead of sending generic strict flags, we send specific constraint details
+    // This allows Gurobi to apply constraints properly without excluding employees entirely
+    
+    // Identify specific days with strict unavailability
+    const strictlyUnavailableDays = Object.entries(workPrefs.day_constraints)
+      .filter(([_, constraint]) => constraint.strict && !constraint.available)
+      .map(([day, _]) => day);
       
-    // Check if any shift has strict constraint enabled (either preferred or non-preferred)
-    const preferredShiftsStrict = Object.entries(workPrefs.shift_constraints)
-      .some(([_, constraint]) => constraint.strict);
+    // Identify specific shifts with strict exclusion (preferred=false AND strict=true)
+    const strictlyExcludedShifts = Object.entries(workPrefs.shift_constraints)
+      .filter(([_, constraint]) => constraint.strict && !constraint.preferred)
+      .map(([shift, _]) => shift);
+    
+    // For available days, exclude only the strictly unavailable ones
+    const effectiveAvailableDays = availableDays.filter(day => 
+      !strictlyUnavailableDays.includes(day)
+    );
+    
+    // For preferred shifts, exclude only the strictly excluded ones
+    const effectivePreferredShifts = preferredShifts.filter(shift => 
+      !strictlyExcludedShifts.includes(shift)
+    );
     
     const gurobiPreference = {
       employee_id: emp.id,
-      preferred_shifts: preferredShifts.length > 0 ? preferredShifts : ["day", "evening", "night"],
+      preferred_shifts: effectivePreferredShifts.length > 0 ? effectivePreferredShifts : ["day", "evening"], // Default to day/evening if all excluded
       max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
-      available_days: availableDays.length > 0 ? availableDays : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-      // Add strict constraint flags
-      available_days_strict: availableDaysStrict,
-      preferred_shifts_strict: preferredShiftsStrict
+      available_days: effectiveAvailableDays.length > 0 ? effectiveAvailableDays : ["monday", "tuesday", "wednesday", "thursday", "friday"], // Default to weekdays if all excluded
+      // Send specific exclusions instead of generic strict flags
+      excluded_shifts: strictlyExcludedShifts,
+      excluded_days: strictlyUnavailableDays,
+      // Keep legacy flags for backwards compatibility but with better logic
+      available_days_strict: strictlyUnavailableDays.length > 0,
+      preferred_shifts_strict: strictlyExcludedShifts.length > 0,
+      // Add employee metadata for better optimization
+      role: profile?.role || 'Unknown',
+      experience_level: profile?.experience_level || 1
     };
     
-    console.log(`✅ Gurobi format for ${emp.id}:`, gurobiPreference);
+    console.log(`✅ Gurobi format for ${profile?.first_name} ${profile?.last_name}:`, gurobiPreference);
     
     // Special debugging for Erik
     if (gurobiPreference.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be') {
@@ -220,7 +247,7 @@ export const generateScheduleForNextMonth = async (
     }
     
     return gurobiPreference;
-  }) || [];
+  }).filter(Boolean) || []; // Remove any null entries from missing profiles
   
   console.log('👥 Employee preferences loaded:', employeePreferences);
 
@@ -249,6 +276,22 @@ export const generateScheduleForNextMonth = async (
     });
   } else {
     console.error('❌ ERIK NOT FOUND IN EMPLOYEE PREFERENCES!');
+  }
+  
+  // Find Andreas specifically
+  const andreasPrefs = employeePreferences.find(pref => pref.employee_id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630');
+  if (andreasPrefs) {
+    console.log('🚨 ANDREAS LUNDQUIST PREFERENCES TO GUROBI:', andreasPrefs);
+    console.log('🚨 ANDREAS DETAILS:', {
+      available_days: andreasPrefs.available_days,
+      preferred_shifts: andreasPrefs.preferred_shifts,
+      excluded_shifts: andreasPrefs.excluded_shifts,
+      excluded_days: andreasPrefs.excluded_days,
+      max_shifts_per_week: andreasPrefs.max_shifts_per_week,
+      message: 'Andreas should get day/evening shifts while avoiding night shifts'
+    });
+  } else {
+    console.error('❌ ANDREAS NOT FOUND IN EMPLOYEE PREFERENCES!');
   }
   
   onProgress?.('🔄 Bearbetar personalschema med samtliga restriktioner...', 55);

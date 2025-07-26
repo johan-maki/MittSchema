@@ -23,6 +23,11 @@ interface GurobiScheduleRequest {
     available_days: string[];
     available_days_strict?: boolean;
     preferred_shifts_strict?: boolean;
+    // New fields for better constraint handling
+    excluded_shifts?: string[];
+    excluded_days?: string[];
+    role?: string;
+    experience_level?: number;
   }>;
 }
 
