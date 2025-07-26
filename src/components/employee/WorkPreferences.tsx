@@ -44,6 +44,7 @@ const defaultPreferences: WorkPreferencesType = {
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isSaving, setIsSaving] = useState(false);
   
   const [preferences, setPreferences] = useState<WorkPreferencesType>(() => ({
     ...defaultPreferences,
@@ -58,18 +59,28 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     };
   };
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['work-preferences', employeeId],
     queryFn: async () => {
+      console.log('🔄 Loading work preferences for employee:', employeeId);
+      
       const { data, error } = await supabase
         .from('employees')
         .select('work_preferences')
         .eq('id', employeeId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error loading preferences:', error);
+        throw error;
+      }
+      
+      console.log('📄 Raw data from database:', data.work_preferences);
       
       const workPreferences = convertWorkPreferences(data.work_preferences);
+      console.log('🔄 Converted preferences:', workPreferences);
+      
+      // Update state synchronously after conversion
       setPreferences({
         ...defaultPreferences,
         ...workPreferences,
@@ -78,34 +89,65 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       return {
         work_preferences: workPreferences
       };
-    }
+    },
+    enabled: !!employeeId // Only run query when employeeId exists
   });
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       const jsonObj = toJsonObject();
       
-      const { error } = await supabase
+      console.log('🔄 Saving work preferences for employee:', employeeId);
+      console.log('📄 Data being saved:', JSON.stringify(jsonObj, null, 2));
+      
+      const { data, error } = await supabase
         .from('employees')
         .update({
           work_preferences: jsonObj
         })
-        .eq('id', employeeId);
+        .eq('id', employeeId)
+        .select('work_preferences');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+
+      console.log('✅ Successfully saved to database:', data);
 
       toast({
         title: "Inställningar sparade",
         description: "Dina arbetsinställningar har uppdaterats",
       });
 
-      queryClient.invalidateQueries({ queryKey: ['work-preferences'] });
-    } catch (error) {
+      // Invalidate multiple cache keys to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ['work-preferences'] });
+      await queryClient.invalidateQueries({ queryKey: ['employee-profile', employeeId] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+      
+      // Verify the save by re-fetching
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('employees')
+        .select('work_preferences')
+        .eq('id', employeeId)
+        .single();
+        
+      if (verifyError) {
+        console.error('❌ Verification failed:', verifyError);
+      } else {
+        console.log('🔍 Verification - data in database:', verifyData.work_preferences);
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error saving preferences:', error);
       toast({
         title: "Ett fel uppstod",
-        description: "Kunde inte spara inställningarna",
+        description: error.message || "Kunde inte spara inställningarna",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -124,6 +166,18 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     { id: "saturday", label: "Lördag" },
     { id: "sunday", label: "Söndag" },
   ];
+
+  // Show loading state while data is being fetched
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-slate-600">Laddar inställningar...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -281,10 +335,20 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       <div className="flex justify-end">
         <Button 
           onClick={handleSave} 
-          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+          disabled={isSaving}
+          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
         >
-          <Save className="h-4 w-4" />
-          Spara inställningar
+          {isSaving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Sparar...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Spara inställningar
+            </>
+          )}
         </Button>
       </div>
     </div>
