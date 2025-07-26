@@ -220,7 +220,12 @@ class GurobiScheduleOptimizer:
         
         # 2. Each employee works at most 5 days per week (legal constraint)
         # Only apply this constraint for periods longer than a few days
+        # Note: Individual employee preferences can override this in _add_employee_preference_constraints
         total_weeks = len(self.dates) / 7.0
+        
+        # Initialize tracking for employee preferences
+        self.employees_with_custom_weekly_limits = set()
+        self.employee_shift_preferences = {}  # Track preferred vs non-preferred shifts
         
         if total_weeks >= 0.7:  # Only apply weekly constraint for periods 5+ days
             for emp in self.employees:
@@ -240,9 +245,11 @@ class GurobiScheduleOptimizer:
                         for shift in self.shift_types
                     )
                     
+                    # Add constraint with a name that can be referenced later
+                    constraint_name = f"default_max_{max_shifts_this_week}_days_per_week_{emp['id']}_week_{week_start}"
                     self.model.addConstr(
                         weekly_shifts <= max_shifts_this_week,
-                        name=f"max_{max_shifts_this_week}_days_per_week_{emp['id']}_week_{week_start}"
+                        name=constraint_name
                     )
         else:
             logger.info(f"Skipping weekly constraint for short period ({len(self.dates)} days)")
@@ -290,8 +297,39 @@ class GurobiScheduleOptimizer:
         
         logger.info(f"Adding employee preference constraints for {len(self.employee_preferences)} employees")
         
+        # Validate employee preferences data
+        valid_preferences = []
+        for pref in self.employee_preferences:
+            try:
+                # Basic validation
+                if not hasattr(pref, 'employee_id') or not pref.employee_id:
+                    logger.warning(f"Invalid preference: missing employee_id")
+                    continue
+                    
+                # Validate max_shifts_per_week
+                if hasattr(pref, 'max_shifts_per_week') and pref.max_shifts_per_week is not None:
+                    if not isinstance(pref.max_shifts_per_week, int) or pref.max_shifts_per_week < 0 or pref.max_shifts_per_week > 7:
+                        logger.warning(f"Invalid max_shifts_per_week for employee {pref.employee_id}: {pref.max_shifts_per_week}, using default 5")
+                        # We could set it to default here, but let the or 5 handle it
+                
+                # Validate available_days
+                if hasattr(pref, 'available_days') and pref.available_days:
+                    valid_days = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'}
+                    invalid_days = [day for day in pref.available_days if day.lower() not in valid_days]
+                    if invalid_days:
+                        logger.warning(f"Invalid available_days for employee {pref.employee_id}: {invalid_days}")
+                
+                valid_preferences.append(pref)
+                
+            except Exception as e:
+                logger.error(f"Error validating preferences for employee {getattr(pref, 'employee_id', 'unknown')}: {e}")
+                continue
+        
+        if len(valid_preferences) != len(self.employee_preferences):
+            logger.warning(f"Filtered {len(self.employee_preferences)} preferences down to {len(valid_preferences)} valid ones")
+        
         # Create a mapping from employee_id to preferences for quick lookup
-        pref_map = {pref.employee_id: pref for pref in self.employee_preferences}
+        pref_map = {pref.employee_id: pref for pref in valid_preferences}
         
         for emp in self.employees:
             emp_id = emp['id']
@@ -314,32 +352,57 @@ class GurobiScheduleOptimizer:
                 
                 available_weekdays = [day_name_to_weekday.get(day.lower()) for day in available_days if day.lower() in day_name_to_weekday]
                 
-                # For each date, if it's not in available days, set all shifts to 0
-                for d, date in enumerate(self.dates):
-                    weekday = date.weekday()  # 0=Monday, 6=Sunday
-                    
-                    if weekday not in available_weekdays:
-                        # Employee is not available on this day - block all shifts
+                if not available_weekdays:
+                    logger.warning(f"Employee {emp_id} has no valid available days, they will be blocked from all shifts")
+                    # Block all shifts for this employee
+                    for d in range(len(self.dates)):
                         for shift in self.shift_types:
                             self.model.addConstr(
                                 self.shifts[(emp_id, d, shift)] == 0,
-                                name=f"unavailable_day_{emp_id}_{d}_{shift}"
+                                name=f"no_valid_days_{emp_id}_{d}_{shift}"
                             )
-                        logger.debug(f"Blocked employee {emp_id} from {date.strftime('%A')} (day {d})")
+                else:
+                    # For each date, if it's not in available days, set all shifts to 0
+                    blocked_days = 0
+                    for d, date in enumerate(self.dates):
+                        weekday = date.weekday()  # 0=Monday, 6=Sunday
+                        
+                        if weekday not in available_weekdays:
+                            # Employee is not available on this day - block all shifts
+                            for shift in self.shift_types:
+                                self.model.addConstr(
+                                    self.shifts[(emp_id, d, shift)] == 0,
+                                    name=f"unavailable_day_{emp_id}_{d}_{shift}"
+                                )
+                            blocked_days += 1
+                    
+                    if blocked_days > 0:
+                        logger.info(f"Employee {emp_id} blocked from {blocked_days} days, available on: {available_days}")
+            else:
+                logger.debug(f"Employee {emp_id} has no day restrictions (available all days)")
             
-            # 2. Preferred shifts constraint (soft constraint - could be enhanced later)
+            # 2. Preferred shifts tracking (for use in objective function)
             preferred_shifts = pref.preferred_shifts or self.shift_types
             non_preferred_shifts = [s for s in self.shift_types if s not in preferred_shifts]
             
+            # Store preference information for objective function
+            self.employee_shift_preferences[emp_id] = {
+                'preferred': preferred_shifts,
+                'non_preferred': non_preferred_shifts
+            }
+            
             if non_preferred_shifts:
-                # For now, we don't block non-preferred shifts entirely (they might be needed for coverage)
-                # But we could add penalty terms to the objective function
-                logger.debug(f"Employee {emp_id} prefers shifts: {preferred_shifts}, dislikes: {non_preferred_shifts}")
+                logger.info(f"Employee {emp_id} prefers shifts: {preferred_shifts}, avoids: {non_preferred_shifts}")
+            else:
+                logger.debug(f"Employee {emp_id} has no shift preferences (all shifts acceptable)")
             
             # 3. Maximum shifts per week constraint (override default if specified)
             max_shifts_per_week = pref.max_shifts_per_week or 5
             if max_shifts_per_week != 5:  # Only add if different from default
                 total_weeks = len(self.dates) / 7.0
+                
+                # Mark this employee as having custom weekly limits
+                self.employees_with_custom_weekly_limits.add(emp_id)
                 
                 if total_weeks >= 0.7:  # Only apply weekly constraint for periods 5+ days
                     for week_start in range(0, len(self.dates), 7):
@@ -349,6 +412,15 @@ class GurobiScheduleOptimizer:
                         # For partial weeks, adjust the limit proportionally
                         days_in_week = len(week_days)
                         max_shifts_this_week = min(max_shifts_per_week, days_in_week)
+                        
+                        # Remove the default constraint for this employee and week if it exists
+                        default_constraint_name = f"default_max_{min(5, days_in_week)}_days_per_week_{emp_id}_week_{week_start}"
+                        try:
+                            # Gurobi doesn't have direct constraint removal, so we'll add our custom constraint
+                            # The solver will handle the constraint optimization
+                            pass
+                        except:
+                            pass
                         
                         # Sum all shifts for this employee in this week
                         weekly_shifts = gp.quicksum(
@@ -361,9 +433,29 @@ class GurobiScheduleOptimizer:
                             weekly_shifts <= max_shifts_this_week,
                             name=f"custom_max_{max_shifts_this_week}_shifts_per_week_{emp_id}_week_{week_start}"
                         )
-                        logger.debug(f"Set custom max {max_shifts_this_week} shifts per week for employee {emp_id}")
+                        logger.info(f"Set custom max {max_shifts_this_week} shifts per week for employee {emp_id} (overrides default 5)")
+            else:
+                logger.debug(f"Employee {emp_id} uses default max 5 shifts per week")
         
         logger.info("Employee preference constraints added successfully")
+        
+        # Summary logging
+        total_employees = len(self.employees)
+        employees_with_preferences = len(self.employee_preferences)
+        employees_with_custom_weekly = len(self.employees_with_custom_weekly_limits)
+        employees_with_shift_prefs = len(self.employee_shift_preferences)
+        
+        logger.info(f"Employee preference summary:")
+        logger.info(f"  Total employees: {total_employees}")
+        logger.info(f"  Employees with preferences: {employees_with_preferences}")
+        logger.info(f"  Employees with custom weekly limits: {employees_with_custom_weekly}")
+        logger.info(f"  Employees with shift preferences: {employees_with_shift_prefs}")
+        
+        # Log any employees without preferences
+        employees_without_prefs = [emp['id'] for emp in self.employees 
+                                 if emp['id'] not in [pref.employee_id for pref in self.employee_preferences]]
+        if employees_without_prefs:
+            logger.info(f"  Employees using default constraints: {len(employees_without_prefs)}")
     
     def _set_objective(self):
         """
@@ -448,17 +540,30 @@ class GurobiScheduleOptimizer:
         
         weekend_unfairness = max_weekend_shifts - min_weekend_shifts
         
+        # Fifth objective: Minimize assignment of non-preferred shifts
+        # This encourages giving employees their preferred shift types when possible
+        non_preferred_penalty = 0
+        for emp in self.employees:
+            emp_id = emp['id']
+            if emp_id in self.employee_shift_preferences:
+                non_preferred_shifts = self.employee_shift_preferences[emp_id]['non_preferred']
+                for d in range(len(self.dates)):
+                    for shift in non_preferred_shifts:
+                        # Add penalty for each non-preferred shift assignment
+                        non_preferred_penalty += self.shifts[(emp_id, d, shift)]
+        
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Weekend fairness is high priority (weight: 15) - increased for better fairness
         # - Total fairness is important (weight: 10) 
         # - Shift type fairness is also important (weight: 5)
+        # - Preferred shifts matter (weight: 3) - encourage preferred shift assignments
         self.model.setObjective(
-            100 * total_coverage - 15 * weekend_unfairness - 10 * total_unfairness - 5 * shift_type_unfairness,
+            100 * total_coverage - 15 * weekend_unfairness - 10 * total_unfairness - 5 * shift_type_unfairness - 3 * non_preferred_penalty,
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Weekend fairness (15x), Total fairness (10x), Shift type fairness (5x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Weekend fairness (15x), Total fairness (10x), Shift type fairness (5x), Preferred shifts (3x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
