@@ -65,11 +65,7 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
     available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
   };
 
-  console.log('🔍 convertWorkPreferences DEBUG:');
-  console.log('  Input json:', json);
-
   if (!json || typeof json !== 'object' || Array.isArray(json)) {
-    console.log('  Using default preferences (invalid json)');
     return defaultPreferences;
   }
 
@@ -87,10 +83,6 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
       ? jsonObj.available_days.map(String)
       : defaultPreferences.available_days,
   };
-
-  console.log('  Converted result:', converted);
-  console.log('  Available days from DB:', jsonObj.available_days);
-  console.log('  Final available days:', converted.available_days);
   
   return converted;
 }

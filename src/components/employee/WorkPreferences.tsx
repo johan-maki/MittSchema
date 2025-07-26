@@ -54,13 +54,6 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       if (error) throw error;
       
       const workPreferences = convertWorkPreferences(data.work_preferences);
-      console.log('🔍 LOADING ERIK PREFERENCES DEBUG:');
-      console.log('  Raw data from DB:', data.work_preferences);
-      console.log('  Converted preferences:', workPreferences);
-      console.log('  Available days after conversion:', workPreferences.available_days);
-      console.log('  Has Saturday after conversion?', workPreferences.available_days.includes('saturday'));
-      console.log('  Has Sunday after conversion?', workPreferences.available_days.includes('sunday'));
-      
       setPreferences(workPreferences);
       
       return {

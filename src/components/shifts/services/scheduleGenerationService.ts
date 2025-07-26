@@ -174,15 +174,7 @@ export const generateScheduleForNextMonth = async (
   }
   
   // Convert Gurobi response to our Shift format
-  console.log('🔍 DEBUG: First shift from Gurobi:', response.schedule[0]);
   const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
-    console.log(`🔍 DEBUG: Converting shift ${index}:`, {
-      date: shift.date,
-      start_time: shift.start_time,
-      end_time: shift.end_time,
-      start_time_type: typeof shift.start_time,
-      end_time_type: typeof shift.end_time
-    });
     
     return {
       id: uuidv4(),
@@ -196,14 +188,6 @@ export const generateScheduleForNextMonth = async (
     };
   });
   
-  console.log('🔍 DEBUG: Before saving - sample shift:', convertedSchedule[0]);
-  console.log('🔍 DEBUG: Gurobi generated schedule length:', convertedSchedule.length);
-  console.log('🔍 DEBUG: All converted shifts:', convertedSchedule.map(s => ({
-    employee_id: s.employee_id,
-    start_time: s.start_time,
-    shift_type: s.shift_type
-  })));
-  
   console.log(`✅ Gurobi generated ${convertedSchedule.length} shifts for next month`);
   console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
@@ -216,9 +200,6 @@ export const generateScheduleForNextMonth = async (
     coverage_stats: response.coverage_stats,
     fairness_stats: response.fairness_stats
   };
-  
-  console.log('🔍 DEBUG: Final result from generateScheduleForNextMonth:', finalResult);
-  console.log('🔍 DEBUG: Final result schedule length:', finalResult.schedule.length);
   
   return finalResult;
 };
