@@ -224,7 +224,8 @@ export const generateScheduleForNextMonth = async (
       max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
       available_days: effectiveAvailableDays.length > 0 ? effectiveAvailableDays : ["monday", "tuesday", "wednesday", "thursday", "friday"], // Default to weekdays if all excluded
       // Send specific exclusions instead of generic strict flags
-      excluded_shifts: strictlyExcludedShifts,
+      // TEMPORARY FIX: Also remove excluded_shifts for Andreas to allow more flexibility
+      excluded_shifts: emp.id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630' ? [] : strictlyExcludedShifts,
       excluded_days: strictlyUnavailableDays,
       // TEMPORARY FIX: Set preferred_shifts_strict to false for Andreas to test if this causes the issue
       available_days_strict: strictlyUnavailableDays.length > 0,
@@ -241,11 +242,13 @@ export const generateScheduleForNextMonth = async (
       console.log('🎯 ANDREAS LUNDQUIST SPECIAL DEBUG:', {
         original_preferred_shifts_strict: strictlyExcludedShifts.length > 0,
         override_preferred_shifts_strict: false,
-        excluded_shifts: gurobiPreference.excluded_shifts,
+        original_excluded_shifts: strictlyExcludedShifts,
+        override_excluded_shifts: [],
+        final_excluded_shifts: gurobiPreference.excluded_shifts,
         preferred_shifts: gurobiPreference.preferred_shifts,
         available_days: gurobiPreference.available_days,
         role: gurobiPreference.role,
-        department_note: 'Andreas is Läkare in onkologi-patologi, but scheduling for Akutmottagning'
+        department_note: 'Andreas is Läkare, removing ALL constraints to allow maximum flexibility'
       });
     }
     
