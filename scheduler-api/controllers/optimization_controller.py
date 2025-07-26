@@ -66,7 +66,8 @@ async def handle_optimization_request(request: ScheduleRequest):
             optimizer=request.optimizer or "gurobi",
             min_staff_per_shift=request.min_staff_per_shift or 1,
             min_experience_per_shift=request.min_experience_per_shift or 1,
-            include_weekends=request.include_weekends if request.include_weekends is not None else True
+            include_weekends=request.include_weekends if request.include_weekends is not None else True,
+            employee_preferences=request.employee_preferences
         )
         
         # Debug: log what we got from optimizer

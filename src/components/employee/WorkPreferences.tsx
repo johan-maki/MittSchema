@@ -54,6 +54,13 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       if (error) throw error;
       
       const workPreferences = convertWorkPreferences(data.work_preferences);
+      console.log('🔍 LOADING ERIK PREFERENCES DEBUG:');
+      console.log('  Raw data from DB:', data.work_preferences);
+      console.log('  Converted preferences:', workPreferences);
+      console.log('  Available days after conversion:', workPreferences.available_days);
+      console.log('  Has Saturday after conversion?', workPreferences.available_days.includes('saturday'));
+      console.log('  Has Sunday after conversion?', workPreferences.available_days.includes('sunday'));
+      
       setPreferences(workPreferences);
       
       return {
@@ -64,10 +71,19 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
 
   const handleSave = async () => {
     try {
+      console.log('🔍 SAVING ERIK PREFERENCES DEBUG:');
+      console.log('  Current preferences state:', preferences);
+      console.log('  Available days:', preferences.available_days);
+      console.log('  Has Saturday?', preferences.available_days.includes('saturday'));
+      console.log('  Has Sunday?', preferences.available_days.includes('sunday'));
+      
+      const jsonObj = toJsonObject(preferences);
+      console.log('  JSON object to save:', jsonObj);
+      
       const { error } = await supabase
         .from('employees')
         .update({
-          work_preferences: toJsonObject(preferences)
+          work_preferences: jsonObj
         })
         .eq('id', employeeId);
 

@@ -16,7 +16,8 @@ def optimize_schedule(
     optimizer: str = "gurobi",  # Keep for API compatibility, but only Gurobi is supported
     min_staff_per_shift: int = 1,
     min_experience_per_shift: int = 1,
-    include_weekends: bool = True
+    include_weekends: bool = True,
+    employee_preferences: Optional[List] = None
 ):
     """
     Core function to optimize the employee schedule using Gurobi.
@@ -36,6 +37,7 @@ def optimize_schedule(
         min_staff_per_shift: Minimum staff required per shift
         min_experience_per_shift: Minimum experience level required
         include_weekends: Whether to schedule weekend shifts
+        employee_preferences: Individual employee work preferences
     
     Returns:
         Optimized schedule dictionary with coverage stats and employee assignments
@@ -64,7 +66,8 @@ def optimize_schedule(
             min_staff_per_shift=min_staff_per_shift,
             min_experience_per_shift=min_experience_per_shift,
             include_weekends=include_weekends,
-            random_seed=random_seed
+            random_seed=random_seed,
+            employee_preferences=employee_preferences
         )
         
         # Add department info to schedule items

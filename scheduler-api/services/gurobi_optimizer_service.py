@@ -1,8 +1,11 @@
 """
 Gurobi-based optimizer service for advanced schedule optimization.
 
-This service uses Gurobi's mathematical optimization solver to create
-fair and efficient schedules that maximize coverage while minimizing
+This service uses Gurobi's mathematical optimization solver to crea            # Add all constraints
+            self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends)
+            self._add_employee_preference_constraints()
+            
+            # Set objective functionair and efficient schedules that maximize coverage while minimizing
 unfairness in shift distribution.
 """
 
@@ -54,7 +57,8 @@ class GurobiScheduleOptimizer:
         min_staff_per_shift: int = 1,
         min_experience_per_shift: int = 1,
         include_weekends: bool = True,
-        random_seed: Optional[int] = None
+        random_seed: Optional[int] = None,
+        employee_preferences: Optional[List] = None
     ) -> Dict[str, Any]:
         """
         Main optimization function that creates the optimal schedule.
@@ -67,6 +71,7 @@ class GurobiScheduleOptimizer:
             min_experience_per_shift: Minimum experience level required
             include_weekends: Whether to schedule weekend shifts
             random_seed: Random seed for reproducible results
+            employee_preferences: Individual employee work preferences
             
         Returns:
             Dictionary containing the optimized schedule and statistics
@@ -77,9 +82,16 @@ class GurobiScheduleOptimizer:
             # Initialize data
             self.employees = employees
             self.dates = create_date_list(start_date, end_date)
+            self.employee_preferences = employee_preferences or []
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
             logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, include_weekends={include_weekends}")
+            logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
+            
+            # Log employee preferences for debugging
+            if self.employee_preferences:
+                for pref in self.employee_preferences:
+                    logger.info(f"  Employee {pref.get('employee_id', 'unknown')}: available_days={pref.get('available_days', [])}, max_shifts_per_week={pref.get('max_shifts_per_week', 5)}")
             
             # Check if we have enough employees for basic coverage
             if include_weekends:
@@ -269,6 +281,89 @@ class GurobiScheduleOptimizer:
         
         logger.info(f"Scheduling {len(self.scheduled_days)} days out of {len(self.dates)} total days")
         logger.info("All constraints added successfully")
+    
+    def _add_employee_preference_constraints(self):
+        """Add constraints based on individual employee preferences."""
+        if not self.employee_preferences:
+            logger.info("No employee preferences provided, skipping preference constraints")
+            return
+        
+        logger.info(f"Adding employee preference constraints for {len(self.employee_preferences)} employees")
+        
+        # Create a mapping from employee_id to preferences for quick lookup
+        pref_map = {pref.get('employee_id'): pref for pref in self.employee_preferences}
+        
+        for emp in self.employees:
+            emp_id = emp['id']
+            pref = pref_map.get(emp_id)
+            
+            if not pref:
+                logger.debug(f"No preferences found for employee {emp_id}, using defaults")
+                continue
+            
+            logger.info(f"Applying preferences for employee {emp_id}")
+            
+            # 1. Available days constraint
+            available_days = pref.get('available_days', [])
+            if available_days:
+                # Convert day names to weekday numbers
+                day_name_to_weekday = {
+                    'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+                    'friday': 4, 'saturday': 5, 'sunday': 6
+                }
+                
+                available_weekdays = [day_name_to_weekday.get(day.lower()) for day in available_days if day.lower() in day_name_to_weekday]
+                
+                # For each date, if it's not in available days, set all shifts to 0
+                for d, date in enumerate(self.dates):
+                    weekday = date.weekday()  # 0=Monday, 6=Sunday
+                    
+                    if weekday not in available_weekdays:
+                        # Employee is not available on this day - block all shifts
+                        for shift in self.shift_types:
+                            self.model.addConstr(
+                                self.shifts[(emp_id, d, shift)] == 0,
+                                name=f"unavailable_day_{emp_id}_{d}_{shift}"
+                            )
+                        logger.debug(f"Blocked employee {emp_id} from {date.strftime('%A')} (day {d})")
+            
+            # 2. Preferred shifts constraint (soft constraint - could be enhanced later)
+            preferred_shifts = pref.get('preferred_shifts', self.shift_types)
+            non_preferred_shifts = [s for s in self.shift_types if s not in preferred_shifts]
+            
+            if non_preferred_shifts:
+                # For now, we don't block non-preferred shifts entirely (they might be needed for coverage)
+                # But we could add penalty terms to the objective function
+                logger.debug(f"Employee {emp_id} prefers shifts: {preferred_shifts}, dislikes: {non_preferred_shifts}")
+            
+            # 3. Maximum shifts per week constraint (override default if specified)
+            max_shifts_per_week = pref.get('max_shifts_per_week', 5)
+            if max_shifts_per_week != 5:  # Only add if different from default
+                total_weeks = len(self.dates) / 7.0
+                
+                if total_weeks >= 0.7:  # Only apply weekly constraint for periods 5+ days
+                    for week_start in range(0, len(self.dates), 7):
+                        week_end = min(week_start + 7, len(self.dates))
+                        week_days = list(range(week_start, week_end))
+                        
+                        # For partial weeks, adjust the limit proportionally
+                        days_in_week = len(week_days)
+                        max_shifts_this_week = min(max_shifts_per_week, days_in_week)
+                        
+                        # Sum all shifts for this employee in this week
+                        weekly_shifts = gp.quicksum(
+                            self.shifts[(emp_id, d, shift)]
+                            for d in week_days
+                            for shift in self.shift_types
+                        )
+                        
+                        self.model.addConstr(
+                            weekly_shifts <= max_shifts_this_week,
+                            name=f"custom_max_{max_shifts_this_week}_shifts_per_week_{emp_id}_week_{week_start}"
+                        )
+                        logger.debug(f"Set custom max {max_shifts_this_week} shifts per week for employee {emp_id}")
+        
+        logger.info("Employee preference constraints added successfully")
     
     def _set_objective(self):
         """
@@ -510,7 +605,8 @@ def optimize_schedule_with_gurobi(
     min_staff_per_shift: int = 1,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
-    random_seed: Optional[int] = None
+    random_seed: Optional[int] = None,
+    employee_preferences: Optional[List] = None
 ) -> Dict[str, Any]:
     """
     Main function to optimize schedule using Gurobi.
@@ -526,5 +622,6 @@ def optimize_schedule_with_gurobi(
         min_staff_per_shift=min_staff_per_shift,
         min_experience_per_shift=min_experience_per_shift,
         include_weekends=include_weekends,
-        random_seed=random_seed
+        random_seed=random_seed,
+        employee_preferences=employee_preferences
     )

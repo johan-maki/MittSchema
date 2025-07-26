@@ -2,6 +2,13 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
+class EmployeePreference(BaseModel):
+    """Employee work preference model"""
+    employee_id: str
+    preferred_shifts: List[str] = Field(default=["day", "evening", "night"], description="Preferred shift types")
+    max_shifts_per_week: int = Field(default=5, description="Maximum shifts per week")
+    available_days: List[str] = Field(default=["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], description="Available days of week")
+
 class ScheduleRequest(BaseModel):
     start_date: str
     end_date: str
@@ -11,6 +18,7 @@ class ScheduleRequest(BaseModel):
     min_staff_per_shift: Optional[int] = Field(default=1, description="Minimum staff required per shift")
     min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience level required")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
+    employee_preferences: Optional[List[EmployeePreference]] = Field(default=None, description="Individual employee work preferences")
 
 class ShiftResponse(BaseModel):
     employee_id: str
