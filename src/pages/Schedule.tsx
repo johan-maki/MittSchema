@@ -26,6 +26,24 @@ const Schedule = () => {
   const [newShiftParams, setNewShiftParams] = useState<{day: Date, role: string} | null>(null);
 
   const { data: shifts = [], isLoading } = useShiftData(currentDate, currentView);
+  
+  // Type-safe shifts with proper error handling
+  const typedShifts = (shifts as Shift[]).filter(shift => 
+    shift.profiles && 
+    typeof shift.profiles === 'object' && 
+    'first_name' in shift.profiles && 
+    'last_name' in shift.profiles
+  );
+  
+  // Ensure profiles are required for components that need them
+  const shiftsWithProfiles = typedShifts.map(shift => ({
+    ...shift,
+    profiles: {
+      first_name: shift.profiles!.first_name,
+      last_name: shift.profiles!.last_name,
+      experience_level: shift.profiles!.experience_level || 1
+    }
+  }));
 
   const { data: profiles = [], error: profileError } = useQuery({
     queryKey: ['profiles'],
@@ -81,11 +99,11 @@ const Schedule = () => {
 
     switch (currentView) {
       case 'day':
-        return <ModernDayView date={currentDate} shifts={shifts} />;
+        return <ModernDayView date={currentDate} shifts={typedShifts} />;
       case 'week':
         return (
           <ManagerScheduleView 
-            shifts={shifts} 
+            shifts={typedShifts} 
             profiles={profiles}
             currentDate={currentDate}
             onDateChange={setCurrentDate}
@@ -97,7 +115,7 @@ const Schedule = () => {
         return (
           <ModernMonthlySchedule 
             date={currentDate} 
-            shifts={shifts} 
+            shifts={shiftsWithProfiles} 
             profiles={profiles} 
           />
         );
@@ -121,7 +139,7 @@ const Schedule = () => {
             <ScheduleActions
               currentView={currentView}
               currentDate={currentDate}
-              shifts={shifts}
+              shifts={shiftsWithProfiles}
               isCreateDialogOpen={isCreateDialogOpen}
               setIsCreateDialogOpen={setIsCreateDialogOpen}
             />

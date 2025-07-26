@@ -49,8 +49,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
           profiles:employees!shifts_employee_id_fkey (
             first_name,
             last_name,
-            experience_level,
-            hourly_rate
+            experience_level
           )
         `)
         .gte('start_time', startDateStr)
@@ -64,7 +63,40 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       
       console.log(`Retrieved ${shifts?.length || 0} shifts from Supabase`);
       
-      return shifts || [];
+      // Filter out shifts with invalid profile data and type-safe transform
+      const validShifts: Shift[] = (shifts || [])
+        .filter(shift => {
+          if (!shift.profiles || typeof shift.profiles !== 'object') {
+            console.warn('Invalid profile data for shift:', shift.id);
+            return false;
+          }
+          // Check if profiles has error property (SelectQueryError)
+          if ('error' in shift.profiles && shift.profiles.error) {
+            console.warn('Profile query error for shift:', shift.id, shift.profiles);
+            return false;
+          }
+          // Ensure required profile fields exist
+          return shift.profiles && 
+                 typeof shift.profiles === 'object' &&
+                 'first_name' in shift.profiles && 
+                 'last_name' in shift.profiles &&
+                 shift.profiles.first_name && 
+                 shift.profiles.last_name;
+        })
+        .map(shift => {
+          const profileData = shift.profiles as { first_name: string; last_name: string; experience_level?: number };
+          return {
+            ...shift,
+            profiles: {
+              first_name: profileData.first_name,
+              last_name: profileData.last_name,
+              hourly_rate: undefined, // Default since it doesn't exist in employees table
+              experience_level: profileData.experience_level || 1 // Add experience_level with default
+            }
+          };
+        });
+      
+      return validShifts;
     },
     enabled: !!user,
     staleTime: 0, // Force fresh data
