@@ -8,6 +8,9 @@ class EmployeePreference(BaseModel):
     preferred_shifts: List[str] = Field(default=["day", "evening", "night"], description="Preferred shift types")
     max_shifts_per_week: int = Field(default=5, description="Maximum shifts per week")
     available_days: List[str] = Field(default=["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], description="Available days of week")
+    # New fields for hard vs soft constraints
+    available_days_strict: bool = Field(default=False, description="If True, available_days becomes a hard constraint (must be followed)")
+    preferred_shifts_strict: bool = Field(default=False, description="If True, preferred_shifts becomes a hard constraint")
 
 class ScheduleRequest(BaseModel):
     start_date: str

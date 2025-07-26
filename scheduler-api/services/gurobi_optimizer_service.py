@@ -42,6 +42,11 @@ class GurobiScheduleOptimizer:
         self.scheduled_days = []  # Track which days need coverage
         self.shift_types = ["day", "evening", "night"]
         
+        # Employee preference tracking for objective function
+        self.employee_shift_preferences = {}  # For preferred shifts
+        self.employee_day_penalties = {}      # For non-preferred days (soft constraints)
+        self.employees_with_custom_weekly_limits = set()  # For weekly constraints
+        
         # Shift time mappings
         self.shift_times = {
             "day": ("06:00", "14:00"),
@@ -341,9 +346,11 @@ class GurobiScheduleOptimizer:
             
             logger.info(f"Applying preferences for employee {emp_id}")
             
-            # 1. Available days constraint
+            # 1. Available days constraint (can be hard or soft)
             available_days = pref.available_days or []
+            available_days_strict = getattr(pref, 'available_days_strict', False)
             logger.info(f"Employee {emp_id} available_days from preference: {available_days}")
+            logger.info(f"Employee {emp_id} available_days_strict: {available_days_strict}")
             
             if available_days:
                 # Convert day names to weekday numbers
@@ -357,7 +364,7 @@ class GurobiScheduleOptimizer:
                 
                 if not available_weekdays:
                     logger.warning(f"Employee {emp_id} has no valid available days, they will be blocked from all shifts")
-                    # Block all shifts for this employee
+                    # Block all shifts for this employee (always hard constraint if no valid days)
                     for d in range(len(self.dates)):
                         for shift in self.shift_types:
                             self.model.addConstr(
@@ -365,42 +372,68 @@ class GurobiScheduleOptimizer:
                                 name=f"no_valid_days_{emp_id}_{d}_{shift}"
                             )
                 else:
-                    # For each date, if it's not in available days, set all shifts to 0
+                    # Process each date based on availability
                     blocked_days = 0
-                    logger.info(f"Employee {emp_id} processing dates for availability constraints...")
+                    logger.info(f"Employee {emp_id} processing dates for availability constraints (strict={available_days_strict})...")
+                    
                     for d, date in enumerate(self.dates):
                         weekday = date.weekday()  # 0=Monday, 6=Sunday
                         day_name = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][weekday]
                         
                         if weekday not in available_weekdays:
-                            # Employee is not available on this day - block all shifts
-                            logger.info(f"Employee {emp_id} BLOCKED from {day_name} {date.strftime('%Y-%m-%d')} (weekday={weekday})")
-                            for shift in self.shift_types:
-                                self.model.addConstr(
-                                    self.shifts[(emp_id, d, shift)] == 0,
-                                    name=f"unavailable_day_{emp_id}_{d}_{shift}"
-                                )
-                            blocked_days += 1
+                            if available_days_strict:
+                                # HARD CONSTRAINT: Employee absolutely cannot work this day
+                                logger.info(f"Employee {emp_id} HARD BLOCKED from {day_name} {date.strftime('%Y-%m-%d')} (weekday={weekday})")
+                                for shift in self.shift_types:
+                                    self.model.addConstr(
+                                        self.shifts[(emp_id, d, shift)] == 0,
+                                        name=f"hard_unavailable_day_{emp_id}_{d}_{shift}"
+                                    )
+                                blocked_days += 1
+                            else:
+                                # SOFT CONSTRAINT: Track for penalty in objective function
+                                logger.info(f"Employee {emp_id} SOFT PENALTY for {day_name} {date.strftime('%Y-%m-%d')} (weekday={weekday})")
+                                # Store non-preferred days for objective function penalty
+                                if emp_id not in self.employee_day_penalties:
+                                    self.employee_day_penalties[emp_id] = []
+                                self.employee_day_penalties[emp_id].append(d)
                         else:
                             logger.info(f"Employee {emp_id} AVAILABLE on {day_name} {date.strftime('%Y-%m-%d')} (weekday={weekday})")
                     
-                    if blocked_days > 0:
-                        logger.info(f"Employee {emp_id} blocked from {blocked_days} days, available on: {available_days}")
+                    if available_days_strict and blocked_days > 0:
+                        logger.info(f"Employee {emp_id} HARD blocked from {blocked_days} days, available on: {available_days}")
+                    elif not available_days_strict and emp_id in self.employee_day_penalties:
+                        logger.info(f"Employee {emp_id} has SOFT penalties for {len(self.employee_day_penalties[emp_id])} non-preferred days")
             else:
                 logger.debug(f"Employee {emp_id} has no day restrictions (available all days)")
             
-            # 2. Preferred shifts tracking (for use in objective function)
+            # 2. Preferred shifts constraint (can be hard or soft)
             preferred_shifts = pref.preferred_shifts or self.shift_types
+            preferred_shifts_strict = getattr(pref, 'preferred_shifts_strict', False)
             non_preferred_shifts = [s for s in self.shift_types if s not in preferred_shifts]
             
-            # Store preference information for objective function
-            self.employee_shift_preferences[emp_id] = {
-                'preferred': preferred_shifts,
-                'non_preferred': non_preferred_shifts
-            }
+            logger.info(f"Employee {emp_id} preferred_shifts: {preferred_shifts}, strict: {preferred_shifts_strict}")
             
             if non_preferred_shifts:
-                logger.info(f"Employee {emp_id} prefers shifts: {preferred_shifts}, avoids: {non_preferred_shifts}")
+                if preferred_shifts_strict:
+                    # HARD CONSTRAINT: Employee absolutely cannot work non-preferred shifts
+                    logger.info(f"Employee {emp_id} HARD blocked from shifts: {non_preferred_shifts}")
+                    for d in range(len(self.dates)):
+                        for shift in non_preferred_shifts:
+                            self.model.addConstr(
+                                self.shifts[(emp_id, d, shift)] == 0,
+                                name=f"hard_non_preferred_shift_{emp_id}_{d}_{shift}"
+                            )
+                else:
+                    # SOFT CONSTRAINT: Store preference information for objective function penalty
+                    logger.info(f"Employee {emp_id} SOFT penalty for shifts: {non_preferred_shifts} (prefers: {preferred_shifts})")
+                    
+                # Store preference information for objective function
+                self.employee_shift_preferences[emp_id] = {
+                    'preferred': preferred_shifts,
+                    'non_preferred': non_preferred_shifts,
+                    'strict': preferred_shifts_strict
+                }
             else:
                 logger.debug(f"Employee {emp_id} has no shift preferences (all shifts acceptable)")
             
@@ -550,28 +583,49 @@ class GurobiScheduleOptimizer:
         
         # Fifth objective: Minimize assignment of non-preferred shifts
         # This encourages giving employees their preferred shift types when possible
-        non_preferred_penalty = 0
+        non_preferred_shift_penalty = 0
         for emp in self.employees:
             emp_id = emp['id']
             if emp_id in self.employee_shift_preferences:
-                non_preferred_shifts = self.employee_shift_preferences[emp_id]['non_preferred']
-                for d in range(len(self.dates)):
-                    for shift in non_preferred_shifts:
-                        # Add penalty for each non-preferred shift assignment
-                        non_preferred_penalty += self.shifts[(emp_id, d, shift)]
+                shift_prefs = self.employee_shift_preferences[emp_id]
+                # Only apply soft penalty if not strict (strict constraints are already hard blocked)
+                if not shift_prefs.get('strict', False):
+                    non_preferred_shifts = shift_prefs['non_preferred']
+                    for d in range(len(self.dates)):
+                        for shift in non_preferred_shifts:
+                            # Add penalty for each non-preferred shift assignment
+                            non_preferred_shift_penalty += self.shifts[(emp_id, d, shift)]
+        
+        # Sixth objective: Minimize assignment on non-preferred days (soft day constraints)
+        # This encourages respecting day preferences as much as possible when not strict
+        non_preferred_day_penalty = 0
+        for emp in self.employees:
+            emp_id = emp['id']
+            if emp_id in self.employee_day_penalties:
+                penalty_days = self.employee_day_penalties[emp_id]
+                for d in penalty_days:
+                    for shift in self.shift_types:
+                        # Add penalty for each shift assignment on non-preferred days
+                        non_preferred_day_penalty += self.shifts[(emp_id, d, shift)]
         
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Weekend fairness is high priority (weight: 15) - increased for better fairness
         # - Total fairness is important (weight: 10) 
         # - Shift type fairness is also important (weight: 5)
-        # - Preferred shifts matter (weight: 3) - encourage preferred shift assignments
+        # - Preferred shifts matter (weight: 8) - increased weight for better preference respect
+        # - Preferred days matter (weight: 12) - high weight for day preferences
         self.model.setObjective(
-            100 * total_coverage - 15 * weekend_unfairness - 10 * total_unfairness - 5 * shift_type_unfairness - 3 * non_preferred_penalty,
+            100 * total_coverage 
+            - 15 * weekend_unfairness 
+            - 10 * total_unfairness 
+            - 5 * shift_type_unfairness 
+            - 8 * non_preferred_shift_penalty 
+            - 12 * non_preferred_day_penalty,
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Weekend fairness (15x), Total fairness (10x), Shift type fairness (5x), Preferred shifts (3x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Weekend fairness (15x), Total fairness (10x), Shift type fairness (5x), Preferred shifts (8x), Preferred days (12x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
