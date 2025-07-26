@@ -3,6 +3,7 @@ import { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { FormField } from "./FormField";
+import { RoleSelector } from "./RoleSelector";
 import { InsertProfile } from "@/types/profile";
 import { useProfileForm } from "@/hooks/useProfileForm";
 
@@ -62,11 +63,9 @@ export const ProfileFormContent = ({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField 
-          label="Yrkesroll" 
-          value={profile.role} 
-          onChange={(value) => updateProfile('role', value)} 
-          required 
+        <RoleSelector
+          value={profile.role}
+          onValueChange={(value) => updateProfile('role', value)}
           disabled={isProcessing}
           error={errors.role}
         />

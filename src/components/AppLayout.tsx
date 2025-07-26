@@ -78,6 +78,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
           <Link to="/" className="flex items-center gap-2 font-semibold text-xl sm:text-2xl">
             <Sparkles className="w-5 h-5 text-indigo-600" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Vårdschema</span>
+            <span className="text-sm text-gray-500 font-normal ml-2">• Karolinska</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -19,14 +19,13 @@ const Help = () => {
       <div className="max-w-4xl mx-auto p-6">
         <div className="space-y-8">
           {/* Header */}
-          <header className="text-center">
+                    <header className="text-center">
             <h1 className="text-3xl font-bold mb-4 flex items-center justify-center gap-2">
-              📌 Hjälpsida för AI-drivet Schemaläggningssystem
+              📌 Hjälpsida för optimeringsalgoritm-drivet Schemaläggningssystem
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Välkommen till hjälpsidan för AI-drivet schemaläggningssystem! Här hittar du svar på vanliga frågor, 
-              instruktioner för navigering och annan viktig information för att använda systemet effektivt.
-            </p>
+              Välkommen till hjälpsidan för optimeringsalgoritm-drivet schemaläggningssystem! Här hittar du svar på vanliga frågor, 
+              instruktioner för att navigera i systemet och kontaktinformation för support.</p>
           </header>
 
           <Separator />
@@ -65,7 +64,7 @@ const Help = () => {
             </h2>
             <ul className="space-y-3 text-gray-600">
               <li>• Systemet genererar automatiskt ett schema baserat på tillgänglig personal, deras erfarenhet och arbetskapacitet.</li>
-              <li>• Schemat tar hänsyn till minsta totala erfarenhet per pass och ser till att varje skift har en balanserad bemanning.</li>
+              <li>• Schemat använder en optimeringsalgoritm, stöttat av AI, för att ta hänsyn till minsta totala erfarenhet per pass och se till att varje skift har en balanserad bemanning.</li>
               <li>• Du kan justera inställningar såsom minsta erfarenhetspoäng per pass, antal anställda per skift och periodens längd.</li>
             </ul>
           </section>
