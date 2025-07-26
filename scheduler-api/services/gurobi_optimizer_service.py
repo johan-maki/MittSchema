@@ -91,7 +91,7 @@ class GurobiScheduleOptimizer:
             # Log employee preferences for debugging
             if self.employee_preferences:
                 for pref in self.employee_preferences:
-                    logger.info(f"  Employee {pref.get('employee_id', 'unknown')}: available_days={pref.get('available_days', [])}, max_shifts_per_week={pref.get('max_shifts_per_week', 5)}")
+                    logger.info(f"  Employee {pref.employee_id}: available_days={pref.available_days or []}, max_shifts_per_week={pref.max_shifts_per_week or 5}")
             
             # Check if we have enough employees for basic coverage
             if include_weekends:
@@ -291,7 +291,7 @@ class GurobiScheduleOptimizer:
         logger.info(f"Adding employee preference constraints for {len(self.employee_preferences)} employees")
         
         # Create a mapping from employee_id to preferences for quick lookup
-        pref_map = {pref.get('employee_id'): pref for pref in self.employee_preferences}
+        pref_map = {pref.employee_id: pref for pref in self.employee_preferences}
         
         for emp in self.employees:
             emp_id = emp['id']
@@ -304,7 +304,7 @@ class GurobiScheduleOptimizer:
             logger.info(f"Applying preferences for employee {emp_id}")
             
             # 1. Available days constraint
-            available_days = pref.get('available_days', [])
+            available_days = pref.available_days or []
             if available_days:
                 # Convert day names to weekday numbers
                 day_name_to_weekday = {
@@ -328,7 +328,7 @@ class GurobiScheduleOptimizer:
                         logger.debug(f"Blocked employee {emp_id} from {date.strftime('%A')} (day {d})")
             
             # 2. Preferred shifts constraint (soft constraint - could be enhanced later)
-            preferred_shifts = pref.get('preferred_shifts', self.shift_types)
+            preferred_shifts = pref.preferred_shifts or self.shift_types
             non_preferred_shifts = [s for s in self.shift_types if s not in preferred_shifts]
             
             if non_preferred_shifts:
@@ -337,7 +337,7 @@ class GurobiScheduleOptimizer:
                 logger.debug(f"Employee {emp_id} prefers shifts: {preferred_shifts}, dislikes: {non_preferred_shifts}")
             
             # 3. Maximum shifts per week constraint (override default if specified)
-            max_shifts_per_week = pref.get('max_shifts_per_week', 5)
+            max_shifts_per_week = pref.max_shifts_per_week or 5
             if max_shifts_per_week != 5:  # Only add if different from default
                 total_weeks = len(self.dates) / 7.0
                 
