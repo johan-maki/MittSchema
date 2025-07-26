@@ -281,10 +281,14 @@ export const generateScheduleForNextMonth = async (
 
   // Convert Gurobi response to our Shift format
   const convertedSchedule: Shift[] = response.schedule.map((shift: GurobiShift, index: number) => {
+    // Find the employee name from profiles
+    const employee = profiles.find(p => p.id === shift.employee_id);
+    const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
     
     return {
       id: uuidv4(),
       employee_id: shift.employee_id,
+      employee_name: employeeName, // Add missing employee_name field
       date: shift.date, // Include date from Gurobi response
       start_time: shift.start_time,
       end_time: shift.end_time,
