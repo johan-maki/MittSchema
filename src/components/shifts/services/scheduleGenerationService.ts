@@ -226,15 +226,28 @@ export const generateScheduleForNextMonth = async (
       // Send specific exclusions instead of generic strict flags
       excluded_shifts: strictlyExcludedShifts,
       excluded_days: strictlyUnavailableDays,
-      // Keep legacy flags for backwards compatibility but with better logic
+      // TEMPORARY FIX: Set preferred_shifts_strict to false for Andreas to test if this causes the issue
       available_days_strict: strictlyUnavailableDays.length > 0,
-      preferred_shifts_strict: strictlyExcludedShifts.length > 0,
+      preferred_shifts_strict: emp.id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630' ? false : strictlyExcludedShifts.length > 0,
       // Add employee metadata for better optimization
       role: profile?.role || 'Unknown',
       experience_level: profile?.experience_level || 1
     };
     
     console.log(`✅ Gurobi format for ${profile?.first_name} ${profile?.last_name}:`, gurobiPreference);
+    
+    // Special debugging for Andreas 
+    if (gurobiPreference.employee_id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630') {
+      console.log('🎯 ANDREAS LUNDQUIST SPECIAL DEBUG:', {
+        original_preferred_shifts_strict: strictlyExcludedShifts.length > 0,
+        override_preferred_shifts_strict: false,
+        excluded_shifts: gurobiPreference.excluded_shifts,
+        preferred_shifts: gurobiPreference.preferred_shifts,
+        available_days: gurobiPreference.available_days,
+        role: gurobiPreference.role,
+        department_note: 'Andreas is Läkare in onkologi-patologi, but scheduling for Akutmottagning'
+      });
+    }
     
     // Special debugging for Erik
     if (gurobiPreference.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be') {
