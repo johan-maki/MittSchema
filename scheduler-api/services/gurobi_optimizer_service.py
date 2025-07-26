@@ -343,6 +343,8 @@ class GurobiScheduleOptimizer:
             
             # 1. Available days constraint
             available_days = pref.available_days or []
+            logger.info(f"Employee {emp_id} available_days from preference: {available_days}")
+            
             if available_days:
                 # Convert day names to weekday numbers
                 day_name_to_weekday = {
@@ -351,6 +353,7 @@ class GurobiScheduleOptimizer:
                 }
                 
                 available_weekdays = [day_name_to_weekday.get(day.lower()) for day in available_days if day.lower() in day_name_to_weekday]
+                logger.info(f"Employee {emp_id} converted to weekday numbers: {available_weekdays}")
                 
                 if not available_weekdays:
                     logger.warning(f"Employee {emp_id} has no valid available days, they will be blocked from all shifts")
@@ -364,17 +367,22 @@ class GurobiScheduleOptimizer:
                 else:
                     # For each date, if it's not in available days, set all shifts to 0
                     blocked_days = 0
+                    logger.info(f"Employee {emp_id} processing dates for availability constraints...")
                     for d, date in enumerate(self.dates):
                         weekday = date.weekday()  # 0=Monday, 6=Sunday
+                        day_name = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][weekday]
                         
                         if weekday not in available_weekdays:
                             # Employee is not available on this day - block all shifts
+                            logger.info(f"Employee {emp_id} BLOCKED from {day_name} {date.strftime('%Y-%m-%d')} (weekday={weekday})")
                             for shift in self.shift_types:
                                 self.model.addConstr(
                                     self.shifts[(emp_id, d, shift)] == 0,
                                     name=f"unavailable_day_{emp_id}_{d}_{shift}"
                                 )
                             blocked_days += 1
+                        else:
+                            logger.info(f"Employee {emp_id} AVAILABLE on {day_name} {date.strftime('%Y-%m-%d')} (weekday={weekday})")
                     
                     if blocked_days > 0:
                         logger.info(f"Employee {emp_id} blocked from {blocked_days} days, available on: {available_days}")
