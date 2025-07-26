@@ -25,3 +25,14 @@ dist-ssr
 scheduler-api/.env
 scheduler-api/.venv/
 .vercel
+
+# Test and debug files
+debug-*.js
+debug-*.mjs
+debug-*.cjs
+test-*.html
+erik-test.html
+check-frontend.html
+verify-*.mjs
+find-service-id.sh
+*.local
