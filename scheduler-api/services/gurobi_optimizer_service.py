@@ -410,17 +410,45 @@ class GurobiScheduleOptimizer:
             else:
                 logger.debug(f"Employee {emp_id} has no day restrictions (available all days)")
             
-            # 2. Preferred shifts constraint (can be hard or soft)
+            # 2. EXCLUDED SHIFTS (HARD CONSTRAINT) - Process this FIRST
+            excluded_shifts = getattr(pref, 'excluded_shifts', [])
+            if excluded_shifts:
+                logger.info(f"Employee {emp_id} HARD EXCLUDED from shifts: {excluded_shifts}")
+                for d in range(len(self.dates)):
+                    for shift in excluded_shifts:
+                        if shift in self.shift_types:  # Validate shift type exists
+                            self.model.addConstr(
+                                self.shifts[(emp_id, d, shift)] == 0,
+                                name=f"excluded_shift_{emp_id}_{d}_{shift}"
+                            )
+            
+            # 3. EXCLUDED DAYS (HARD CONSTRAINT)
+            excluded_days = getattr(pref, 'excluded_days', [])
+            if excluded_days:
+                logger.info(f"Employee {emp_id} HARD EXCLUDED from days: {excluded_days}")
+                for d, date in enumerate(self.dates):
+                    day_name = date.strftime('%A').lower()
+                    if day_name in excluded_days:
+                        for shift in self.shift_types:
+                            self.model.addConstr(
+                                self.shifts[(emp_id, d, shift)] == 0,
+                                name=f"excluded_day_{emp_id}_{d}_{day_name}_{shift}"
+                            )
+            
+            # 4. Preferred shifts constraint (can be hard or soft) - Process AFTER exclusions
             preferred_shifts = pref.preferred_shifts or self.shift_types
             preferred_shifts_strict = getattr(pref, 'preferred_shifts_strict', False)
-            non_preferred_shifts = [s for s in self.shift_types if s not in preferred_shifts]
             
-            logger.info(f"Employee {emp_id} preferred_shifts: {preferred_shifts}, strict: {preferred_shifts_strict}")
+            # Calculate non-preferred shifts, but exclude the already excluded ones
+            all_non_excluded_shifts = [s for s in self.shift_types if s not in excluded_shifts]
+            non_preferred_shifts = [s for s in all_non_excluded_shifts if s not in preferred_shifts]
+            
+            logger.info(f"Employee {emp_id} preferred_shifts: {preferred_shifts}, excluded_shifts: {excluded_shifts}, strict: {preferred_shifts_strict}")
             
             if non_preferred_shifts:
                 if preferred_shifts_strict:
-                    # HARD CONSTRAINT: Employee absolutely cannot work non-preferred shifts
-                    logger.info(f"Employee {emp_id} HARD blocked from shifts: {non_preferred_shifts}")
+                    # HARD CONSTRAINT: Employee absolutely cannot work non-preferred shifts (that aren't already excluded)
+                    logger.info(f"Employee {emp_id} HARD blocked from NON-PREFERRED shifts: {non_preferred_shifts}")
                     for d in range(len(self.dates)):
                         for shift in non_preferred_shifts:
                             self.model.addConstr(
@@ -435,6 +463,7 @@ class GurobiScheduleOptimizer:
                 self.employee_shift_preferences[emp_id] = {
                     'preferred': preferred_shifts,
                     'non_preferred': non_preferred_shifts,
+                    'excluded': excluded_shifts,  # Store excluded shifts for reference
                     'strict': preferred_shifts_strict
                 }
             else:
