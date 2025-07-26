@@ -89,8 +89,16 @@ export function Globe({
       onRender,
     })
 
-    setTimeout(() => (canvasRef.current!.style.opacity = "1"))
-    return () => globe.destroy()
+    const timeoutId = setTimeout(() => {
+      if (canvasRef.current) {
+        canvasRef.current.style.opacity = "1"
+      }
+    })
+    
+    return () => {
+      clearTimeout(timeoutId)
+      globe.destroy()
+    }
   }, [])
 
   return (
