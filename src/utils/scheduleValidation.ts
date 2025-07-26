@@ -9,10 +9,11 @@ import type { Profile } from '@/types/profile';
 interface ConstraintViolation {
   employeeId: string;
   employeeName: string;
-  violationType: 'weekend_strict' | 'unavailable_day';
+  violationType: 'weekend_strict' | 'unavailable_day' | 'excluded_shift';
   shiftDate: string;
   shiftType: string;
-  expectedDays: string[];
+  expectedDays?: string[];
+  excludedShifts?: string[];
 }
 
 export const validateScheduleConstraints = (
@@ -33,7 +34,27 @@ export const validateScheduleConstraints = (
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const shiftDayName = dayNames[dayOfWeek] as keyof typeof prefs.day_constraints;
     
-    // Check if employee has strict day constraint for this specific day
+    // 1. Check EXCLUDED SHIFTS (hard constraint)
+    const shiftConstraint = prefs.shift_constraints[shift.shift_type as keyof typeof prefs.shift_constraints];
+    if (shiftConstraint?.strict && !shiftConstraint.preferred) {
+      // This is an excluded shift
+      const excludedShifts = Object.entries(prefs.shift_constraints)
+        .filter(([_, constraint]) => constraint.strict && !constraint.preferred)
+        .map(([shift, _]) => shift);
+      
+      violations.push({
+        employeeId: shift.employee_id,
+        employeeName: `${profile.first_name} ${profile.last_name}`,
+        violationType: 'excluded_shift',
+        shiftDate: shift.date,
+        shiftType: shift.shift_type,
+        excludedShifts: excludedShifts
+      });
+      
+      console.log(`🚨 EXCLUDED SHIFT VIOLATION: ${profile.first_name} ${profile.last_name} assigned ${shift.shift_type} shift on ${shift.date} but has excluded this shift type`);
+    }
+    
+    // 2. Check if employee has strict day constraint for this specific day
     const dayConstraint = prefs.day_constraints[shiftDayName];
     
     if (dayConstraint?.strict && !dayConstraint.available) {
@@ -74,12 +95,22 @@ export const formatViolationMessage = (violations: ConstraintViolation[]): strin
     message += `👤 ${name}:\n`;
     empViolations.forEach(v => {
       const date = new Date(v.shiftDate).toLocaleDateString('sv-SE');
-      message += `   • ${v.shiftType} ${date} (förbjuden dag)\n`;
+      if (v.violationType === 'excluded_shift') {
+        message += `   • ${v.shiftType} ${date} (FÖRBJUDET SKIFT - hard constraint)\n`;
+      } else {
+        message += `   • ${v.shiftType} ${date} (förbjuden dag)\n`;
+      }
     });
-    message += `   Tillåtna dagar: ${empViolations[0].expectedDays.join(', ')}\n\n`;
+    
+    const firstViolation = empViolations[0];
+    if (firstViolation.expectedDays) {
+      message += `   Tillåtna dagar: ${firstViolation.expectedDays.join(', ')}\n\n`;
+    } else if (firstViolation.excludedShifts) {
+      message += `   Förbjudna skift: ${firstViolation.excludedShifts.join(', ')}\n\n`;
+    }
   });
   
-  message += `Detta är ett känt problem med Gurobi backend som ignorerar "available_days_strict" constraints.`;
+  message += `Detta är ett känt problem med Gurobi backend som ignorerar "excluded_shifts" och "available_days_strict" constraints.`;
   
   return message;
 };

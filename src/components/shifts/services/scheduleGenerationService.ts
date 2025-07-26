@@ -364,20 +364,44 @@ export const generateScheduleForNextMonth = async (
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Rättvishet: ${response.fairness_stats?.shift_distribution_range || 0} pass spridning`);
   
-  // Validate schedule for constraint violations
+  // Validate schedule for constraint violations and enforce hard constraints
+  let finalSchedule = convertedSchedule;
   if (profiles && profiles.length > 0) {
     const violations = validateScheduleConstraints(convertedSchedule, profiles);
     if (violations.length > 0) {
       const violationMessage = formatViolationMessage(violations);
       console.warn('🚨 SCHEDULE CONSTRAINT VIOLATIONS DETECTED:');
       console.warn(violationMessage);
+      
+      // ENFORCE HARD CONSTRAINTS: Remove excluded shifts
+      const excludedShiftViolations = violations.filter(v => v.violationType === 'excluded_shift');
+      if (excludedShiftViolations.length > 0) {
+        console.log('🛠️ ENFORCING HARD CONSTRAINTS: Removing excluded shifts...');
+        
+        finalSchedule = convertedSchedule.filter(shift => {
+          const hasViolation = excludedShiftViolations.some(v => 
+            v.employeeId === shift.employee_id && 
+            v.shiftType === shift.shift_type &&
+            v.shiftDate === shift.date
+          );
+          
+          if (hasViolation) {
+            const profile = profiles.find(p => p.id === shift.employee_id);
+            console.log(`🗑️ REMOVED: ${profile?.first_name} ${profile?.last_name} ${shift.shift_type} shift on ${shift.date} (excluded shift)`);
+          }
+          
+          return !hasViolation;
+        });
+        
+        console.log(`📊 Constraint enforcement: ${convertedSchedule.length} → ${finalSchedule.length} shifts (removed ${convertedSchedule.length - finalSchedule.length} violations)`);
+      }
     }
   }
   
   onProgress?.('✅ Schema optimerat och klart för granskning!', 100);
   
   const finalResult = {
-    schedule: convertedSchedule, // Use Gurobi result directly without deduplication
+    schedule: finalSchedule, // Use constraint-enforced schedule
     staffingIssues: [], // Gurobi should minimize these
     coverage_stats: response.coverage_stats,
     fairness_stats: response.fairness_stats
