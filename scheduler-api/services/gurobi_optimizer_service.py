@@ -148,6 +148,9 @@ class GurobiScheduleOptimizer:
             # Add constraints
             self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends)
             
+            # Add employee preference constraints (CRITICAL: This was missing!)
+            self._add_employee_preference_constraints()
+            
             # Set objective function
             self._set_objective()
             
