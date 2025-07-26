@@ -42,7 +42,8 @@ export const WeekView = ({ date, shifts }: WeekViewProps) => {
     const roleToShiftType: { [key: string]: string } = {
       'Läkare': 'day',
       'Sjuksköterska': 'evening',
-      'Undersköterska': 'night'
+      'Undersköterska': 'night',
+      'Professor': 'day'  // Professorer arbetar dagtid som läkare
     };
     
     const dayShifts = shifts.filter(shift => {

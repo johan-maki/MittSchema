@@ -9,7 +9,8 @@ import type { ShiftType } from "@/types/shift";
 export const ROLE_TO_SHIFT_TYPE: Record<string, ShiftType> = {
   'Läkare': 'day',
   'Sjuksköterska': 'evening',
-  'Undersköterska': 'night'
+  'Undersköterska': 'night',
+  'Professor': 'day'  // Professorer arbetar dagtid som läkare
 };
 
 // Set minimum staffing requirements

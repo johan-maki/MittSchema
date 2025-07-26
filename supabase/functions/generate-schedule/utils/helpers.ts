@@ -5,7 +5,8 @@ import { Employee } from "./types.ts";
 export const roleToShiftType: Record<string, 'day' | 'evening' | 'night'> = {
   'Läkare': 'day',
   'Sjuksköterska': 'evening',
-  'Undersköterska': 'night'
+  'Undersköterska': 'night',
+  'Professor': 'day'  // Professorer arbetar dagtid som läkare
 };
 
 // Helper function to generate random ID

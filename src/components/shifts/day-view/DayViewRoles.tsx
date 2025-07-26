@@ -30,7 +30,8 @@ export const DayViewRoles = ({ date, shifts, onShiftClick, onAddClick }: DayView
     const roleToShiftType: { [key: string]: string } = {
       'Läkare': 'day',
       'Sjuksköterska': 'evening',
-      'Undersköterska': 'night'
+      'Undersköterska': 'night',
+      'Professor': 'day'  // Professorer arbetar dagtid som läkare
     };
     
     return shifts.filter(shift => {

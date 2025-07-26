@@ -38,7 +38,8 @@ export const MonthlySchedule = ({ date, shifts, profiles }: MonthlyScheduleProps
     const roleToShiftType: { [key: string]: string } = {
       'Läkare': 'day',
       'Sjuksköterska': 'evening',
-      'Undersköterska': 'night'
+      'Undersköterska': 'night',
+      'Professor': 'day'  // Professorer arbetar dagtid som läkare
     };
     
     // Filter shifts for the given day and role
