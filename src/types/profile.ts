@@ -36,13 +36,39 @@ export type InsertProfile = {
   hourly_rate?: number; // SEK per hour
 };
 
+export type DayConstraint = {
+  available: boolean;
+  strict: boolean; // true = hard constraint, false = soft constraint
+};
+
+export type ShiftConstraint = {
+  preferred: boolean;
+  strict: boolean; // true = hard constraint, false = soft constraint
+};
+
 export interface WorkPreferences {
-  preferred_shifts: ("day" | "evening" | "night")[];
   max_shifts_per_week: number;
-  available_days: string[];
-  // New fields for hard vs soft constraints
-  available_days_strict?: boolean;  // If true, available_days becomes a hard constraint
-  preferred_shifts_strict?: boolean; // If true, preferred_shifts becomes a hard constraint
+  // Granular constraints per day
+  day_constraints: {
+    monday: DayConstraint;
+    tuesday: DayConstraint;
+    wednesday: DayConstraint;
+    thursday: DayConstraint;
+    friday: DayConstraint;
+    saturday: DayConstraint;
+    sunday: DayConstraint;
+  };
+  // Granular constraints per shift type
+  shift_constraints: {
+    day: ShiftConstraint;
+    evening: ShiftConstraint;
+    night: ShiftConstraint;
+  };
+  // Legacy fields for backward compatibility - will be derived from granular constraints
+  preferred_shifts?: ("day" | "evening" | "night")[];
+  available_days?: string[];
+  available_days_strict?: boolean;
+  preferred_shifts_strict?: boolean;
 }
 
 export type DatabaseProfile = Omit<Profile, 'work_preferences'> & {
@@ -63,9 +89,21 @@ export function convertDatabaseProfile(dbProfile: DatabaseProfile): Profile {
 // Helper function to safely convert Json to WorkPreferences
 export function convertWorkPreferences(json: Json): WorkPreferences {
   const defaultPreferences: WorkPreferences = {
-    preferred_shifts: ["day"],
     max_shifts_per_week: 5,
-    available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    day_constraints: {
+      monday: { available: true, strict: false },
+      tuesday: { available: true, strict: false },
+      wednesday: { available: true, strict: false },
+      thursday: { available: true, strict: false },
+      friday: { available: true, strict: false },
+      saturday: { available: true, strict: false },
+      sunday: { available: true, strict: false },
+    },
+    shift_constraints: {
+      day: { preferred: true, strict: false },
+      evening: { preferred: true, strict: false },
+      night: { preferred: true, strict: false },
+    },
   };
 
   if (!json || typeof json !== 'object' || Array.isArray(json)) {
@@ -74,24 +112,54 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
 
   const jsonObj = json as Record<string, unknown>;
   
-  const converted = {
-    preferred_shifts: Array.isArray(jsonObj.preferred_shifts) 
-      ? jsonObj.preferred_shifts.filter((shift): shift is "day" | "evening" | "night" => 
-          ["day", "evening", "night"].includes(String(shift)))
-      : defaultPreferences.preferred_shifts,
+  // Handle new granular constraint format
+  if (jsonObj.day_constraints && jsonObj.shift_constraints) {
+    return {
+      max_shifts_per_week: typeof jsonObj.max_shifts_per_week === 'number' 
+        ? jsonObj.max_shifts_per_week 
+        : defaultPreferences.max_shifts_per_week,
+      day_constraints: jsonObj.day_constraints as WorkPreferences['day_constraints'] || defaultPreferences.day_constraints,
+      shift_constraints: jsonObj.shift_constraints as WorkPreferences['shift_constraints'] || defaultPreferences.shift_constraints,
+    };
+  }
+  
+  // Handle legacy format and convert to new granular format
+  const legacyAvailableDays = Array.isArray(jsonObj.available_days) 
+    ? jsonObj.available_days.map(String)
+    : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    
+  const legacyPreferredShifts = Array.isArray(jsonObj.preferred_shifts) 
+    ? jsonObj.preferred_shifts.filter((shift): shift is "day" | "evening" | "night" => 
+        ["day", "evening", "night"].includes(String(shift)))
+    : ["day", "evening", "night"];
+    
+  const legacyDaysStrict = typeof jsonObj.available_days_strict === 'boolean' 
+    ? jsonObj.available_days_strict 
+    : false;
+    
+  const legacyShiftsStrict = typeof jsonObj.preferred_shifts_strict === 'boolean' 
+    ? jsonObj.preferred_shifts_strict 
+    : false;
+
+  // Convert legacy to granular format
+  const converted: WorkPreferences = {
     max_shifts_per_week: typeof jsonObj.max_shifts_per_week === 'number' 
       ? jsonObj.max_shifts_per_week 
       : defaultPreferences.max_shifts_per_week,
-    available_days: Array.isArray(jsonObj.available_days) 
-      ? jsonObj.available_days.map(String)
-      : defaultPreferences.available_days,
-    // Add new strict fields with default false
-    available_days_strict: typeof jsonObj.available_days_strict === 'boolean' 
-      ? jsonObj.available_days_strict 
-      : false,
-    preferred_shifts_strict: typeof jsonObj.preferred_shifts_strict === 'boolean' 
-      ? jsonObj.preferred_shifts_strict 
-      : false,
+    day_constraints: {
+      monday: { available: legacyAvailableDays.includes('monday'), strict: legacyDaysStrict },
+      tuesday: { available: legacyAvailableDays.includes('tuesday'), strict: legacyDaysStrict },
+      wednesday: { available: legacyAvailableDays.includes('wednesday'), strict: legacyDaysStrict },
+      thursday: { available: legacyAvailableDays.includes('thursday'), strict: legacyDaysStrict },
+      friday: { available: legacyAvailableDays.includes('friday'), strict: legacyDaysStrict },
+      saturday: { available: legacyAvailableDays.includes('saturday'), strict: legacyDaysStrict },
+      sunday: { available: legacyAvailableDays.includes('sunday'), strict: legacyDaysStrict },
+    },
+    shift_constraints: {
+      day: { preferred: legacyPreferredShifts.includes('day'), strict: legacyShiftsStrict },
+      evening: { preferred: legacyPreferredShifts.includes('evening'), strict: legacyShiftsStrict },
+      night: { preferred: legacyPreferredShifts.includes('night'), strict: legacyShiftsStrict },
+    },
   };
   
   return converted;

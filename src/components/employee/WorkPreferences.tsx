@@ -23,23 +23,33 @@ interface WorkPreferencesProps {
 }
 
 const defaultPreferences: WorkPreferencesType = {
-  preferred_shifts: ["day", "evening", "night"], // Alla pass-typer som standard
   max_shifts_per_week: 5,
-  available_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], // Alla dagar inklusive helger
-  available_days_strict: false, // Soft constraint som standard
-  preferred_shifts_strict: false, // Soft constraint som standard
+  day_constraints: {
+    monday: { available: true, strict: false },
+    tuesday: { available: true, strict: false },
+    wednesday: { available: true, strict: false },
+    thursday: { available: true, strict: false },
+    friday: { available: true, strict: false },
+    saturday: { available: true, strict: false },
+    sunday: { available: true, strict: false },
+  },
+  shift_constraints: {
+    day: { preferred: true, strict: false },
+    evening: { preferred: true, strict: false },
+    night: { preferred: true, strict: false },
+  },
 };
 
 // Helper function to convert WorkPreferences to a Json-compatible object
-const toJsonObject = (preferences: WorkPreferencesType): Record<string, Json> => {
-  return {
-    preferred_shifts: preferences.preferred_shifts as Json[],
-    max_shifts_per_week: preferences.max_shifts_per_week as number,
-    available_days: preferences.available_days as Json[],
-    available_days_strict: preferences.available_days_strict as boolean,
-    preferred_shifts_strict: preferences.preferred_shifts_strict as boolean
+  const toJsonObject = () => {
+    return {
+      max_weekly_hours: preferences.max_weekly_hours,
+      can_open_close: preferences.can_open_close,
+      monthly_salary: preferences.monthly_salary,
+      day_constraints: preferences.day_constraints,
+      shift_constraints: preferences.shift_constraints
+    };
   };
-};
 
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
@@ -64,9 +74,6 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       setPreferences({
         ...defaultPreferences,
         ...workPreferences,
-        // Säkerställ att de nya fälten finns
-        available_days_strict: workPreferences.available_days_strict ?? false,
-        preferred_shifts_strict: workPreferences.preferred_shifts_strict ?? false,
       });
       
       return {
@@ -103,6 +110,12 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     }
   };
 
+  const shifts = [
+    { id: "day", label: "Dagpass" },
+    { id: "evening", label: "Kvällspass" },
+    { id: "night", label: "Nattpass" },
+  ];
+
   const weekdays = [
     { id: "monday", label: "Måndag" },
     { id: "tuesday", label: "Tisdag" },
@@ -118,44 +131,54 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       <div>
         <h3 className="text-lg font-medium mb-4">Önskade arbetspass</h3>
         <div className="space-y-4">
-          {["day", "evening", "night"].map((shift) => (
-            <div key={shift} className="flex items-center space-x-2">
-              <Switch
-                id={`shift-${shift}`}
-                checked={preferences.preferred_shifts.includes(shift as any)}
-                onCheckedChange={(checked) => {
-                  setPreferences(prev => ({
-                    ...prev,
-                    preferred_shifts: checked
-                      ? [...prev.preferred_shifts, shift as "day" | "evening" | "night"]
-                      : prev.preferred_shifts.filter(s => s !== shift)
-                  }));
-                }}
-              />
-              <Label htmlFor={`shift-${shift}`}>
-                {shift === "day" ? "Dagpass" : shift === "evening" ? "Kvällspass" : "Nattpass"}
-              </Label>
+          {shifts.map((shift) => (
+            <div key={shift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Switch
+                  id={`shift-${shift.id}`}
+                  checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].preferred}
+                  onCheckedChange={(checked) => {
+                    setPreferences(prev => ({
+                      ...prev,
+                      shift_constraints: {
+                        ...prev.shift_constraints,
+                        [shift.id]: {
+                          ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
+                          preferred: checked
+                        }
+                      }
+                    }));
+                  }}
+                />
+                <Label htmlFor={`shift-${shift.id}`} className="font-medium">
+                  {shift.label}
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={`shift-${shift.id}-strict`}
+                  checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].strict}
+                  onChange={(e) => {
+                    setPreferences(prev => ({
+                      ...prev,
+                      shift_constraints: {
+                        ...prev.shift_constraints,
+                        [shift.id]: {
+                          ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
+                          strict: e.target.checked
+                        }
+                      }
+                    }));
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor={`shift-${shift.id}-strict`} className="text-sm text-gray-600">
+                  Hårt krav
+                </Label>
+              </div>
             </div>
           ))}
-        </div>
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <label className="flex items-center space-x-2 text-sm">
-            <input
-              type="checkbox"
-              checked={preferences.preferred_shifts_strict}
-              onChange={(e) => {
-                setPreferences(prev => ({
-                  ...prev,
-                  preferred_shifts_strict: e.target.checked
-                }));
-              }}
-              className="rounded border-gray-300"
-            />
-            <span>
-              <strong>Hårt krav:</strong> Endast schemalägg för valda pass-typer 
-              <em className="text-gray-600 ml-1">(annars som preferens)</em>
-            </span>
-          </label>
         </div>
       </div>
 
@@ -183,45 +206,57 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         </Select>
       </div>
 
-      <div>
+            <div>
         <h3 className="text-lg font-medium mb-4">Tillgängliga dagar</h3>
         <div className="space-y-4">
-          {weekdays.map(({ id, label }) => (
-            <div key={id} className="flex items-center space-x-2">
-              <Switch
-                id={id}
-                checked={preferences.available_days.includes(id)}
-                onCheckedChange={(checked) => {
-                  setPreferences(prev => ({
-                    ...prev,
-                    available_days: checked
-                      ? [...prev.available_days, id]
-                      : prev.available_days.filter(day => day !== id)
-                  }));
-                }}
-              />
-              <Label htmlFor={id}>{label}</Label>
+          {weekdays.map((day) => (
+            <div key={day.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Switch
+                  id={`day-${day.id}`}
+                  checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].available}
+                  onCheckedChange={(checked) => {
+                    setPreferences(prev => ({
+                      ...prev,
+                      day_constraints: {
+                        ...prev.day_constraints,
+                        [day.id]: {
+                          ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
+                          available: checked
+                        }
+                      }
+                    }));
+                  }}
+                />
+                <Label htmlFor={`day-${day.id}`} className="font-medium">
+                  {day.label}
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={`day-${day.id}-strict`}
+                  checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].strict}
+                  onChange={(e) => {
+                    setPreferences(prev => ({
+                      ...prev,
+                      day_constraints: {
+                        ...prev.day_constraints,
+                        [day.id]: {
+                          ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
+                          strict: e.target.checked
+                        }
+                      }
+                    }));
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor={`day-${day.id}-strict`} className="text-sm text-gray-600">
+                  Hårt krav
+                </Label>
+              </div>
             </div>
           ))}
-        </div>
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <label className="flex items-center space-x-2 text-sm">
-            <input
-              type="checkbox"
-              checked={preferences.available_days_strict}
-              onChange={(e) => {
-                setPreferences(prev => ({
-                  ...prev,
-                  available_days_strict: e.target.checked
-                }));
-              }}
-              className="rounded border-gray-300"
-            />
-            <span>
-              <strong>Hårt krav:</strong> Schemalägg ENDAST på valda dagar 
-              <em className="text-gray-600 ml-1">(annars som preferens)</em>
-            </span>
-          </label>
         </div>
       </div>
 

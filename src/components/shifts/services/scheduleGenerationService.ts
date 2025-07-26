@@ -136,14 +136,32 @@ export const generateScheduleForNextMonth = async (
   // Convert employee preferences to format expected by Gurobi API
   const employeePreferences = employeeData?.map(emp => {
     const workPrefs = convertWorkPreferences(emp.work_preferences);
+    
+    // Convert granular constraints back to legacy format for Gurobi API
+    const availableDays = Object.entries(workPrefs.day_constraints)
+      .filter(([_, constraint]) => constraint.available)
+      .map(([day, _]) => day);
+      
+    const preferredShifts = Object.entries(workPrefs.shift_constraints)
+      .filter(([_, constraint]) => constraint.preferred)
+      .map(([shift, _]) => shift);
+    
+    // Check if any day has strict constraint enabled
+    const availableDaysStrict = Object.values(workPrefs.day_constraints)
+      .some(constraint => constraint.strict);
+      
+    // Check if any shift has strict constraint enabled  
+    const preferredShiftsStrict = Object.values(workPrefs.shift_constraints)
+      .some(constraint => constraint.strict);
+    
     return {
       employee_id: emp.id,
-      preferred_shifts: workPrefs.preferred_shifts || ["day", "evening", "night"],
+      preferred_shifts: preferredShifts.length > 0 ? preferredShifts : ["day", "evening", "night"],
       max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
-      available_days: workPrefs.available_days || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-      // Add new strict constraint flags
-      available_days_strict: workPrefs.available_days_strict || false,
-      preferred_shifts_strict: workPrefs.preferred_shifts_strict || false
+      available_days: availableDays.length > 0 ? availableDays : ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      // Add strict constraint flags
+      available_days_strict: availableDaysStrict,
+      preferred_shifts_strict: preferredShiftsStrict
     };
   }) || [];
   
