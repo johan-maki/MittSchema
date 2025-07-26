@@ -144,7 +144,8 @@ export function useProfileDirectory() {
           role: editingProfile.role,
           department: editingProfile.department || null,
           phone: editingProfile.phone || null,
-          experience_level: editingProfile.experience_level
+          experience_level: editingProfile.experience_level,
+          hourly_rate: editingProfile.hourly_rate || 1000 // Include hourly_rate in update
         })
         .eq('id', editingProfile.id)
         .select();

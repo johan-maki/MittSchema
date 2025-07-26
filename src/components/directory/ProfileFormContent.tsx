@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { FormField } from "./FormField";
 import { RoleSelector } from "./RoleSelector";
+import { HourlyRateSlider } from "./HourlyRateSlider";
 import { InsertProfile } from "@/types/profile";
 import { useProfileForm } from "@/hooks/useProfileForm";
 
@@ -104,17 +105,10 @@ export const ProfileFormContent = ({
       </div>
       
       <div className="grid grid-cols-1 gap-6">
-        <FormField 
-          label="Timlön (SEK)" 
-          value={profile.hourly_rate || 1000} 
-          onChange={(value) => updateProfile('hourly_rate', Number(value))} 
-          type="number" 
-          min="0" 
-          step="50"
+        <HourlyRateSlider
+          value={profile.hourly_rate || 1000}
+          onChange={(value) => updateProfile('hourly_rate', value)}
           disabled={isProcessing}
-          error={errors.hourly_rate}
-          placeholder="1000"
-          helperText="Används för att beräkna schemakostnader"
         />
       </div>
 
