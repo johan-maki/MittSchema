@@ -112,13 +112,45 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
 
   const jsonObj = json as Record<string, unknown>;
   
-  // Handle new granular constraint format
+  // Handle new granular constraint format (with possible mixed day formats)
   if (jsonObj.day_constraints && jsonObj.shift_constraints) {
+    const dayConstraints = jsonObj.day_constraints as Record<string, any>;
+    const convertedDayConstraints: Record<string, DayConstraint> = {};
+    
+    // Handle each day, supporting both old {available, strict} and new {day, evening, night} formats
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+    
+    for (const day of days) {
+      const dayData = dayConstraints[day];
+      
+      if (!dayData) {
+        // Default if no data for this day
+        convertedDayConstraints[day] = { available: true, strict: false };
+      } else if (typeof dayData.available === 'boolean') {
+        // Old format: {available: boolean, strict: boolean}
+        convertedDayConstraints[day] = {
+          available: dayData.available,
+          strict: typeof dayData.strict === 'boolean' ? dayData.strict : false
+        };
+      } else if (typeof dayData.day === 'boolean' || typeof dayData.evening === 'boolean' || typeof dayData.night === 'boolean') {
+        // New granular format: {day: boolean, evening: boolean, night: boolean}
+        // Convert to old format: available if ANY shift is true
+        const hasAnyShift = dayData.day === true || dayData.evening === true || dayData.night === true;
+        convertedDayConstraints[day] = {
+          available: hasAnyShift,
+          strict: true // Granular constraints are treated as strict
+        };
+      } else {
+        // Fallback to default
+        convertedDayConstraints[day] = { available: true, strict: false };
+      }
+    }
+    
     return {
       max_shifts_per_week: typeof jsonObj.max_shifts_per_week === 'number' 
         ? jsonObj.max_shifts_per_week 
         : defaultPreferences.max_shifts_per_week,
-      day_constraints: jsonObj.day_constraints as WorkPreferences['day_constraints'] || defaultPreferences.day_constraints,
+      day_constraints: convertedDayConstraints as WorkPreferences['day_constraints'],
       shift_constraints: jsonObj.shift_constraints as WorkPreferences['shift_constraints'] || defaultPreferences.shift_constraints,
     };
   }

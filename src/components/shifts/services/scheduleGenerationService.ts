@@ -98,7 +98,7 @@ export const generateScheduleForNextMonth = async (
   const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
   endDate.setHours(23, 59, 59, 999);
   
-  onProgress?.('🚀 Initializing Gurobi schedule optimization...', 0);
+  onProgress?.('� Analyserar personalens tillgänglighet och preferenser...', 5);
   
   console.log('🗓️ Generating next month schedule with Gurobi:', {
     startDate: startDate.toISOString().split('T')[0],
@@ -112,6 +112,8 @@ export const generateScheduleForNextMonth = async (
     throw new Error('No employees available for scheduling');
   }
 
+  onProgress?.('⚙️ Konfigurerar optimeringsparametrar...', 15);
+
   // Extract Gurobi parameters from settings
   const gurobiConfig = {
     minStaffPerShift: settings?.min_staff_per_shift || settings?.minStaffPerShift || 2, // Default to 2!
@@ -121,7 +123,7 @@ export const generateScheduleForNextMonth = async (
 
   console.log('🎯 Using Gurobi configuration:', gurobiConfig);
 
-  onProgress?.('📋 Fetching employee preferences...', 10);
+  onProgress?.('� Hämtar personalens arbetsönskemål och begränsningar...', 25);
   
   // Fetch employee preferences from database
   const { data: employeeData, error: empError } = await supabase
@@ -167,13 +169,20 @@ export const generateScheduleForNextMonth = async (
   
   console.log('👥 Employee preferences loaded:', employeePreferences);
 
-  onProgress?.('⚡ Calling Gurobi optimizer...', 20);
+  onProgress?.('🧮 Startar matematisk optimering för bästa möjliga schema...', 35);
+  
+  // Add small delay to show progress
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  onProgress?.('⚡ Optimerar schemaläggning med avancerade algoritmer...', 45);
   
   // 🔍 FINAL DIAGNOSTIC: What we're sending to Gurobi
   console.log('📤 SENDING TO GUROBI API:');
   console.log('  Start date:', startDate.toISOString());
   console.log('  End date:', endDate.toISOString());
   console.log('  Employee preferences count:', employeePreferences.length);
+  
+  onProgress?.('🔄 Bearbetar personalschema med samtliga restriktioner...', 55);
   
   const response = await schedulerApi.generateSchedule(
     startDate.toISOString(),
@@ -186,14 +195,16 @@ export const generateScheduleForNextMonth = async (
     employeePreferences
   );
   
-  onProgress?.('📊 Processing Gurobi results...', 60);
+  onProgress?.('📊 Analyserar optimeringsresultat och kvalitetskontroll...', 75);
   
   console.log('🎉 Gurobi optimization response:', response);
   
   if (!response.schedule || response.schedule.length === 0) {
-    throw new Error('Gurobi optimizer could not generate a schedule with the current constraints. Please review employee availability and constraints, then try again.');
+    throw new Error('Optimering kunde inte generera ett schema med nuvarande begränsningar. Kontrollera personalens tillgänglighet och försök igen.');
   }
-  
+
+  onProgress?.('🔧 Formaterar och validerar schemaresultat...', 85);
+
   // Convert Gurobi response to our Shift format
   const convertedSchedule: Shift[] = response.schedule.map((shift: any, index: number) => {
     
@@ -209,11 +220,11 @@ export const generateScheduleForNextMonth = async (
     };
   });
   
-  console.log(`✅ Gurobi generated ${convertedSchedule.length} shifts for next month`);
-  console.log(`📈 Coverage: ${response.coverage_stats?.coverage_percentage || 0}%`);
-  console.log(`⚖️ Fairness range: ${response.fairness_stats?.shift_distribution_range || 0} shifts`);
+  console.log(`✅ Optimering genererade ${convertedSchedule.length} pass för nästa månad`);
+  console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
+  console.log(`⚖️ Rättvishet: ${response.fairness_stats?.shift_distribution_range || 0} pass spridning`);
   
-  onProgress?.('🎯 Gurobi optimization complete!', 100);
+  onProgress?.('✅ Schema optimerat och klart för granskning!', 100);
   
   const finalResult = {
     schedule: convertedSchedule, // Use Gurobi result directly without deduplication

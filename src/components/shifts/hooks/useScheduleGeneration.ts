@@ -13,6 +13,8 @@ import { startOfWeek, endOfWeek, addWeeks, addDays } from "date-fns";
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -34,8 +36,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       minStaffPerShift?: number;
       minExperiencePerShift?: number;
       includeWeekends?: boolean;
-    },
-    onProgress?: (step: string, progress: number) => void
+    }
   ) => {
     console.log('🎯 === GENERATE SCHEDULE FUNCTION CALLED ===');
     console.log('🚀 Starting next month schedule generation');
@@ -47,6 +48,12 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       profiles: profiles,
       config: config
     });
+
+    const onProgress = (step: string, progress: number) => {
+      setGenerationProgress(progress);
+      setProgressMessage(step);
+      console.log(`📈 Progress: ${progress}% - ${step}`);
+    };
     
     // Show toast notification that function was called
     toast({
@@ -84,6 +91,9 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     }
 
     setIsGenerating(true);
+    setGenerationProgress(0);
+    setProgressMessage("Förbereder optimering...");
+    
     try {
       console.log("🚀 Calling generateScheduleForNextMonth for better coverage");
       console.log("🔍 DEBUG: Current date:", currentDate);
@@ -222,6 +232,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       });
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(0);
+      setProgressMessage("");
     }
     return false;
   };
@@ -237,6 +249,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   return {
     isGenerating,
     isLoadingSettings,
+    generationProgress,
+    progressMessage,
     showPreview,
     setShowPreview,
     generatedShifts,

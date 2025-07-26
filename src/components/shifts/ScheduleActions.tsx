@@ -29,6 +29,8 @@ export const ScheduleActions = ({
   const {
     isGenerating,
     isLoadingSettings,
+    generationProgress,
+    progressMessage,
     showPreview,
     setShowPreview,
     generatedShifts,
@@ -71,6 +73,8 @@ export const ScheduleActions = ({
       <GenerateButton
         isGenerating={isGenerating}
         isLoadingSettings={isLoadingSettings}
+        generationProgress={generationProgress}
+        progressMessage={progressMessage}
         onClick={generateSchedule}
       />
 
