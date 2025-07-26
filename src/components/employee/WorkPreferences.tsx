@@ -26,6 +26,8 @@ const defaultPreferences: WorkPreferencesType = {
   preferred_shifts: ["day", "evening", "night"], // Alla pass-typer som standard
   max_shifts_per_week: 5,
   available_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], // Alla dagar inklusive helger
+  available_days_strict: false, // Soft constraint som standard
+  preferred_shifts_strict: false, // Soft constraint som standard
 };
 
 // Helper function to convert WorkPreferences to a Json-compatible object
@@ -33,14 +35,22 @@ const toJsonObject = (preferences: WorkPreferencesType): Record<string, Json> =>
   return {
     preferred_shifts: preferences.preferred_shifts as Json[],
     max_shifts_per_week: preferences.max_shifts_per_week as number,
-    available_days: preferences.available_days as Json[]
+    available_days: preferences.available_days as Json[],
+    available_days_strict: preferences.available_days_strict as boolean,
+    preferred_shifts_strict: preferences.preferred_shifts_strict as boolean
   };
 };
 
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [preferences, setPreferences] = useState<WorkPreferencesType>(defaultPreferences);
+    const [workPreferences, setWorkPreferences] = useState<WorkPreferencesType>(() => ({
+    ...defaultPreferences,
+    ...employee.work_preferences,
+    // Säkerställ att de nya fälten finns
+    available_days_strict: employee.work_preferences?.available_days_strict ?? false,
+    preferred_shifts_strict: employee.work_preferences?.preferred_shifts_strict ?? false,
+  }));
 
   const { data: profile } = useQuery({
     queryKey: ['work-preferences', employeeId],
@@ -125,6 +135,25 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
             </div>
           ))}
         </div>
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={preferences.preferred_shifts_strict}
+              onChange={(e) => {
+                setPreferences(prev => ({
+                  ...prev,
+                  preferred_shifts_strict: e.target.checked
+                }));
+              }}
+              className="rounded border-gray-300"
+            />
+            <span>
+              <strong>Hårt krav:</strong> Endast schemalägg för valda pass-typer 
+              <em className="text-gray-600 ml-1">(annars som preferens)</em>
+            </span>
+          </label>
+        </div>
       </div>
 
       <div>
@@ -171,6 +200,25 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
               <Label htmlFor={id}>{label}</Label>
             </div>
           ))}
+        </div>
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={preferences.available_days_strict}
+              onChange={(e) => {
+                setPreferences(prev => ({
+                  ...prev,
+                  available_days_strict: e.target.checked
+                }));
+              }}
+              className="rounded border-gray-300"
+            />
+            <span>
+              <strong>Hårt krav:</strong> Schemalägg ENDAST på valda dagar 
+              <em className="text-gray-600 ml-1">(annars som preferens)</em>
+            </span>
+          </label>
         </div>
       </div>
 

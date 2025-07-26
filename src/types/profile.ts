@@ -40,6 +40,9 @@ export interface WorkPreferences {
   preferred_shifts: ("day" | "evening" | "night")[];
   max_shifts_per_week: number;
   available_days: string[];
+  // New fields for hard vs soft constraints
+  available_days_strict?: boolean;  // If true, available_days becomes a hard constraint
+  preferred_shifts_strict?: boolean; // If true, preferred_shifts becomes a hard constraint
 }
 
 export type DatabaseProfile = Omit<Profile, 'work_preferences'> & {
@@ -82,6 +85,13 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
     available_days: Array.isArray(jsonObj.available_days) 
       ? jsonObj.available_days.map(String)
       : defaultPreferences.available_days,
+    // Add new strict fields with default false
+    available_days_strict: typeof jsonObj.available_days_strict === 'boolean' 
+      ? jsonObj.available_days_strict 
+      : false,
+    preferred_shifts_strict: typeof jsonObj.preferred_shifts_strict === 'boolean' 
+      ? jsonObj.preferred_shifts_strict 
+      : false,
   };
   
   return converted;

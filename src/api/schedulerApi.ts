@@ -21,6 +21,8 @@ interface GurobiScheduleRequest {
     preferred_shifts: string[];
     max_shifts_per_week: number;
     available_days: string[];
+    available_days_strict?: boolean;
+    preferred_shifts_strict?: boolean;
   }>;
 }
 

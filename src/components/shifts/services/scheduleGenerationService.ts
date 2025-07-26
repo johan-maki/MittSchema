@@ -140,7 +140,10 @@ export const generateScheduleForNextMonth = async (
       employee_id: emp.id,
       preferred_shifts: workPrefs.preferred_shifts || ["day", "evening", "night"],
       max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
-      available_days: workPrefs.available_days || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+      available_days: workPrefs.available_days || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      // Add new strict constraint flags
+      available_days_strict: workPrefs.available_days_strict || false,
+      preferred_shifts_strict: workPrefs.preferred_shifts_strict || false
     };
   }) || [];
   
