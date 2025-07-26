@@ -68,6 +68,7 @@ export function DirectoryControls() {
       
       // Refresh the profiles list
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       setIsDialogOpen(false);
     } catch (error: any) {
       console.error('Error adding profile:', error);

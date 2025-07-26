@@ -113,6 +113,7 @@ export function useProfileDirectory() {
       });
       
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       
       setIsDeleteDialogOpen(false);
       setProfileToDelete(null);
@@ -161,6 +162,7 @@ export function useProfileDirectory() {
       });
       
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       setIsEditDialogOpen(false);
     } catch (error: any) {
       console.error('Error updating profile:', error);
