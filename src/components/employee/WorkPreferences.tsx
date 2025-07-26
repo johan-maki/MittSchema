@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 import { convertWorkPreferences } from "@/types/profile";
 import type { Json } from "@/integrations/supabase/types";
+import { Save, Clock, Calendar, Briefcase } from "lucide-react";
 
 interface WorkPreferencesProps {
   employeeId: string;
@@ -125,13 +126,19 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   ];
 
   return (
-    <Card className="p-6 space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-4">Önskade arbetspass</h3>
-        <div className="space-y-4">
+    <div className="space-y-8">
+      {/* Önskade arbetspass */}
+      <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-blue-500/10 rounded-lg">
+            <Briefcase className="h-5 w-5 text-blue-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-slate-800">Önskade arbetspass</h3>
+        </div>
+        <div className="grid gap-4">
           {shifts.map((shift) => (
-            <div key={shift.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
+            <div key={shift.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center space-x-4">
                 <Switch
                   id={`shift-${shift.id}`}
                   checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].preferred}
@@ -148,11 +155,11 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
                     }));
                   }}
                 />
-                <Label htmlFor={`shift-${shift.id}`} className="font-medium">
+                <Label htmlFor={`shift-${shift.id}`} className="font-medium text-slate-700 cursor-pointer">
                   {shift.label}
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
                   id={`shift-${shift.id}-strict`}
@@ -169,19 +176,25 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
                       }
                     }));
                   }}
-                  className="rounded border-gray-300"
+                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                 />
-                <Label htmlFor={`shift-${shift.id}-strict`} className="text-sm text-gray-600">
+                <Label htmlFor={`shift-${shift.id}-strict`} className="text-sm font-medium text-slate-600 cursor-pointer">
                   Hårt krav
                 </Label>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      <div>
-        <h3 className="text-lg font-medium mb-4">Max antal pass per vecka</h3>
+      {/* Max antal pass per vecka */}
+      <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-purple-500/10 rounded-lg">
+            <Clock className="h-5 w-5 text-purple-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-slate-800">Max antal pass per vecka</h3>
+        </div>
         <Select
           value={preferences.max_shifts_per_week.toString()}
           onValueChange={(value) => 
@@ -191,7 +204,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
             }))
           }
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-48 h-12 bg-white border-slate-200 hover:border-slate-300 transition-colors">
             <SelectValue placeholder="Välj antal pass" />
           </SelectTrigger>
           <SelectContent>
@@ -202,14 +215,20 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </Card>
 
-            <div>
-        <h3 className="text-lg font-medium mb-4">Tillgängliga dagar</h3>
-        <div className="space-y-4">
+      {/* Tillgängliga dagar */}
+      <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-green-500/10 rounded-lg">
+            <Calendar className="h-5 w-5 text-green-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-slate-800">Tillgängliga dagar</h3>
+        </div>
+        <div className="grid gap-4">
           {weekdays.map((day) => (
-            <div key={day.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
+            <div key={day.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <div className="flex items-center space-x-4">
                 <Switch
                   id={`day-${day.id}`}
                   checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].available}
@@ -226,11 +245,11 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
                     }));
                   }}
                 />
-                <Label htmlFor={`day-${day.id}`} className="font-medium">
+                <Label htmlFor={`day-${day.id}`} className="font-medium text-slate-700 cursor-pointer">
                   {day.label}
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
                   id={`day-${day.id}-strict`}
@@ -247,20 +266,27 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
                       }
                     }));
                   }}
-                  className="rounded border-gray-300"
+                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
                 />
-                <Label htmlFor={`day-${day.id}-strict`} className="text-sm text-gray-600">
+                <Label htmlFor={`day-${day.id}-strict`} className="text-sm font-medium text-slate-600 cursor-pointer">
                   Hårt krav
                 </Label>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      <Button onClick={handleSave} className="w-full">
-        Spara inställningar
-      </Button>
-    </Card>
+      {/* Spara knapp */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleSave} 
+          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+        >
+          <Save className="h-4 w-4" />
+          Spara inställningar
+        </Button>
+      </div>
+    </div>
   );
 };
