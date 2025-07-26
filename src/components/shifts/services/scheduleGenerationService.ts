@@ -5,6 +5,7 @@ import type { Profile } from "@/types/profile";
 import type { Shift, ShiftType } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
 import { convertWorkPreferences } from "@/types/profile";
+import { validateScheduleConstraints, formatViolationMessage } from '@/utils/scheduleValidation';
 
 // Type definitions for schedule generation
 interface ScheduleSettings {
@@ -296,6 +297,16 @@ export const generateScheduleForNextMonth = async (
   console.log(`✅ Optimering genererade ${convertedSchedule.length} pass för nästa månad`);
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Rättvishet: ${response.fairness_stats?.shift_distribution_range || 0} pass spridning`);
+  
+  // Validate schedule for constraint violations
+  if (profiles && profiles.length > 0) {
+    const violations = validateScheduleConstraints(convertedSchedule, profiles);
+    if (violations.length > 0) {
+      const violationMessage = formatViolationMessage(violations);
+      console.warn('🚨 SCHEDULE CONSTRAINT VIOLATIONS DETECTED:');
+      console.warn(violationMessage);
+    }
+  }
   
   onProgress?.('✅ Schema optimerat och klart för granskning!', 100);
   
