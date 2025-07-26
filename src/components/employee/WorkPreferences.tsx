@@ -71,14 +71,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
 
   const handleSave = async () => {
     try {
-      console.log('🔍 SAVING ERIK PREFERENCES DEBUG:');
-      console.log('  Current preferences state:', preferences);
-      console.log('  Available days:', preferences.available_days);
-      console.log('  Has Saturday?', preferences.available_days.includes('saturday'));
-      console.log('  Has Sunday?', preferences.available_days.includes('sunday'));
-      
       const jsonObj = toJsonObject(preferences);
-      console.log('  JSON object to save:', jsonObj);
       
       const { error } = await supabase
         .from('employees')

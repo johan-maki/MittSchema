@@ -145,26 +145,6 @@ export const generateScheduleForNextMonth = async (
   }) || [];
   
   console.log('👥 Employee preferences loaded:', employeePreferences);
-  
-  // 🔍 DIAGNOSTIC: Check Erik's preferences specifically
-  const erikPrefs = employeePreferences.find(pref => 
-    pref.employee_id.toLowerCase().includes('erik') || 
-    pref.employee_id.includes('Erik')
-  );
-  
-  if (erikPrefs) {
-    console.log('🔍 ERIK DIAGNOSTIC:');
-    console.log('  Employee ID:', erikPrefs.employee_id);
-    console.log('  Available days:', erikPrefs.available_days);
-    console.log('  Has Saturday?', erikPrefs.available_days.includes('saturday'));
-    console.log('  Has Sunday?', erikPrefs.available_days.includes('sunday'));
-    console.log('  Should be weekend-free:', !erikPrefs.available_days.includes('saturday') && !erikPrefs.available_days.includes('sunday'));
-  } else {
-    console.log('⚠️ ERIK NOT FOUND in employee preferences! Checking all IDs:');
-    employeePreferences.forEach(pref => {
-      console.log('  Available employee ID:', pref.employee_id);
-    });
-  }
 
   onProgress?.('⚡ Calling Gurobi optimizer...', 20);
   
@@ -173,7 +153,6 @@ export const generateScheduleForNextMonth = async (
   console.log('  Start date:', startDate.toISOString());
   console.log('  End date:', endDate.toISOString());
   console.log('  Employee preferences count:', employeePreferences.length);
-  console.log('  Full employee preferences:', JSON.stringify(employeePreferences, null, 2));
   
   const response = await schedulerApi.generateSchedule(
     startDate.toISOString(),
@@ -189,38 +168,6 @@ export const generateScheduleForNextMonth = async (
   onProgress?.('📊 Processing Gurobi results...', 60);
   
   console.log('🎉 Gurobi optimization response:', response);
-  
-  // 🔍 DIAGNOSTIC: Check Erik's shifts in response
-  if (response.schedule && response.schedule.length > 0) {
-    const erikShifts = response.schedule.filter(shift => 
-      shift.employee_id && (
-        shift.employee_id.toLowerCase().includes('erik') ||
-        shift.employee_name?.toLowerCase().includes('erik')
-      )
-    );
-    
-    console.log('🔍 ERIK SHIFT DIAGNOSTIC:');
-    console.log('  Erik got', erikShifts.length, 'total shifts');
-    
-    if (erikShifts.length > 0) {
-      const weekendShifts = erikShifts.filter(shift => {
-        const date = new Date(shift.start_time);
-        const dayOfWeek = date.getDay();
-        return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
-      });
-      
-      console.log('  Erik weekend shifts:', weekendShifts.length);
-      if (weekendShifts.length > 0) {
-        console.log('  ❌ PROBLEM: Erik got weekend shifts despite preferences!');
-        weekendShifts.forEach(shift => {
-          const date = new Date(shift.start_time);
-          console.log('    -', date.toDateString(), shift.shift_type);
-        });
-      } else {
-        console.log('  ✅ SUCCESS: Erik has no weekend shifts!');
-      }
-    }
-  }
   
   if (!response.schedule || response.schedule.length === 0) {
     throw new Error('Gurobi optimizer could not generate a schedule with the current constraints. Please review employee availability and constraints, then try again.');
