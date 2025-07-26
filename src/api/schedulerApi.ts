@@ -16,6 +16,12 @@ interface GurobiScheduleRequest {
   fairness_weight?: number;
   balance_workload?: boolean;
   max_hours_per_nurse?: number;
+  employee_preferences?: Array<{
+    employee_id: string;
+    preferred_shifts: string[];
+    max_shifts_per_week: number;
+    available_days: string[];
+  }>;
 }
 
 interface GurobiScheduleResponse {
@@ -83,6 +89,12 @@ export const schedulerApi = {
     minExperiencePerShift: number = 1,
     includeWeekends: boolean = true,
     timestamp?: number, 
+    employeePreferences?: Array<{
+      employee_id: string;
+      preferred_shifts: string[];
+      max_shifts_per_week: number;
+      available_days: string[];
+    }>,
     retries = 3
   ): Promise<GurobiScheduleResponse> => {
     // Use local Gurobi API from environment config
@@ -116,7 +128,8 @@ export const schedulerApi = {
       weekend_penalty_weight: automaticWeekendPenalty, // Automatisk beräkning för rättvisa
       fairness_weight: 1.0, // Maximal fokus på rättvis fördelning
       balance_workload: true, // Balansera arbetsbördan
-      max_hours_per_nurse: 40 // Maximal arbetstid per sjuksköterska
+      max_hours_per_nurse: 40, // Maximal arbetstid per sjuksköterska
+      employee_preferences: employeePreferences || [] // Lägg till employee preferences
     };
     
     console.log("🚀 Calling Gurobi scheduler API with:", requestBody);

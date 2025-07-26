@@ -23,9 +23,9 @@ interface WorkPreferencesProps {
 }
 
 const defaultPreferences: WorkPreferencesType = {
-  preferred_shifts: ["day"],
+  preferred_shifts: ["day", "evening", "night"], // Alla pass-typer som standard
   max_shifts_per_week: 5,
-  available_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+  available_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], // Alla dagar inklusive helger
 };
 
 // Helper function to convert WorkPreferences to a Json-compatible object

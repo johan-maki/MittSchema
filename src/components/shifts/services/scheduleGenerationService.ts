@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Profile } from "@/types/profile";
 import type { Shift } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
+import { convertWorkPreferences } from "@/types/profile";
 
 /**
  * Save generated shifts to Supabase database
@@ -120,6 +121,31 @@ export const generateScheduleForNextMonth = async (
 
   console.log('🎯 Using Gurobi configuration:', gurobiConfig);
 
+  onProgress?.('📋 Fetching employee preferences...', 10);
+  
+  // Fetch employee preferences from database
+  const { data: employeeData, error: empError } = await supabase
+    .from('employees')
+    .select('id, work_preferences')
+    .in('id', profiles.map(p => p.id));
+    
+  if (empError) {
+    console.warn('Could not fetch employee preferences:', empError);
+  }
+  
+  // Convert employee preferences to format expected by Gurobi API
+  const employeePreferences = employeeData?.map(emp => {
+    const workPrefs = convertWorkPreferences(emp.work_preferences);
+    return {
+      employee_id: emp.id,
+      preferred_shifts: workPrefs.preferred_shifts || ["day", "evening", "night"],
+      max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
+      available_days: workPrefs.available_days || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    };
+  }) || [];
+  
+  console.log('👥 Employee preferences loaded:', employeePreferences);
+
   onProgress?.('⚡ Calling Gurobi optimizer...', 20);
   
   const response = await schedulerApi.generateSchedule(
@@ -129,7 +155,8 @@ export const generateScheduleForNextMonth = async (
     gurobiConfig.minStaffPerShift,
     gurobiConfig.minExperiencePerShift,
     gurobiConfig.includeWeekends,
-    timestamp || Date.now()
+    timestamp || Date.now(),
+    employeePreferences
   );
   
   onProgress?.('📊 Processing Gurobi results...', 60);
