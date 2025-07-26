@@ -369,12 +369,14 @@ export const generateScheduleForNextMonth = async (
     console.log('🚨 ANDREAS GOT 0 SHIFTS - APPLYING POST-PROCESSING FIX');
     
     // Find some shifts that can be reassigned to Andreas
-    const reassignableShifts = convertedSchedule.filter(shift => 
-      shift.shift_type !== 'night' && // Andreas doesn't prefer night shifts
-      ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(
-        new Date(shift.date).toLocaleDateString('en', { weekday: 'lowercase' })
-      )
-    ).slice(0, 3); // Take first 3 suitable shifts
+    const reassignableShifts = convertedSchedule.filter(shift => {
+      const shiftDate = new Date(shift.date);
+      const dayOfWeek = shiftDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
+      
+      return shift.shift_type !== 'night' && // Andreas doesn't prefer night shifts
+             isWeekday; // Only weekdays
+    }).slice(0, 3); // Take first 3 suitable shifts
     
     reassignableShifts.forEach(shift => {
       const originalEmployee = profiles.find(p => p.id === shift.employee_id);
