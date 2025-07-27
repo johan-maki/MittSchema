@@ -273,41 +273,80 @@ export const generateScheduleForNextMonth = async (
   
   // Clear existing shifts for the target month FIRST - before any Gurobi processing
   // This ensures immediate visual feedback and no conflicts
-  // 🔧 CRITICAL FIX: Only clear shifts that should be replaced, keep boundary night shifts
-  // PROBLEM: Clearing 31 Aug 22:00 → 1 Sep 06:00 removes needed night shift
-  // SOLUTION: Clear only shifts that start within target month boundaries
+  // 🔧 CRITICAL FIX: Clear both target month AND next month to remove any spillover shifts
+  // PROBLEM: Previous generations might have left shifts in September that show up in UI
+  // SOLUTION: Clear target month (August) and next month (September) to eliminate all boundary issues
   
   const clearStartDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
   const clearEndDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T23:59:59.999Z`;
   
-  console.log('🗑️ CLEARING SHIFTS IN RANGE:');
-  console.log('  From:', clearStartDateISO);
-  console.log('  To (inclusive):', clearEndDateISO);
+  // Also clear any shifts in the following month (September) to remove boundary spillovers
+  let nextMonthYear = targetYear;
+  let nextMonth = targetMonth + 1; // September (0-indexed)
+  if (nextMonth > 11) {
+    nextMonthYear += 1;
+    nextMonth = 0; // January
+  }
+  const nextMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const nextMonthIsLeapYear = (nextMonthYear % 4 === 0 && nextMonthYear % 100 !== 0) || (nextMonthYear % 400 === 0);
+  const lastDayOfNextMonth = nextMonth === 1 && nextMonthIsLeapYear ? 29 : nextMonthDays[nextMonth];
   
+  const clearNextMonthStartISO = `${nextMonthYear}-${String(nextMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
+  const clearNextMonthEndISO = `${nextMonthYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(lastDayOfNextMonth).padStart(2, '0')}T23:59:59.999Z`;
+  
+  console.log('🗑️ CLEARING SHIFTS IN RANGE:');
+  console.log('  Target month (Aug):', clearStartDateISO, 'to', clearEndDateISO);
+  console.log('  Next month (Sep):', clearNextMonthStartISO, 'to', clearNextMonthEndISO);
+  
+  // Clear target month shifts
   const { error: clearError } = await supabase
     .from('shifts')
     .delete()
     .gte('start_time', clearStartDateISO)
-    .lte('start_time', clearEndDateISO); // Use .lte() to include end of target month
+    .lte('start_time', clearEndDateISO);
     
   if (clearError) {
-    console.error("Error clearing existing shifts for target month:", clearError);
-    throw new Error(`Could not clear existing shifts: ${clearError.message}`);
+    console.error("Error clearing target month shifts:", clearError);
+    throw new Error(`Could not clear target month shifts: ${clearError.message}`);
   }
   
-  // 🔍 DEBUG: Verify what was actually cleared
-  const { data: remainingShifts, error: checkError } = await supabase
+  // Clear next month shifts (September boundary spillovers)
+  const { error: clearNextError } = await supabase
+    .from('shifts')
+    .delete()
+    .gte('start_time', clearNextMonthStartISO)
+    .lte('start_time', clearNextMonthEndISO);
+    
+  if (clearNextError) {
+    console.error("Error clearing next month boundary shifts:", clearNextError);
+    throw new Error(`Could not clear next month boundary shifts: ${clearNextError.message}`);
+  }
+  
+  // 🔍 DEBUG: Verify what was actually cleared from both months
+  const { data: remainingTargetShifts, error: checkError } = await supabase
     .from('shifts')
     .select('start_time, date, employee_id, shift_type')
     .gte('start_time', clearStartDateISO)
     .lte('start_time', clearEndDateISO);
     
-  if (checkError) {
-    console.warn('Could not verify cleared shifts:', checkError);
+  const { data: remainingNextShifts, error: checkNextError } = await supabase
+    .from('shifts')
+    .select('start_time, date, employee_id, shift_type')
+    .gte('start_time', clearNextMonthStartISO)
+    .lte('start_time', clearNextMonthEndISO);
+    
+  if (checkError || checkNextError) {
+    console.warn('Could not verify cleared shifts:', { checkError, checkNextError });
   } else {
-    console.log('🔍 VERIFICATION: Remaining shifts in target range after clear:', remainingShifts?.length || 0);
-    if (remainingShifts && remainingShifts.length > 0) {
-      console.warn('🚨 WARNING: Some shifts were not cleared:', remainingShifts);
+    console.log('🔍 VERIFICATION: Remaining shifts after clear:');
+    console.log('  Target month (Aug):', remainingTargetShifts?.length || 0);
+    console.log('  Next month (Sep):', remainingNextShifts?.length || 0);
+    
+    if (remainingTargetShifts && remainingTargetShifts.length > 0) {
+      console.warn('🚨 WARNING: Some target month shifts were not cleared:', remainingTargetShifts);
+    }
+    if (remainingNextShifts && remainingNextShifts.length > 0) {
+      console.warn('🚨 WARNING: Some next month shifts were not cleared:', remainingNextShifts);
     }
   }
   
