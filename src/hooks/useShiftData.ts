@@ -33,6 +33,12 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       } else { // month
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
+        
+        // 🔧 CRITICAL FIX: Extend endDate to catch timezone-converted shifts
+        // Problem: Shifts saved as '2025-08-30T06:00:00' get stored in UTC
+        // but our filter ends at '2025-08-31T21:59:59.999Z' which can miss
+        // the last day's shifts due to timezone conversion
+        endDate = addDays(endDate, 1); // Add one extra day to be safe
       }
       
       // Format dates to ISO strings in UTC
@@ -63,6 +69,37 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       }
       
       console.log(`Retrieved ${shifts?.length || 0} shifts from Supabase`);
+      
+      // 🔍 CRITICAL DEBUG: Check if we're filtering correctly for target month
+      if (currentView === 'month' && shifts && shifts.length > 0) {
+        const targetMonth = currentDate.getMonth() + 1; // 1-indexed month
+        const actualMonthShifts = shifts.filter(shift => {
+          const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
+          return shiftMonth === targetMonth;
+        });
+        
+        console.log(`🎯 TARGET MONTH FILTER ANALYSIS:`);
+        console.log(`  Viewing month: ${targetMonth}`);
+        console.log(`  Total retrieved: ${shifts.length}`);
+        console.log(`  In target month: ${actualMonthShifts.length}`);
+        console.log(`  Filter range: ${startDateStr} to ${endDateStr}`);
+        
+        if (actualMonthShifts.length !== shifts.length) {
+          const wrongMonthShifts = shifts.filter(shift => {
+            const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
+            return shiftMonth !== targetMonth;
+          });
+          
+          console.warn(`🚨 RETRIEVED SHIFTS FROM WRONG MONTHS: ${wrongMonthShifts.length}`, 
+            wrongMonthShifts.map(s => ({
+              id: s.id,
+              start_time: s.start_time,
+              month: s.start_time ? parseInt(s.start_time.split('-')[1]) : null,
+              expected_month: targetMonth
+            }))
+          );
+        }
+      }
       
       // 🔍 CRITICAL DEBUG: Analyze retrieved shifts for date issues
       if (shifts && shifts.length > 0) {
