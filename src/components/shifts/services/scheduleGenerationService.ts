@@ -651,10 +651,15 @@ export const generateScheduleForNextMonth = async (
             end_month: endTimeMonth,
             employee_name: employeeName,
             shift_type: shift.shift_type,
-            action: 'Keeping original end_time for proper night shift display'
+            action: 'Truncating end_time to stay within target month'
           });
-          // Keep the original end_time - this is correct for night shifts
-          correctedEndTime = shift.end_time;
+          
+          // Truncate the end_time to the last moment of the target month
+          const startDate = shift.start_time.split('T')[0]; // Get YYYY-MM-DD from start_time
+          const [year, month, day] = startDate.split('-');
+          correctedEndTime = `${year}-${month}-${day}T23:59:59`;
+          
+          console.warn(`🔧 CORRECTED END_TIME: ${shift.end_time} → ${correctedEndTime}`);
         }
       }
       
