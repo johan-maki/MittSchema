@@ -64,7 +64,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       shift_type: shift.shift_type,
       department: shift.department || 'General',
       employee_id: shift.employee_id,
-      is_published: true // Set as published so they are immediately visible
+      is_published: false // Draft schedule - requires manual publishing by manager
     }));
     
     // Clear existing shifts for the target month first (both published and unpublished)
