@@ -64,8 +64,12 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
         const [year, month, day] = shiftDate.split('-').map(Number);
         dateAnalysis[month] = (dateAnalysis[month] || 0) + 1;
         
-        // Flag shifts that are not in August (month 8)
-        if (month !== 8) {
+        // Flag shifts that are not in target month (should be consistent with generateScheduleForNextMonth logic)
+        const today = new Date();
+        let expectedMonth = today.getMonth() + 2; // Next month (0-indexed + 1 for next month + 1 for 1-indexed months)
+        if (expectedMonth > 12) expectedMonth = expectedMonth - 12;
+        
+        if (month !== expectedMonth) {
           problemShifts.push({
             index,
             date: shiftDate,
@@ -99,7 +103,7 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
           employee_id: shift.employee_id,
           shift_type: shift.shift_type,
           month_from_date: shift.month,
-          expected_month: 8
+          expected_month: expectedMonth
         });
       });
     }
@@ -599,7 +603,31 @@ export const generateScheduleForNextMonth = async (
   onProgress?.('🔧 Formaterar och validerar schemaresultat...', 85);
 
   // Convert Gurobi response to our Shift format
-  const convertedSchedule: Shift[] = response.schedule.map((shift: GurobiShift, index: number) => {
+  const convertedSchedule: Shift[] = response.schedule
+    .filter((shift: GurobiShift, index: number) => {
+      // 🔧 CRITICAL FIX: Filter out shifts that start outside target month
+      // PROBLEM: Gurobi returns boundary shifts like Aug 31 22:00 → Sep 1 06:00 
+      // SOLUTION: Only keep shifts that start within target month boundaries
+      const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
+      const startTimeYear = shift.start_time ? parseInt(shift.start_time.split('-')[0]) : null;
+      
+      const isInTargetMonth = startTimeMonth === (targetMonth + 1) && startTimeYear === targetYear;
+      
+      if (!isInTargetMonth) {
+        console.warn(`🚨 FILTERING OUT BOUNDARY SHIFT ${index + 1}:`, {
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          start_month: startTimeMonth,
+          expected_month: targetMonth + 1,
+          employee_name: shift.employee_name,
+          shift_type: shift.shift_type,
+          reason: 'Starts outside target month - boundary shift excluded'
+        });
+      }
+      
+      return isInTargetMonth;
+    })
+    .map((shift: GurobiShift, index: number) => {
     // Find the employee name from profiles
     const employee = profiles.find(p => p.id === shift.employee_id);
     const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
@@ -623,26 +651,26 @@ export const generateScheduleForNextMonth = async (
     const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
     const dateMonth = shift.date ? parseInt(shift.date.split('-')[1]) : null;
     
-    if (startTimeMonth && startTimeMonth !== 8) {
+    if (startTimeMonth && startTimeMonth !== (targetMonth + 1)) {
       console.error(`🚨 WRONG MONTH IN START_TIME for shift ${index}:`, {
         start_time: shift.start_time,
         start_time_month: startTimeMonth,
         date: shift.date,
         date_month: dateMonth,
-        expected_month: 8,
+        expected_month: targetMonth + 1,
         employee_name: employeeName,
         shift_type: shift.shift_type,
         THIS_WILL_CAUSE_FETCH_ISSUE: 'YES - useShiftData filters by start_time'
       });
     }
     
-    if (dateMonth && dateMonth !== 8) {
+    if (dateMonth && dateMonth !== (targetMonth + 1)) {
       console.error(`🚨 WRONG MONTH IN DATE for shift ${index}:`, {
         date: shift.date,
         date_month: dateMonth,
         start_time: shift.start_time,
         start_time_month: startTimeMonth,
-        expected_month: 8,
+        expected_month: targetMonth + 1,
         employee_name: employeeName,
         shift_type: shift.shift_type
       });
