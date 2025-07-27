@@ -86,7 +86,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           return false;
         }
         
-        // Note: Actual deletion happens in generateScheduleForNextMonth for immediate feedback
+        // Note: Actual deletion happens in generateScheduleForNextMonth
         console.log('User confirmed replacement - proceeding with generation');
       }
     } catch (error) {
@@ -166,16 +166,25 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       
       // Add timestamp to ensure different results each time
       const timestamp = Date.now();
+      
+      // IMMEDIATELY invalidate cache so user sees empty schedule before backend processing
+      console.log('🔄 Invalidating cache immediately for instant visual feedback');
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      
+      // Small delay to ensure UI updates visually
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       const generatedSchedule = await generateScheduleForNextMonth(
         currentDate, 
         profiles, 
         scheduleConfig, 
         timestamp,
         onProgress,
-        () => {
-          // Cache invalidation callback - triggered immediately after clearing
-          console.log('🔄 Invalidating cache after schedule clear');
-          queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        async () => {
+          // Cache invalidation callback - triggered immediately after backend clearing
+          console.log('🔄 Backend cleared shifts - invalidating cache again for safety');
+          await queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          console.log('✅ Double cache invalidation completed');
         }
       );
 
