@@ -119,20 +119,27 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     
     // 🔍 CRITICAL DEBUG: Log first and last few shifts being inserted to database
     console.log('🔍 SAMPLE SHIFTS BEING INSERTED TO DATABASE:');
-    console.log('  First 5 shifts:', shiftsToInsert.slice(0, 5).map(s => ({
-      date: s.date,
-      start_time: s.start_time,
-      end_time: s.end_time,
-      shift_type: s.shift_type,
-      employee_id: s.employee_id
-    })));
-    console.log('  Last 5 shifts:', shiftsToInsert.slice(-5).map(s => ({
-      date: s.date,
-      start_time: s.start_time,  
-      end_time: s.end_time,
-      shift_type: s.shift_type,
-      employee_id: s.employee_id
-    })));
+    console.log('  First 5 shifts:');
+    shiftsToInsert.slice(0, 5).forEach((s, i) => {
+      console.log(`    Shift ${i + 1}:`, {
+        date: s.date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        shift_type: s.shift_type,
+        employee_id: s.employee_id
+      });
+    });
+    
+    console.log('  Last 5 shifts:');
+    shiftsToInsert.slice(-5).forEach((s, i) => {
+      console.log(`    Shift ${shiftsToInsert.length - 4 + i}:`, {
+        date: s.date,
+        start_time: s.start_time,  
+        end_time: s.end_time,
+        shift_type: s.shift_type,
+        employee_id: s.employee_id
+      });
+    });
     
     // Check for any shifts with September dates (month 9) that shouldn't be there
     const septemberShifts = shiftsToInsert.filter(s => {
@@ -163,15 +170,19 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
       
       // 🔍 CRITICAL DEBUG: Log exactly what we're inserting to database
-      console.log(`🔍 BATCH ${Math.floor(i/BATCH_SIZE) + 1} DETAILED ANALYSIS:`, batch.map(shift => ({
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        shift_type: shift.shift_type,
-        employee_id: shift.employee_id,
-        date_month: shift.date ? parseInt(shift.date.split('-')[1]) : 'No date',
-        start_time_month: shift.start_time ? parseInt(shift.start_time.split('-')[1]) : 'No start_time'
-      })));
+      console.log(`🔍 BATCH ${Math.floor(i/BATCH_SIZE) + 1} DETAILED ANALYSIS:`);
+      batch.forEach((shift, batchIndex) => {
+        const globalIndex = i + batchIndex + 1;
+        console.log(`  Shift ${globalIndex}:`, {
+          date: shift.date,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          shift_type: shift.shift_type,
+          employee_id: shift.employee_id,
+          date_month: shift.date ? parseInt(shift.date.split('-')[1]) : 'No date',
+          start_time_month: shift.start_time ? parseInt(shift.start_time.split('-')[1]) : 'No start_time'
+        });
+      });
       
       const { error: insertError } = await supabase
         .from('shifts')
@@ -506,20 +517,27 @@ export const generateScheduleForNextMonth = async (
     console.log('  Date breakdown:', dateAnalysis);
     
     // 🔍 CRITICAL DEBUG: Sample first and last few shifts from Gurobi
-    console.log('🔍 SAMPLE GUROBI SHIFTS (First 3):', response.schedule.slice(0, 3).map(shift => ({
-      date: shift.date,
-      start_time: shift.start_time,
-      end_time: shift.end_time,
-      employee_name: shift.employee_name,
-      shift_type: shift.shift_type
-    })));
-    console.log('🔍 SAMPLE GUROBI SHIFTS (Last 3):', response.schedule.slice(-3).map(shift => ({
-      date: shift.date,
-      start_time: shift.start_time,
-      end_time: shift.end_time,
-      employee_name: shift.employee_name,
-      shift_type: shift.shift_type
-    })));
+    console.log('🔍 SAMPLE GUROBI SHIFTS (First 3):');
+    response.schedule.slice(0, 3).forEach((shift, i) => {
+      console.log(`  Shift ${i + 1}:`, {
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        employee_name: shift.employee_name,
+        shift_type: shift.shift_type
+      });
+    });
+    
+    console.log('🔍 SAMPLE GUROBI SHIFTS (Last 3):');
+    response.schedule.slice(-3).forEach((shift, i) => {
+      console.log(`  Shift ${response.schedule.length - 2 + i}:`, {
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        employee_name: shift.employee_name,
+        shift_type: shift.shift_type
+      });
+    });
     
     // Check for dates outside target month
     const wrongMonthDates = dateAnalysis.filter(d => 
