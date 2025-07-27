@@ -118,13 +118,26 @@ export const generateScheduleForNextMonth = async (
 }> => {
   // Always generate for next month from today for consistency
   const today = new Date();
-  const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  const startDate = new Date(targetMonth);
-  startDate.setHours(0, 0, 0, 0);
   
-  // Last day of next month
-  const endDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
-  endDate.setHours(23, 59, 59, 999);
+  // 🔧 ROOT CAUSE FIX: Create UTC dates directly to avoid timezone conversion issues
+  // PROBLEM: When we created local timezone dates and converted to ISO string,
+  //          "2025-01-01 00:00:00 CET" became "2024-12-31T23:00:00.000Z" in UTC
+  //          Gurobi then received December 31st as start date instead of January 1st!
+  // SOLUTION: Create dates directly in UTC so ISO strings represent correct dates
+  const startDate = new Date(Date.UTC(
+    today.getFullYear(), 
+    today.getMonth() + 1, // Next month
+    1, // First day
+    0, 0, 0, 0 // Midnight UTC
+  ));
+  
+  // Last day of next month in UTC
+  const endDate = new Date(Date.UTC(
+    today.getFullYear(), 
+    today.getMonth() + 2, // Month after next
+    0, // Last day of previous month (so last day of target month)
+    23, 59, 59, 999 // End of day UTC
+  ));
   
   onProgress?.('�️ Rensar befintligt schema för målmånaden...', 2);
   
@@ -150,13 +163,23 @@ export const generateScheduleForNextMonth = async (
   
   console.log('🗓️ Generating schedule for next month with Gurobi:', {
     today: today.toISOString().split('T')[0],
-    targetMonth: targetMonth.toISOString().split('T')[0],
+    targetMonthStart: startDate.toISOString().split('T')[0],
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
     currentViewParam: currentDate.toISOString().split('T')[0],
     employeeCount: profiles.length,
     daysInMonth: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
   });
+  
+  // 🔍 DETAILED DATE VALIDATION
+  console.log('🔍 DETAILED DATE ANALYSIS FOR GUROBI:');
+  console.log('  Today (source):', today);
+  console.log('  Target month start (UTC):', startDate);
+  console.log('  Start date (to Gurobi):', startDate.toISOString());
+  console.log('  End date (to Gurobi):', endDate.toISOString());
+  console.log('  Expected month:', startDate.getMonth() + 1); // +1 because getMonth() is 0-indexed
+  console.log('  Start date month:', new Date(startDate).getMonth() + 1);
+  console.log('  End date month:', new Date(endDate).getMonth() + 1);
   
   // Validate inputs
   if (!profiles || profiles.length === 0) {
@@ -322,6 +345,37 @@ export const generateScheduleForNextMonth = async (
   
   console.log('🎉 Gurobi optimization response:', response);
   
+  // 🔍 ANALYZE GUROBI RESPONSE DATES
+  if (response.schedule && response.schedule.length > 0) {
+    const responseDates = response.schedule.map(shift => shift.date || shift.start_time?.split('T')[0]);
+    const uniqueDates = [...new Set(responseDates)].sort();
+    const dateAnalysis = uniqueDates.map(date => {
+      const dateObj = new Date(date);
+      return {
+        date: date,
+        month: dateObj.getMonth() + 1,
+        year: dateObj.getFullYear(),
+        shiftsOnDate: response.schedule.filter(s => (s.date || s.start_time?.split('T')[0]) === date).length
+      };
+    });
+    
+    console.log('🔍 GUROBI RESPONSE DATE ANALYSIS:');
+    console.log('  Expected month:', startDate.getMonth() + 1);
+    console.log('  Expected year:', startDate.getFullYear());
+    console.log('  Unique dates in response:', uniqueDates);
+    console.log('  Date breakdown:', dateAnalysis);
+    
+    // Check for dates outside target month
+    const wrongMonthDates = dateAnalysis.filter(d => 
+      d.month !== (startDate.getMonth() + 1) || d.year !== startDate.getFullYear()
+    );
+    
+    if (wrongMonthDates.length > 0) {
+      console.warn('🚨 GUROBI RETURNED SHIFTS FOR WRONG MONTHS:', wrongMonthDates);
+      console.warn('🚨 This is the source of the Juli/September bug!');
+    }
+  }
+  
   if (!response.schedule || response.schedule.length === 0) {
     throw new Error('Optimering kunde inte generera ett schema med nuvarande begränsningar. Kontrollera personalens tillgänglighet och försök igen.');
   }
@@ -347,7 +401,7 @@ export const generateScheduleForNextMonth = async (
     };
   });
   
-  console.log(`✅ Optimering genererade ${convertedSchedule.length} pass för nästa månad`);
+  console.log(`✅ Optimering genererade ${convertedSchedule.length} pass från Gurobi`);
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
   console.log(`⚖️ Rättvishet: ${response.fairness_stats?.shift_distribution_range || 0} pass spridning`);
   
