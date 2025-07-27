@@ -38,6 +38,23 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
     };
   }, [isOpen]);
 
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleInputChange = (key: keyof ScheduleConfig, value: number | boolean) => {
