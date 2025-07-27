@@ -189,7 +189,7 @@ export const EmployeePreferencesModal = ({ employee, isOpen, onClose }: Employee
           {/* Legend */}
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">Förklaring:</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
               <div className="flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
                 <span className="text-gray-600">Kan/Föredrar - Mjuk preferens</span>
@@ -197,6 +197,10 @@ export const EmployeePreferencesModal = ({ employee, isOpen, onClose }: Employee
               <div className="flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 text-orange-600" />
                 <span className="text-gray-600">Måste - Hård begränsning</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gray-300 rounded border border-gray-400"></div>
+                <span className="text-gray-600">Inte tillgänglig/föredragen</span>
               </div>
             </div>
           </div>
