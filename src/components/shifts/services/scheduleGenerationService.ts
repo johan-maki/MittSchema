@@ -153,15 +153,45 @@ export const generateScheduleForNextMonth = async (
   
   // Clear existing shifts for the target month FIRST - before any Gurobi processing
   // This ensures immediate visual feedback and no conflicts
+  // 🔧 EXTENDED CLEAR RANGE: Include start of next month to catch any overflow shifts
+  let clearEndYear = targetYear;
+  let clearEndMonth = targetMonth + 1; // Next month after target
+  if (clearEndMonth > 11) {
+    clearEndYear += 1;
+    clearEndMonth = 0;
+  }
+  // Add extra day to ensure we catch all September 1st shifts
+  const clearEndDateISO = `${clearEndYear}-${String(clearEndMonth + 1).padStart(2, '0')}-02T00:00:00.000Z`;
+  
+  console.log('🗑️ CLEARING SHIFTS IN RANGE:');
+  console.log('  From:', startDateISO);
+  console.log('  To (exclusive):', clearEndDateISO);
+  
   const { error: clearError } = await supabase
     .from('shifts')
     .delete()
     .gte('start_time', startDateISO)
-    .lte('start_time', endDateISO);
+    .lt('start_time', clearEndDateISO); // Use .lt() instead of .lte() with next month boundary
     
   if (clearError) {
     console.error("Error clearing existing shifts for target month:", clearError);
     throw new Error(`Could not clear existing shifts: ${clearError.message}`);
+  }
+  
+  // 🔍 DEBUG: Verify what was actually cleared
+  const { data: remainingShifts, error: checkError } = await supabase
+    .from('shifts')
+    .select('start_time, date, employee_id, shift_type')
+    .gte('start_time', startDateISO)
+    .lt('start_time', clearEndDateISO);
+    
+  if (checkError) {
+    console.warn('Could not verify cleared shifts:', checkError);
+  } else {
+    console.log('🔍 VERIFICATION: Remaining shifts in target range after clear:', remainingShifts?.length || 0);
+    if (remainingShifts && remainingShifts.length > 0) {
+      console.warn('🚨 WARNING: Some shifts were not cleared:', remainingShifts);
+    }
   }
   
   console.log('✅ Successfully cleared existing shifts for target month');
