@@ -126,9 +126,10 @@ export const generateScheduleForNextMonth = async (
   // SOLUTION: Use precise calculation with year rollover support
   
   let targetYear = today.getFullYear();
-  let targetMonth = today.getMonth() + 1; // Next month (0-indexed)
+  let targetMonth = today.getMonth(); // Current month (0-indexed), will increment to next month below
   
-  // Handle year rollover (December → January)
+  // Increment to next month and handle year rollover (December → January)
+  targetMonth += 1;
   if (targetMonth > 11) {
     targetYear += 1;
     targetMonth = 0; // January
