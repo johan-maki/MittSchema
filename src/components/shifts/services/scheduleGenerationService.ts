@@ -284,35 +284,6 @@ export const generateScheduleForNextMonth = async (
   console.log('  Employee preferences count:', employeePreferences.length);
   console.log('  🎯 CRITICAL - Full employee preferences being sent to Gurobi:', JSON.stringify(employeePreferences, null, 2));
   
-  // Find Erik specifically
-  const erikPrefs = employeePreferences.find(pref => pref.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be');
-  if (erikPrefs) {
-    console.log('🚨 ERIK ERIKSSON PREFERENCES TO GUROBI:', erikPrefs);
-    console.log('🚨 ERIK HAS WEEKENDS?', {
-      saturday: erikPrefs.available_days.includes('saturday'),
-      sunday: erikPrefs.available_days.includes('sunday'),
-      available_days_strict: erikPrefs.available_days_strict
-    });
-  } else {
-    console.error('❌ ERIK NOT FOUND IN EMPLOYEE PREFERENCES!');
-  }
-  
-  // Find Andreas specifically
-  const andreasPrefs = employeePreferences.find(pref => pref.employee_id === 'cb319cf9-6688-4d57-b6e6-8a62086b7630');
-  if (andreasPrefs) {
-    console.log('🚨 ANDREAS LUNDQUIST PREFERENCES TO GUROBI:', andreasPrefs);
-    console.log('🚨 ANDREAS DETAILS:', {
-      available_days: andreasPrefs.available_days,
-      preferred_shifts: andreasPrefs.preferred_shifts,
-      excluded_shifts: andreasPrefs.excluded_shifts,
-      excluded_days: andreasPrefs.excluded_days,
-      max_shifts_per_week: andreasPrefs.max_shifts_per_week,
-      message: 'Andreas should get day/evening shifts while avoiding night shifts'
-    });
-  } else {
-    console.error('❌ ANDREAS NOT FOUND IN EMPLOYEE PREFERENCES!');
-  }
-  
   onProgress?.('🔄 Bearbetar personalschema med samtliga restriktioner...', 55);
   
   // Add intermediate progress steps during API call
