@@ -6,9 +6,10 @@ interface ProfilesTableBodyProps {
   profiles: Profile[];
   onEdit: (profile: Profile) => void;
   onDelete: (profile: Profile) => void;
+  onViewPreferences: (profile: Profile) => void;
 }
 
-export function ProfilesTableBody({ profiles, onEdit, onDelete }: ProfilesTableBodyProps) {
+export function ProfilesTableBody({ profiles, onEdit, onDelete, onViewPreferences }: ProfilesTableBodyProps) {
   return (
     <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
       {profiles.length === 0 ? (
@@ -30,6 +31,7 @@ export function ProfilesTableBody({ profiles, onEdit, onDelete }: ProfilesTableB
             profile={profile} 
             onEdit={onEdit} 
             onDelete={onDelete} 
+            onViewPreferences={onViewPreferences}
           />
         ))
       )}

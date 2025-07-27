@@ -3,19 +3,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Trash2, Users, AlertTriangle } from "lucide-react";
 import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { InsertProfile } from "@/types/profile";
-import { addProfile } from "@/services/profileService";
+import { addProfile, clearDatabase, generateTestData } from "@/services/profileService";
 
 export function DirectoryControls() {
   const { roleFilter, setRoleFilter, searchQuery, setSearchQuery } = useDirectory();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [newProfile, setNewProfile] = useState<InsertProfile>({
     id: '',
     first_name: '',
@@ -97,17 +99,71 @@ export function DirectoryControls() {
     }
   };
 
+  const handleClearDatabase = async () => {
+    if (!window.confirm('Är du säker på att du vill tömma hela databasen? Detta går inte att ångra.')) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      await clearDatabase();
+      
+      toast({
+        title: "Databas tömd",
+        description: "Alla anställda har tagits bort från databasen",
+      });
+      
+      // Refresh the profiles list
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+    } catch (error: unknown) {
+      console.error('Error clearing database:', error);
+      toast({
+        title: "Fel",
+        description: error instanceof Error ? error.message : "Kunde inte tömma databasen",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleGenerateTestData = async (count: number) => {
+    setIsGenerating(true);
+    try {
+      await generateTestData(count);
+      
+      toast({
+        title: "Testdata skapad",
+        description: `${count} testanställda har lagts till i databasen`,
+      });
+      
+      // Refresh the profiles list
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+    } catch (error: unknown) {
+      console.error('Error generating test data:', error);
+      toast({
+        title: "Fel",
+        description: error instanceof Error ? error.message : "Kunde inte skapa testdata",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200/50">
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        {/* Search and Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          <div className="relative">
+      <div className="flex flex-col gap-4">
+        {/* Top row: Search and Filter */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <div className="relative flex-1">
             <Input
               placeholder="Sök personal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:w-[320px] h-11 pl-4 pr-4 border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-200"
+              className="w-full h-11 pl-4 pr-4 border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-200"
             />
           </div>
           <Select
@@ -125,12 +181,81 @@ export function DirectoryControls() {
             </SelectContent>
           </Select>
         </div>
-        
-        {/* Add Employee Button */}
-        <div className="w-full lg:w-auto">
+
+        {/* Bottom row: Action buttons */}
+        <div className="flex flex-wrap gap-3 items-center justify-between">
+          {/* Left side: Database management buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              onClick={handleClearDatabase}
+              disabled={isClearing}
+              variant="destructive"
+              size="sm"
+              className="h-9 px-3"
+            >
+              {isClearing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Tömmer...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Töm databas
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={() => handleGenerateTestData(3)}
+              disabled={isGenerating}
+              variant="outline"
+              size="sm"
+              className="h-9 px-3"
+            >
+              {isGenerating ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+              ) : (
+                <Users className="w-4 h-4 mr-2" />
+              )}
+              Testdata (3)
+            </Button>
+            
+            <Button 
+              onClick={() => handleGenerateTestData(5)}
+              disabled={isGenerating}
+              variant="outline"
+              size="sm"
+              className="h-9 px-3"
+            >
+              {isGenerating ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+              ) : (
+                <Users className="w-4 h-4 mr-2" />
+              )}
+              Testdata (5)
+            </Button>
+            
+            <Button 
+              onClick={() => handleGenerateTestData(6)}
+              disabled={isGenerating}
+              variant="outline"
+              size="sm"
+              className="h-9 px-3"
+            >
+              {isGenerating ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+              ) : (
+                <Users className="w-4 h-4 mr-2" />
+              )}
+              Testdata (6)
+            </Button>
+          </div>
+
+          {/* Right side: Add employee button */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full lg:w-auto h-11 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+              <Button className="h-9 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Lägg till personal
               </Button>

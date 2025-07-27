@@ -1,10 +1,16 @@
 
+import { useState } from "react";
 import { useProfileDirectory } from "./hooks/useProfileDirectory";
 import { ProfilesTable } from "./ProfilesTable";
 import { EditProfileDialog } from "./EditProfileDialog";
 import { DeleteProfileDialog } from "./DeleteProfileDialog";
+import { EmployeePreferencesModal } from "./EmployeePreferencesModal";
+import { Profile } from "@/types/profile";
 
 export function DirectoryTable() {
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
+
   const {
     profiles,
     isLoading,
@@ -22,6 +28,16 @@ export function DirectoryTable() {
     confirmDelete,
     handleUpdateProfile
   } = useProfileDirectory();
+
+  const handleViewPreferences = (profile: Profile) => {
+    setSelectedProfile(profile);
+    setIsPreferencesModalOpen(true);
+  };
+
+  const handleClosePreferencesModal = () => {
+    setIsPreferencesModalOpen(false);
+    setSelectedProfile(null);
+  };
 
   if (isLoading) {
     return (
@@ -54,6 +70,7 @@ export function DirectoryTable() {
         profiles={profiles} 
         onEdit={handleEditProfile} 
         onDelete={handleDeleteProfile} 
+        onViewPreferences={handleViewPreferences}
       />
 
       {/* Edit Dialog */}
@@ -73,6 +90,13 @@ export function DirectoryTable() {
         profileToDelete={profileToDelete}
         onConfirmDelete={confirmDelete}
         isProcessing={isProcessing}
+      />
+
+      {/* Preferences Modal */}
+      <EmployeePreferencesModal
+        employee={selectedProfile}
+        isOpen={isPreferencesModalOpen}
+        onClose={handleClosePreferencesModal}
       />
     </div>
   );

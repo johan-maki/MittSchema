@@ -7,18 +7,22 @@ interface ProfileTableRowProps {
   profile: Profile;
   onEdit: (profile: Profile) => void;
   onDelete: (profile: Profile) => void;
+  onViewPreferences: (profile: Profile) => void;
 }
 
-export function ProfileTableRow({ profile, onEdit, onDelete }: ProfileTableRowProps) {
+export function ProfileTableRow({ profile, onEdit, onDelete, onViewPreferences }: ProfileTableRowProps) {
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
       <td className="px-6 py-5">
         <div className="flex items-center gap-4">
           <ProfileAvatar profile={profile} />
           <div>
-            <div className="font-semibold text-gray-900 dark:text-gray-100">
+            <button
+              onClick={() => onViewPreferences(profile)}
+              className="font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer text-left"
+            >
               {profile.first_name} {profile.last_name}
-            </div>
+            </button>
             <div className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">
               {profile.role}
             </div>
