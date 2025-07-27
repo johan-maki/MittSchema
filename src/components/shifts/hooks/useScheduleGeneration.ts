@@ -49,6 +49,66 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       config: config
     });
 
+    // Check if there's already a schedule for next month
+    try {
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const startOfNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+      const endOfNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+
+      const { data: existingShifts, error } = await supabase
+        .from('shifts')
+        .select('id')
+        .gte('start_time', startOfNextMonth.toISOString())
+        .lte('start_time', endOfNextMonth.toISOString())
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking existing shifts:', error);
+      } else if (existingShifts && existingShifts.length > 0) {
+        // There's already a schedule for next month
+        const confirmed = window.confirm(
+          'Det ligger redan ett schema för nästa månad. Vill du ersätta det nuvarande schemat?'
+        );
+        
+        if (!confirmed) {
+          console.log('User cancelled schedule generation');
+          return false;
+        }
+
+        // Delete existing shifts for next month
+        console.log('Deleting existing shifts for next month...');
+        const { error: deleteError } = await supabase
+          .from('shifts')
+          .delete()
+          .gte('start_time', startOfNextMonth.toISOString())
+          .lte('start_time', endOfNextMonth.toISOString());
+
+        if (deleteError) {
+          console.error('Error deleting existing shifts:', deleteError);
+          toast({
+            title: "Fel vid borttagning",
+            description: "Kunde inte ta bort befintligt schema. Försök igen.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        toast({
+          title: "Befintligt schema borttaget",
+          description: "Det gamla schemat har tagits bort. Genererar nytt schema...",
+        });
+      }
+    } catch (error) {
+      console.error('Error checking/deleting existing schedule:', error);
+      toast({
+        title: "Fel",
+        description: "Kunde inte kontrollera befintligt schema. Försök igen.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     const onProgress = (step: string, progress: number) => {
       setGenerationProgress(progress);
       setProgressMessage(step);
