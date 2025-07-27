@@ -101,15 +101,30 @@ export const fetchProfiles = async (): Promise<Profile[]> => {
  */
 export const clearDatabase = async (): Promise<void> => {
   try {
-    console.log("Clearing all employees from database...");
-    const { error } = await supabase
+    console.log("Clearing all data from database...");
+    
+    // First, delete all shifts to avoid foreign key constraint violations
+    console.log("Clearing shifts...");
+    const { error: shiftsError } = await supabase
+      .from('shifts')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // This condition is always true, deleting all rows
+    
+    if (shiftsError) {
+      console.error('Error clearing shifts:', shiftsError);
+      throw shiftsError;
+    }
+    
+    // Then, delete all employees
+    console.log("Clearing employees...");
+    const { error: employeesError } = await supabase
       .from('employees')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000'); // This condition is always true, deleting all rows
     
-    if (error) {
-      console.error('Error clearing database:', error);
-      throw error;
+    if (employeesError) {
+      console.error('Error clearing employees:', employeesError);
+      throw employeesError;
     }
     
     console.log("Database cleared successfully");
