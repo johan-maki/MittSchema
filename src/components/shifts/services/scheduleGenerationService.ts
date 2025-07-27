@@ -249,11 +249,18 @@ export const generateScheduleForNextMonth = async (
   const isLeapYear = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
   const lastDayOfTargetMonth = targetMonth === 1 && isLeapYear ? 29 : daysInMonth[targetMonth];
   
-  // 🔧 CRITICAL FIX: Construct dates as ISO strings to avoid JavaScript Date object bugs
-  // PROBLEM: T23:59:59.999Z gets interpreted as next day by backend timezone conversion
-  // SOLUTION: Use T00:00:00.000Z for end date to avoid month rollover
-  const startDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
-  const endDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T00:00:00.000Z`;
+  // 🔧 CRITICAL FIX: Include night shifts that cross month boundaries
+  // PROBLEM 1: First night shift (Aug 1 22:00 → Aug 2 06:00) was missing
+  // PROBLEM 2: Last night shift (Aug 31 22:00 → Sep 1 06:00) was incorrectly cleared
+  // SOLUTION: Extend Gurobi range to include boundary night shifts
+  
+  // For Gurobi: Include previous day's night shift and next day's night shift
+  const gurobiStartISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
+  const gurobiEndISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T23:59:59.999Z`;
+  
+  // Use these for database operations (more restrictive to avoid clearing needed shifts)
+  const startDateISO = gurobiStartISO;
+  const endDateISO = gurobiEndISO;
   
   // 🚨 CRITICAL FIX: Don't create Date objects from ISO strings - they cause month rollover bugs!
   // Only use ISO strings for database operations and Gurobi API
@@ -262,25 +269,22 @@ export const generateScheduleForNextMonth = async (
   
   // Clear existing shifts for the target month FIRST - before any Gurobi processing
   // This ensures immediate visual feedback and no conflicts
-  // 🔧 EXTENDED CLEAR RANGE: Include start of next month to catch any overflow shifts
-  let clearEndYear = targetYear;
-  let clearEndMonth = targetMonth + 1; // Next month after target
-  if (clearEndMonth > 11) {
-    clearEndYear += 1;
-    clearEndMonth = 0;
-  }
-  // Add extra day to ensure we catch all September 1st shifts
-  const clearEndDateISO = `${clearEndYear}-${String(clearEndMonth + 1).padStart(2, '0')}-02T00:00:00.000Z`;
+  // 🔧 CRITICAL FIX: Only clear shifts that should be replaced, keep boundary night shifts
+  // PROBLEM: Clearing 31 Aug 22:00 → 1 Sep 06:00 removes needed night shift
+  // SOLUTION: Clear only shifts that start within target month boundaries
+  
+  const clearStartDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
+  const clearEndDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T23:59:59.999Z`;
   
   console.log('🗑️ CLEARING SHIFTS IN RANGE:');
-  console.log('  From:', startDateISO);
-  console.log('  To (exclusive):', clearEndDateISO);
+  console.log('  From:', clearStartDateISO);
+  console.log('  To (inclusive):', clearEndDateISO);
   
   const { error: clearError } = await supabase
     .from('shifts')
     .delete()
-    .gte('start_time', startDateISO)
-    .lt('start_time', clearEndDateISO); // Use .lt() instead of .lte() with next month boundary
+    .gte('start_time', clearStartDateISO)
+    .lte('start_time', clearEndDateISO); // Use .lte() to include end of target month
     
   if (clearError) {
     console.error("Error clearing existing shifts for target month:", clearError);
@@ -291,8 +295,8 @@ export const generateScheduleForNextMonth = async (
   const { data: remainingShifts, error: checkError } = await supabase
     .from('shifts')
     .select('start_time, date, employee_id, shift_type')
-    .gte('start_time', startDateISO)
-    .lt('start_time', clearEndDateISO);
+    .gte('start_time', clearStartDateISO)
+    .lte('start_time', clearEndDateISO);
     
   if (checkError) {
     console.warn('Could not verify cleared shifts:', checkError);
@@ -312,9 +316,9 @@ export const generateScheduleForNextMonth = async (
   
   console.log('🗓️ Generating schedule for next month with Gurobi:', {
     today: today.toISOString().split('T')[0],
-    targetMonthStart: startDateISO.split('T')[0],
-    startDate: startDateISO.split('T')[0],
-    endDate: endDateISO.split('T')[0],
+    targetMonthStart: gurobiStartISO.split('T')[0],
+    startDate: gurobiStartISO.split('T')[0],
+    endDate: gurobiEndISO.split('T')[0],
     currentViewParam: currentDate.toISOString().split('T')[0],
     employeeCount: profiles.length,
     daysInMonth: lastDayOfTargetMonth
@@ -323,8 +327,8 @@ export const generateScheduleForNextMonth = async (
   // 🔍 DETAILED DATE VALIDATION
   console.log('🔍 DETAILED DATE ANALYSIS FOR GUROBI:');
   console.log('  Today (source):', today);
-  console.log('  Target month start (ISO):', startDateISO);
-  console.log('  Target month end (ISO):', endDateISO);
+  console.log('  Target month start (ISO):', gurobiStartISO);
+  console.log('  Target month end (ISO):', gurobiEndISO);
   console.log('  Expected month:', targetMonth + 1);
   console.log('  Expected year:', targetYear);
   console.log('  Last day of month:', lastDayOfTargetMonth);
@@ -466,8 +470,8 @@ export const generateScheduleForNextMonth = async (
   
   // 🔍 FINAL DIAGNOSTIC: What we're sending to Gurobi
   console.log('📤 SENDING TO GUROBI API:');
-  console.log('  Start date ISO:', startDateISO);
-  console.log('  End date ISO:', endDateISO);
+  console.log('  Start date ISO:', gurobiStartISO);
+  console.log('  End date ISO:', gurobiEndISO);
   console.log('  Expected month:', targetMonth + 1);
   console.log('  Expected year:', targetYear);
   console.log('  Employee preferences count:', employeePreferences.length);
@@ -481,8 +485,8 @@ export const generateScheduleForNextMonth = async (
   setTimeout(() => onProgress?.('🧮 Balanserar rättvisa och effektivitet...', 70), 1500);
   
   const response = await schedulerApi.generateSchedule(
-    startDateISO,
-    endDateISO,
+    gurobiStartISO,
+    gurobiEndISO,
     settings?.department || 'Akutmottagning',
     gurobiConfig.minStaffPerShift,
     gurobiConfig.minExperiencePerShift,
