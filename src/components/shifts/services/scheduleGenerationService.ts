@@ -162,6 +162,17 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
       console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
       
+      // 🔍 CRITICAL DEBUG: Log exactly what we're inserting to database
+      console.log(`🔍 BATCH ${Math.floor(i/BATCH_SIZE) + 1} DETAILED ANALYSIS:`, batch.map(shift => ({
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        shift_type: shift.shift_type,
+        employee_id: shift.employee_id,
+        date_month: shift.date ? parseInt(shift.date.split('-')[1]) : 'No date',
+        start_time_month: shift.start_time ? parseInt(shift.start_time.split('-')[1]) : 'No start_time'
+      })));
+      
       const { error: insertError } = await supabase
         .from('shifts')
         .insert(batch);
@@ -494,6 +505,22 @@ export const generateScheduleForNextMonth = async (
     console.log('  Unique dates in response:', uniqueDates);
     console.log('  Date breakdown:', dateAnalysis);
     
+    // 🔍 CRITICAL DEBUG: Sample first and last few shifts from Gurobi
+    console.log('🔍 SAMPLE GUROBI SHIFTS (First 3):', response.schedule.slice(0, 3).map(shift => ({
+      date: shift.date,
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      employee_name: shift.employee_name,
+      shift_type: shift.shift_type
+    })));
+    console.log('🔍 SAMPLE GUROBI SHIFTS (Last 3):', response.schedule.slice(-3).map(shift => ({
+      date: shift.date,
+      start_time: shift.start_time,
+      end_time: shift.end_time,
+      employee_name: shift.employee_name,
+      shift_type: shift.shift_type
+    })));
+    
     // Check for dates outside target month
     const wrongMonthDates = dateAnalysis.filter(d => 
       d.month !== (targetMonth + 1) || d.year !== targetYear
@@ -565,6 +592,35 @@ export const generateScheduleForNextMonth = async (
         start_time_date: startDate,
         start_time: shift.start_time,
         end_time: shift.end_time,
+        employee_name: employeeName,
+        shift_type: shift.shift_type
+      });
+    }
+    
+    // 🔍 CRITICAL DEBUG: Check if start_time month differs from expected
+    const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
+    const dateMonth = shift.date ? parseInt(shift.date.split('-')[1]) : null;
+    
+    if (startTimeMonth && startTimeMonth !== 8) {
+      console.error(`🚨 WRONG MONTH IN START_TIME for shift ${index}:`, {
+        start_time: shift.start_time,
+        start_time_month: startTimeMonth,
+        date: shift.date,
+        date_month: dateMonth,
+        expected_month: 8,
+        employee_name: employeeName,
+        shift_type: shift.shift_type,
+        THIS_WILL_CAUSE_FETCH_ISSUE: 'YES - useShiftData filters by start_time'
+      });
+    }
+    
+    if (dateMonth && dateMonth !== 8) {
+      console.error(`🚨 WRONG MONTH IN DATE for shift ${index}:`, {
+        date: shift.date,
+        date_month: dateMonth,
+        start_time: shift.start_time,
+        start_time_month: startTimeMonth,
+        expected_month: 8,
         employee_name: employeeName,
         shift_type: shift.shift_type
       });
