@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Clock, Calendar, TrendingUp, Award, BarChart3, AlertTriangle, Info } from 'lucide-react';
+import { X, Users, Clock, Calendar, TrendingUp, Award, BarChart3, AlertTriangle, Info, DollarSign, CheckCircle, RefreshCw, XCircle, HelpCircle } from 'lucide-react';
 import type { Shift } from '@/types/shift';
 import type { Profile } from '@/types/profile';
 import type { StaffingIssue } from '@/components/shifts/utils/staffingUtils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, getDaysInMonth } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 interface EmployeeSummary {
@@ -18,11 +18,15 @@ interface EmployeeSummary {
   nightShifts: number;
   weekendShifts: number;
   experienceLevel: number;
+  workloadPercentage: number; // New field for workload percentage
 }
 
 interface ScheduleSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onAccept?: () => void;
+  onRegenerate?: () => void;
+  onCancel?: () => void;
   shifts: Shift[];
   employees: Profile[];
   startDate: Date;
@@ -33,13 +37,22 @@ interface ScheduleSummaryModalProps {
 export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   isOpen,
   onClose,
+  onAccept,
+  onRegenerate, 
+  onCancel,
   shifts,
   employees,
   startDate,
   endDate,
   staffingIssues = []
 }) => {
+  const [showCoverageDetails, setShowCoverageDetails] = useState(false);
+  
   if (!isOpen) return null;
+
+  // Calculate days in month for workload calculation
+  const daysInMonth = getDaysInMonth(startDate);
+  const fullTimeHoursPerMonth = daysInMonth * 8 * (5/7); // Assuming 5 working days per week
 
   // Calculate employee summaries
   const employeeSummaries = employees.map(employee => {
@@ -74,6 +87,9 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
       }
     });
 
+    // Calculate workload percentage based on full-time equivalent
+    const workloadPercentage = Math.round((totalHours / fullTimeHoursPerMonth) * 100);
+
     return {
       id: employee.id,
       name: `${employee.first_name} ${employee.last_name}`,
@@ -84,15 +100,43 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
       afternoonShifts,
       nightShifts,
       weekendShifts,
-      experienceLevel: employee.experience_level
+      experienceLevel: employee.experience_level,
+      workloadPercentage
     };
-  }).sort((a, b) => b.totalShifts - a.totalShifts); // Sort by total shifts descending
+  }).sort((a, b) => b.totalShifts - a.totalShifts);
+
+  // Calculate coverage statistics
+  const totalRequiredShifts = daysInMonth * 3; // Assuming 3 shifts per day (morning, afternoon, night)
+  const totalGeneratedShifts = shifts.length;
+  const coveragePercentage = Math.round((totalGeneratedShifts / totalRequiredShifts) * 100);
+  
+  // Calculate total cost (assuming average hourly rate from employees)
+  const averageHourlyRate = employees.reduce((sum, emp) => sum + (emp.hourly_rate || 1000), 0) / employees.length;
+  const totalCoveredHours = employeeSummaries.reduce((sum, emp) => sum + emp.totalHours, 0);
+  const totalCost = Math.round(totalCoveredHours * averageHourlyRate);
 
   // Calculate overall statistics
-  const totalGeneratedShifts = shifts.length;
-  const totalCoveredHours = employeeSummaries.reduce((sum, emp) => sum + emp.totalHours, 0);
   const averageShiftsPerEmployee = totalGeneratedShifts / employees.length;
   const averageHoursPerEmployee = totalCoveredHours / employees.length;
+  
+  // Helper functions for color coding
+  const getCoverageColor = (percentage: number) => {
+    if (percentage >= 100) return 'text-green-600 bg-green-50 border-green-200';
+    if (percentage >= 90) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    return 'text-red-600 bg-red-50 border-red-200';
+  };
+
+  const getWorkloadColor = (percentage: number) => {
+    if (percentage >= 90 && percentage <= 110) return 'text-green-600 bg-green-50 border-green-200';
+    if ((percentage >= 80 && percentage < 90) || (percentage > 110 && percentage <= 120)) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    return 'text-red-600 bg-red-50 border-red-200';
+  };
+
+  const getCoverageIcon = (percentage: number) => {
+    if (percentage >= 100) return <CheckCircle className="h-6 w-6 text-green-600" />;
+    if (percentage >= 90) return <HelpCircle className="h-6 w-6 text-yellow-600" />;
+    return <XCircle className="h-6 w-6 text-red-600" />;
+  };
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
@@ -130,8 +174,45 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1">
+          {/* Coverage Alert */}
+          <div className={`mb-6 p-4 rounded-lg border ${getCoverageColor(coveragePercentage)}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                {getCoverageIcon(coveragePercentage)}
+                <div>
+                  <h3 className="font-semibold text-lg">Täckningsgrad: {coveragePercentage}%</h3>
+                  <p className="text-sm opacity-75">
+                    {totalGeneratedShifts} av {totalRequiredShifts} pass täckta
+                  </p>
+                </div>
+              </div>
+              {coveragePercentage < 100 && (
+                <button
+                  onClick={() => setShowCoverageDetails(!showCoverageDetails)}
+                  className="flex items-center space-x-1 text-sm hover:underline"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Varför?</span>
+                </button>
+              )}
+            </div>
+            
+            {showCoverageDetails && coveragePercentage < 100 && (
+              <div className="mt-3 p-3 bg-white/50 rounded border text-sm">
+                <p className="font-medium mb-2">Möjliga orsaker till ofullständig täckning:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Otillräckligt antal medarbetare för alla pass</li>
+                  <li>Medarbetares tidsbegränsningar och preferenser</li>
+                  <li>Erfarenhetskrav kan inte uppfyllas för vissa pass</li>
+                  <li>Komplexa schemaläggningsregler begränsar möjligheterna</li>
+                  {staffingIssues.length > 0 && <li>Se "Ofyllda pass" sektionen nedan för detaljer</li>}
+                </ul>
+              </div>
+            )}
+          </div>
+
           {/* Overall Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-blue-600" />
@@ -162,6 +243,14 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                 <span className="text-sm font-medium text-orange-800">Snitt Timmar/Person</span>
               </div>
               <p className="text-2xl font-bold text-orange-900 mt-1">{Math.round(averageHoursPerEmployee * 10) / 10}</p>
+            </div>
+
+            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-800">Total Kostnad</span>
+              </div>
+              <p className="text-2xl font-bold text-emerald-900 mt-1">{totalCost.toLocaleString()} SEK</p>
             </div>
           </div>
 
@@ -265,6 +354,9 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                       Totalt Timmar
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Arbetsbörda
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Passfördelning
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -291,6 +383,24 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <span className="font-semibold">{summary.totalHours}h</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-16 h-2 rounded-full ${getWorkloadColor(summary.workloadPercentage)}`}>
+                            <div 
+                              className="h-full rounded-full bg-current opacity-60" 
+                              style={{ width: `${Math.min(summary.workloadPercentage, 100)}%` }}
+                            />
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            summary.workloadPercentage > 120 ? 'text-red-700' : 
+                            summary.workloadPercentage > 100 ? 'text-orange-700' : 
+                            summary.workloadPercentage > 80 ? 'text-green-700' : 
+                            'text-gray-700'
+                          }`}>
+                            {summary.workloadPercentage}%
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex space-x-1">
@@ -345,12 +455,45 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
             <div className="text-sm text-gray-600">
               Schema genererat {format(new Date(), 'HH:mm, d MMMM yyyy', { locale: sv })}
             </div>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all shadow-lg"
-            >
-              Stäng
-            </button>
+            
+            <div className="flex items-center space-x-3">
+              {onCancel && (
+                <button
+                  onClick={onCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>Avbryt</span>
+                </button>
+              )}
+              
+              {onRegenerate && (
+                <button
+                  onClick={onRegenerate}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-red-600 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all shadow-lg flex items-center space-x-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Generera Om</span>
+                </button>
+              )}
+              
+              {onAccept ? (
+                <button
+                  onClick={onAccept}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all shadow-lg flex items-center space-x-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Acceptera Schema</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all shadow-lg"
+                >
+                  Stäng
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
