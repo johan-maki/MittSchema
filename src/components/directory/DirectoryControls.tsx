@@ -25,7 +25,8 @@ export function DirectoryControls() {
     role: '',
     department: '',
     phone: '',
-    experience_level: 1
+    experience_level: 1,
+    hourly_rate: 1000 // Default hourly rate
   });
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -44,7 +45,8 @@ export function DirectoryControls() {
         role: newProfile.role,
         department: newProfile.department || '',
         phone: newProfile.phone || '',
-        experience_level: Number(newProfile.experience_level)
+        experience_level: Number(newProfile.experience_level),
+        hourly_rate: Number(newProfile.hourly_rate) || 1000 // Include hourly rate
       };
       
       // Use the profile service to add the profile
@@ -65,7 +67,8 @@ export function DirectoryControls() {
         role: '',
         department: '',
         phone: '',
-        experience_level: 1
+        experience_level: 1,
+        hourly_rate: 1000 // Reset hourly rate to default
       });
       
       // Refresh the profiles list

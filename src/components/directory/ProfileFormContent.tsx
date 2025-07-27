@@ -3,6 +3,7 @@ import { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { FormField } from "./FormField";
+import { FormSelectField } from "./FormSelectField";
 import { RoleSelector } from "./RoleSelector";
 import { HourlyRateSlider } from "./HourlyRateSlider";
 import { InsertProfile } from "@/types/profile";
@@ -41,6 +42,12 @@ export const ProfileFormContent = ({
     onProfileChange(profile);
   }
 
+  // Avdelningsalternativ
+  const departmentOptions = [
+    { value: "Akutmottagning", label: "Akutmottagning" },
+    { value: "Barnröntgen", label: "Barnröntgen" },
+  ];
+
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6 mt-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -71,13 +78,14 @@ export const ProfileFormContent = ({
           error={errors.role}
         />
         
-        <FormField 
+        <FormSelectField 
           label="Avdelning" 
           value={profile.department || ''} 
           onChange={(value) => updateProfile('department', value)} 
           disabled={isProcessing}
           error={errors.department}
-          placeholder="Ange avdelning (valfritt)"
+          placeholder="Välj avdelning"
+          options={departmentOptions}
         />
       </div>
       
