@@ -100,10 +100,6 @@ export function DirectoryControls() {
   };
 
   const handleClearDatabase = async () => {
-    if (!window.confirm('Är du säker på att du vill tömma hela databasen? Detta går inte att ångra.')) {
-      return;
-    }
-
     setIsClearing(true);
     try {
       await clearDatabase();
