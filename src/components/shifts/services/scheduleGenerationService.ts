@@ -140,9 +140,11 @@ export const generateScheduleForNextMonth = async (
   const isLeapYear = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
   const lastDayOfTargetMonth = targetMonth === 1 && isLeapYear ? 29 : daysInMonth[targetMonth];
   
-  // Construct dates as ISO strings to avoid JavaScript Date object bugs
+  // 🔧 CRITICAL FIX: Construct dates as ISO strings to avoid JavaScript Date object bugs
+  // PROBLEM: T23:59:59.999Z gets interpreted as next day by backend timezone conversion
+  // SOLUTION: Use T00:00:00.000Z for end date to avoid month rollover
   const startDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
-  const endDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T23:59:59.999Z`;
+  const endDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T00:00:00.000Z`;
   
   // 🚨 CRITICAL FIX: Don't create Date objects from ISO strings - they cause month rollover bugs!
   // Only use ISO strings for database operations and Gurobi API
