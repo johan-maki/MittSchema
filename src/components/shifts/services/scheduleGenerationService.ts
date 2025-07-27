@@ -54,6 +54,40 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     
     console.log(`Saving ${shifts.length} Gurobi-optimized shifts to database`);
     
+    // 🔍 CRITICAL DEBUG: Inspect all shift dates before saving to catch wrong month shifts
+    const dateAnalysis = {};
+    const problemShifts = [];
+    
+    shifts.forEach((shift, index) => {
+      const shiftDate = shift.date || shift.start_time?.split('T')[0];
+      if (shiftDate) {
+        const [year, month, day] = shiftDate.split('-').map(Number);
+        dateAnalysis[month] = (dateAnalysis[month] || 0) + 1;
+        
+        // Flag shifts that are not in August (month 8)
+        if (month !== 8) {
+          problemShifts.push({
+            index,
+            date: shiftDate,
+            month,
+            start_time: shift.start_time,
+            end_time: shift.end_time,
+            employee_id: shift.employee_id,
+            shift_type: shift.shift_type
+          });
+        }
+      }
+    });
+    
+    console.log('🔍 SHIFT DATE ANALYSIS BEFORE SAVING:');
+    console.log('  Total shifts to save:', shifts.length);
+    console.log('  Date distribution by month:', dateAnalysis);
+    
+    if (problemShifts.length > 0) {
+      console.warn(`🚨 FOUND ${problemShifts.length} SHIFTS WITH WRONG DATES:`, problemShifts);
+      console.warn('🚨 These shifts will cause September entries in database!');
+    }
+    
     // Process shifts in batches to avoid database timeouts
     const BATCH_SIZE = 10;
     const shiftsToInsert = shifts.map(shift => ({
@@ -415,6 +449,21 @@ export const generateScheduleForNextMonth = async (
     if (wrongMonthDates.length > 0) {
       console.warn('🚨 GUROBI RETURNED SHIFTS FOR WRONG MONTHS:', wrongMonthDates);
       console.warn('🚨 This is the source of the Juli/September bug!');
+      
+      // 🔍 DETAILED ANALYSIS: Show actual problem shifts
+      const problemShifts = response.schedule.filter(shift => {
+        const date = shift.date || shift.start_time?.split('T')[0];
+        const [year, month, day] = date.split('-').map(Number);
+        return month !== (targetMonth + 1) || year !== targetYear;
+      });
+      
+      console.warn('🚨 DETAILED PROBLEM SHIFTS FROM GUROBI:', problemShifts.map(shift => ({
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        employee_name: shift.employee_name,
+        shift_type: shift.shift_type
+      })));
     }
   }
   
