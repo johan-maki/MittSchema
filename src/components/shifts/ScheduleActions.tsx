@@ -14,7 +14,8 @@ import { PublicationStatus } from "./PublicationStatus";
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
   currentDate: Date;
-  shifts: Array<Shift & { profiles: { first_name: string; last_name: string; } }>;
+  onDateChange: (date: Date) => void;
+  shifts: Shift[];
   isCreateDialogOpen: boolean;
   setIsCreateDialogOpen: (open: boolean) => void;
 }
@@ -22,6 +23,7 @@ interface ScheduleActionsProps {
 export const ScheduleActions = ({
   currentView,
   currentDate,
+  onDateChange,
   shifts,
   isCreateDialogOpen,
   setIsCreateDialogOpen
@@ -43,7 +45,7 @@ export const ScheduleActions = ({
     showSummary,
     setShowSummary,
     summaryData
-  } = useScheduleGeneration(currentDate, currentView);
+  } = useScheduleGeneration(currentDate, currentView, onDateChange);
 
   const {
     handleSettingsClick,

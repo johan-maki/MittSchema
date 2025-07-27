@@ -139,6 +139,7 @@ const Schedule = () => {
             <ScheduleActions
               currentView={currentView}
               currentDate={currentDate}
+              onDateChange={setCurrentDate}
               shifts={shiftsWithProfiles}
               isCreateDialogOpen={isCreateDialogOpen}
               setIsCreateDialogOpen={setIsCreateDialogOpen}

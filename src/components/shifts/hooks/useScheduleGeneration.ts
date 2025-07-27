@@ -8,9 +8,9 @@ import { generateScheduleForNextMonth, saveScheduleToSupabase } from "../service
 import { useStaffingIssues } from "./useStaffingIssues";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfWeek, endOfWeek, addWeeks, addDays } from "date-fns";
+import { startOfWeek, endOfWeek, addWeeks, addDays, addMonths } from "date-fns";
 
-export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month') => {
+export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month', onDateChange?: (date: Date) => void) => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -320,6 +320,15 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         
         // Invalidate shifts query to refresh the calendar
         queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        
+        // 🎯 CRITICAL FIX: Navigate to next month automatically after schedule acceptance
+        // This ensures user sees the generated schedule immediately in the correct month
+        if (onDateChange) {
+          const today = new Date();
+          const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+          console.log('🗓️ AUTO-NAVIGATING to next month after schedule acceptance:', nextMonth.toISOString().split('T')[0]);
+          onDateChange(nextMonth);
+        }
         
         // Close summary modal
         setShowSummary(false);
