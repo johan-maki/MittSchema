@@ -233,15 +233,20 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
       
       if (saveResult) {
-        // Calculate date range for summary - next full calendar month
-        const today = new Date();
-        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1); // First day of next month
-        const summaryStartDate = new Date(nextMonth);
+        // Calculate date range for summary using the current view month
+        const viewDate = new Date(currentDate);
+        const summaryStartDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
         summaryStartDate.setHours(0, 0, 0, 0);
         
-        // Last day of next month
-        const summaryEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+        // Last day of the current view month
+        const summaryEndDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
         summaryEndDate.setHours(23, 59, 59, 999);
+        
+        console.log('📊 Summary date range for modal:', {
+          currentView: currentDate.toISOString().split('T')[0],
+          summaryStartDate: summaryStartDate.toISOString().split('T')[0],
+          summaryEndDate: summaryEndDate.toISOString().split('T')[0]
+        });
         
         // Set summary data and show modal
         setSummaryData({

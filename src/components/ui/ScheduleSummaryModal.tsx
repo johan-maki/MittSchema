@@ -129,7 +129,11 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
     totalShifts: shifts.length,
     shiftsInTargetMonth: shiftsInTargetMonth.length,
     totalRequiredShifts,
-    coveragePercentage
+    coveragePercentage,
+    firstFewShifts: shifts.slice(0, 3).map(s => ({
+      start_time: s.start_time,
+      date: parseISO(s.start_time).toISOString().split('T')[0]
+    }))
   });
   
   // Calculate total cost (assuming average hourly rate from employees)
