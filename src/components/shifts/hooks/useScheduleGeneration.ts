@@ -49,26 +49,32 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       config: config
     });
 
-    // Check if there's already a schedule for next month
+    // Check if there's already a schedule for the current view month
     try {
-      const now = new Date();
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const startOfNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
-      const endOfNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+      // Use the current view date instead of always "next month"
+      const viewDate = new Date(currentDate);
+      const startOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+      const endOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+
+      console.log('🗓️ Checking for existing schedule in date range:', {
+        startOfMonth: startOfMonth.toISOString().split('T')[0],
+        endOfMonth: endOfMonth.toISOString().split('T')[0],
+        currentView: currentDate.toISOString().split('T')[0]
+      });
 
       const { data: existingShifts, error } = await supabase
         .from('shifts')
         .select('id')
-        .gte('start_time', startOfNextMonth.toISOString())
-        .lte('start_time', endOfNextMonth.toISOString())
+        .gte('start_time', startOfMonth.toISOString())
+        .lte('start_time', endOfMonth.toISOString())
         .limit(1);
 
       if (error) {
         console.error('Error checking existing shifts:', error);
       } else if (existingShifts && existingShifts.length > 0) {
-        // There's already a schedule for next month
+        // There's already a schedule for this month
         const confirmed = window.confirm(
-          'Det ligger redan ett schema för nästa månad. Vill du ersätta det nuvarande schemat?'
+          'Det ligger redan ett schema för denna månad. Vill du ersätta det nuvarande schemat?'
         );
         
         if (!confirmed) {
@@ -76,13 +82,13 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           return false;
         }
 
-        // Delete existing shifts for next month
-        console.log('Deleting existing shifts for next month...');
+        // Delete existing shifts for this month
+        console.log('Deleting existing shifts for this month...');
         const { error: deleteError } = await supabase
           .from('shifts')
           .delete()
-          .gte('start_time', startOfNextMonth.toISOString())
-          .lte('start_time', endOfNextMonth.toISOString());
+          .gte('start_time', startOfMonth.toISOString())
+          .lte('start_time', endOfMonth.toISOString());
 
         if (deleteError) {
           console.error('Error deleting existing shifts:', deleteError);

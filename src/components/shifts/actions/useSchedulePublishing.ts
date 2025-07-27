@@ -95,10 +95,12 @@ export const useSchedulePublishing = () => {
     
     // Confirmation dialog temporarily removed - clear schedule directly
     try {
+      // Clear all shifts (both published and unpublished) for better user experience
+      // In a production environment, you might want to be more selective
       const { error: deleteError } = await supabase
         .from('shifts')
         .delete()
-        .eq('is_published', false);
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // This deletes all shifts
 
       if (deleteError) throw deleteError;
 

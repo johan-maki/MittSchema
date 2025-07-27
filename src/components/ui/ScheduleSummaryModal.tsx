@@ -56,7 +56,13 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
 
   // Calculate employee summaries
   const employeeSummaries = employees.map(employee => {
-    const employeeShifts = shifts.filter(shift => shift.employee_id === employee.id);
+    // Filter shifts to only include those within the target month for this employee
+    const employeeShifts = shifts.filter(shift => {
+      const shiftDate = parseISO(shift.start_time);
+      return shift.employee_id === employee.id && 
+             shiftDate >= startDate && 
+             shiftDate <= endDate;
+    });
     
     let totalHours = 0;
     let morningShifts = 0;
@@ -106,9 +112,25 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   }).sort((a, b) => b.totalShifts - a.totalShifts);
 
   // Calculate coverage statistics
+  // Filter shifts to only include those within the target month
+  const shiftsInTargetMonth = shifts.filter(shift => {
+    const shiftDate = parseISO(shift.start_time);
+    return shiftDate >= startDate && shiftDate <= endDate;
+  });
+  
   const totalRequiredShifts = daysInMonth * 3; // Assuming 3 shifts per day (morning, afternoon, night)
-  const totalGeneratedShifts = shifts.length;
+  const totalGeneratedShifts = shiftsInTargetMonth.length;
   const coveragePercentage = Math.round((totalGeneratedShifts / totalRequiredShifts) * 100);
+  
+  console.log('🔍 Coverage calculation debug:', {
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+    daysInMonth,
+    totalShifts: shifts.length,
+    shiftsInTargetMonth: shiftsInTargetMonth.length,
+    totalRequiredShifts,
+    coveragePercentage
+  });
   
   // Calculate total cost (assuming average hourly rate from employees)
   const averageHourlyRate = employees.reduce((sum, emp) => sum + (emp.hourly_rate || 1000), 0) / employees.length;

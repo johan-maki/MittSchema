@@ -64,17 +64,22 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       shift_type: shift.shift_type,
       department: shift.department || 'General',
       employee_id: shift.employee_id,
-      is_published: false
+      is_published: true // Set as published so they are immediately visible
     }));
     
-    // Clear existing unpublished shifts first
+    // Clear existing shifts for the target month first (both published and unpublished)
+    // This ensures we don't have conflicts when regenerating a schedule
+    const startOfMonth = new Date(shifts[0]?.start_time || new Date());
+    const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
+    
     const { error: clearError } = await supabase
       .from('shifts')
       .delete()
-      .eq('is_published', false);
+      .gte('start_time', startOfMonth.toISOString())
+      .lte('start_time', endOfMonth.toISOString());
       
     if (clearError) {
-      console.error("Error clearing unpublished shifts:", clearError);
+      console.error("Error clearing existing shifts for target month:", clearError);
       throw new Error(`Could not clear existing shifts: ${clearError.message}`);
     }
     
@@ -123,19 +128,19 @@ export const generateScheduleForNextMonth = async (
   coverage_stats?: CoverageStats,
   fairness_stats?: FairnessStats 
 }> => {
-  // Calculate next full calendar month
-  const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  const startDate = new Date(nextMonth);
+  // Use the current view date instead of always "next month"
+  const viewDate = new Date(currentDate);
+  const startDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
   startDate.setHours(0, 0, 0, 0);
   
-  // Last day of next month
-  const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+  // Last day of the current view month
+  const endDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
   endDate.setHours(23, 59, 59, 999);
   
-  onProgress?.('� Analyserar personalens tillgänglighet och preferenser...', 5);
+  onProgress?.('📅 Analyserar personalens tillgänglighet och preferenser...', 5);
   
-  console.log('🗓️ Generating next month schedule with Gurobi:', {
+  console.log('🗓️ Generating schedule for current view month with Gurobi:', {
+    currentView: currentDate.toISOString().split('T')[0],
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
     employeeCount: profiles.length,
