@@ -134,18 +134,19 @@ export const generateScheduleForNextMonth = async (
     targetMonth = 0; // January
   }
   
-  // Calculate actual last day of target month
-  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  // Calculate actual last day of target month using string manipulation to avoid Date bugs
+  const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const isLeapYear = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
+  const lastDayOfTargetMonth = targetMonth === 1 && isLeapYear ? 29 : daysInMonth[targetMonth];
   
   // Construct dates as ISO strings to avoid JavaScript Date object bugs
   const startDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
   const endDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T23:59:59.999Z`;
   
-  // Create Date objects from ISO strings (these are only for clearing operations)
-  const startDate = new Date(startDateISO);
-  const endDate = new Date(endDateISO);
+  // 🚨 CRITICAL FIX: Don't create Date objects from ISO strings - they cause month rollover bugs!
+  // Only use ISO strings for database operations and Gurobi API
   
-  onProgress?.('�️ Rensar befintligt schema för målmånaden...', 2);
+  onProgress?.('🗑️ Rensar befintligt schema för målmånaden...', 2);
   
   // Clear existing shifts for the target month FIRST - before any Gurobi processing
   // This ensures immediate visual feedback and no conflicts
@@ -183,8 +184,8 @@ export const generateScheduleForNextMonth = async (
   console.log('  Target month start (ISO):', startDateISO);
   console.log('  Target month end (ISO):', endDateISO);
   console.log('  Expected month:', targetMonth + 1);
-  console.log('  Start date object month:', startDate.getMonth() + 1);
-  console.log('  End date object month:', endDate.getMonth() + 1);
+  console.log('  Expected year:', targetYear);
+  console.log('  Last day of month:', lastDayOfTargetMonth);
   
   // Validate inputs
   if (!profiles || profiles.length === 0) {
@@ -325,8 +326,8 @@ export const generateScheduleForNextMonth = async (
   console.log('📤 SENDING TO GUROBI API:');
   console.log('  Start date ISO:', startDateISO);
   console.log('  End date ISO:', endDateISO);
-  console.log('  Start date object month:', startDate.getMonth() + 1);
-  console.log('  End date object month:', endDate.getMonth() + 1);
+  console.log('  Expected month:', targetMonth + 1);
+  console.log('  Expected year:', targetYear);
   console.log('  Employee preferences count:', employeePreferences.length);
   console.log('  🎯 CRITICAL - Full employee preferences being sent to Gurobi:', JSON.stringify(employeePreferences, null, 2));
   
@@ -357,11 +358,12 @@ export const generateScheduleForNextMonth = async (
     const responseDates = response.schedule.map(shift => shift.date || shift.start_time?.split('T')[0]);
     const uniqueDates = [...new Set(responseDates)].sort();
     const dateAnalysis = uniqueDates.map(date => {
-      const dateObj = new Date(date);
+      // Parse date string without creating Date object to avoid month rollover bugs
+      const [year, month, day] = date.split('-').map(Number);
       return {
         date: date,
-        month: dateObj.getMonth() + 1,
-        year: dateObj.getFullYear(),
+        month: month,
+        year: year,
         shiftsOnDate: response.schedule.filter(s => (s.date || s.start_time?.split('T')[0]) === date).length
       };
     });
