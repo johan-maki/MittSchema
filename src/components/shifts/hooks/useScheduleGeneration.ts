@@ -82,31 +82,12 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         
         if (!confirmed) {
           console.log('User cancelled schedule generation');
+          setIsGenerating(false);
           return false;
         }
-
-        // Delete existing shifts for target month
-        console.log('Deleting existing shifts for target month...');
-        const { error: deleteError } = await supabase
-          .from('shifts')
-          .delete()
-          .gte('start_time', startOfMonth.toISOString())
-          .lte('start_time', endOfMonth.toISOString());
-
-        if (deleteError) {
-          console.error('Error deleting existing shifts:', deleteError);
-          toast({
-            title: "Fel vid borttagning",
-            description: "Kunde inte ta bort befintligt schema. Försök igen.",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        toast({
-          title: "Befintligt schema borttaget",
-          description: "Det gamla schemat har tagits bort. Genererar nytt schema...",
-        });
+        
+        // Note: Actual deletion happens in generateScheduleForNextMonth for immediate feedback
+        console.log('User confirmed replacement - proceeding with generation');
       }
     } catch (error) {
       console.error('Error checking/deleting existing schedule:', error);
@@ -190,7 +171,12 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         profiles, 
         scheduleConfig, 
         timestamp,
-        onProgress
+        onProgress,
+        () => {
+          // Cache invalidation callback - triggered immediately after clearing
+          console.log('🔄 Invalidating cache after schedule clear');
+          queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        }
       );
 
       console.log("🔍 DEBUG: Next month schedule generation result:", generatedSchedule);

@@ -67,21 +67,8 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       is_published: false // Draft schedule - requires manual publishing by manager
     }));
     
-    // Clear existing shifts for the target month first (both published and unpublished)
-    // This ensures we don't have conflicts when regenerating a schedule
-    const startOfMonth = new Date(shifts[0]?.start_time || new Date());
-    const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
-    
-    const { error: clearError } = await supabase
-      .from('shifts')
-      .delete()
-      .gte('start_time', startOfMonth.toISOString())
-      .lte('start_time', endOfMonth.toISOString());
-      
-    if (clearError) {
-      console.error("Error clearing existing shifts for target month:", clearError);
-      throw new Error(`Could not clear existing shifts: ${clearError.message}`);
-    }
+    // Note: Shifts are already cleared at the beginning of generateScheduleForNextMonth
+    // This function now only handles insertion of new shifts
     
     // Insert shifts in batches
     for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {
@@ -121,7 +108,8 @@ export const generateScheduleForNextMonth = async (
   profiles: Profile[],
   settings: ScheduleSettings,
   timestamp?: number,
-  onProgress?: (step: string, progress: number) => void
+  onProgress?: (step: string, progress: number) => void,
+  onClearComplete?: () => void
 ): Promise<{ 
   schedule: Shift[], 
   staffingIssues?: { date: string; shiftType: string; current: number; required: number }[],
@@ -138,7 +126,27 @@ export const generateScheduleForNextMonth = async (
   const endDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
   endDate.setHours(23, 59, 59, 999);
   
-  onProgress?.('📅 Analyserar personalens tillgänglighet och preferenser...', 5);
+  onProgress?.('�️ Rensar befintligt schema för målmånaden...', 2);
+  
+  // Clear existing shifts for the target month FIRST - before any Gurobi processing
+  // This ensures immediate visual feedback and no conflicts
+  const { error: clearError } = await supabase
+    .from('shifts')
+    .delete()
+    .gte('start_time', startDate.toISOString())
+    .lte('start_time', endDate.toISOString());
+    
+  if (clearError) {
+    console.error("Error clearing existing shifts for target month:", clearError);
+    throw new Error(`Could not clear existing shifts: ${clearError.message}`);
+  }
+  
+  console.log('✅ Successfully cleared existing shifts for target month');
+  
+  // Trigger cache invalidation to show cleared schedule immediately
+  onClearComplete?.();
+  
+  onProgress?.('�📅 Analyserar personalens tillgänglighet och preferenser...', 5);
   
   console.log('🗓️ Generating schedule for next month with Gurobi:', {
     today: today.toISOString().split('T')[0],
