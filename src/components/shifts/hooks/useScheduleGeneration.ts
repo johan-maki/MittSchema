@@ -49,14 +49,17 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       config: config
     });
 
-    // Check if there's already a schedule for the current view month
+    // Check if there's already a schedule for the target month
     try {
-      // Use the current view date instead of always "next month"
-      const viewDate = new Date(currentDate);
-      const startOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-      const endOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+      // Always generate for next month from today's date for predictability
+      const today = new Date();
+      const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const startOfMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+      const endOfMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
 
-      console.log('🗓️ Checking for existing schedule in date range:', {
+      console.log('🗓️ Checking for existing schedule in target month (next month):', {
+        today: today.toISOString().split('T')[0],
+        targetMonth: targetMonth.toISOString().split('T')[0],
         startOfMonth: startOfMonth.toISOString().split('T')[0],
         endOfMonth: endOfMonth.toISOString().split('T')[0],
         currentView: currentDate.toISOString().split('T')[0]
@@ -72,9 +75,9 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       if (error) {
         console.error('Error checking existing shifts:', error);
       } else if (existingShifts && existingShifts.length > 0) {
-        // There's already a schedule for this month
+        // There's already a schedule for target month
         const confirmed = window.confirm(
-          'Det ligger redan ett schema för denna månad. Vill du ersätta det nuvarande schemat?'
+          'Det ligger redan ett schema för nästa månad. Vill du ersätta det nuvarande schemat?'
         );
         
         if (!confirmed) {
@@ -82,8 +85,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           return false;
         }
 
-        // Delete existing shifts for this month
-        console.log('Deleting existing shifts for this month...');
+        // Delete existing shifts for target month
+        console.log('Deleting existing shifts for target month...');
         const { error: deleteError } = await supabase
           .from('shifts')
           .delete()
@@ -233,19 +236,22 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
       
       if (saveResult) {
-        // Calculate date range for summary using the current view month
-        const viewDate = new Date(currentDate);
-        const summaryStartDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+        // Calculate date range for summary using the same target month logic
+        const today = new Date();
+        const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const summaryStartDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
         summaryStartDate.setHours(0, 0, 0, 0);
         
-        // Last day of the current view month
-        const summaryEndDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+        // Last day of the target month
+        const summaryEndDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
         summaryEndDate.setHours(23, 59, 59, 999);
         
         console.log('📊 Summary date range for modal:', {
-          currentView: currentDate.toISOString().split('T')[0],
+          today: today.toISOString().split('T')[0],
+          targetMonth: targetMonth.toISOString().split('T')[0],
           summaryStartDate: summaryStartDate.toISOString().split('T')[0],
-          summaryEndDate: summaryEndDate.toISOString().split('T')[0]
+          summaryEndDate: summaryEndDate.toISOString().split('T')[0],
+          currentView: currentDate.toISOString().split('T')[0]
         });
         
         // Set summary data and show modal

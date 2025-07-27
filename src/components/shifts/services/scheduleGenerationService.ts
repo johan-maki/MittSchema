@@ -128,21 +128,24 @@ export const generateScheduleForNextMonth = async (
   coverage_stats?: CoverageStats,
   fairness_stats?: FairnessStats 
 }> => {
-  // Use the current view date instead of always "next month"
-  const viewDate = new Date(currentDate);
-  const startDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  // Always generate for next month from today for consistency
+  const today = new Date();
+  const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const startDate = new Date(targetMonth);
   startDate.setHours(0, 0, 0, 0);
   
-  // Last day of the current view month
-  const endDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+  // Last day of next month
+  const endDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
   endDate.setHours(23, 59, 59, 999);
   
   onProgress?.('📅 Analyserar personalens tillgänglighet och preferenser...', 5);
   
-  console.log('🗓️ Generating schedule for current view month with Gurobi:', {
-    currentView: currentDate.toISOString().split('T')[0],
+  console.log('🗓️ Generating schedule for next month with Gurobi:', {
+    today: today.toISOString().split('T')[0],
+    targetMonth: targetMonth.toISOString().split('T')[0],
     startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
+    currentViewParam: currentDate.toISOString().split('T')[0],
     employeeCount: profiles.length,
     daysInMonth: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
   });
