@@ -119,25 +119,31 @@ export const generateScheduleForNextMonth = async (
   // Always generate for next month from today for consistency
   const today = new Date();
   
-  // 🔧 ROOT CAUSE FIX: Create UTC dates directly to avoid timezone conversion issues
-  // PROBLEM: When we created local timezone dates and converted to ISO string,
-  //          "2025-01-01 00:00:00 CET" became "2024-12-31T23:00:00.000Z" in UTC
-  //          Gurobi then received December 31st as start date instead of January 1st!
-  // SOLUTION: Create dates directly in UTC so ISO strings represent correct dates
-  const startDate = new Date(Date.UTC(
-    today.getFullYear(), 
-    today.getMonth() + 1, // Next month
-    1, // First day
-    0, 0, 0, 0 // Midnight UTC
-  ));
+  // 🔧 ULTIMATE ROOT CAUSE FIX: Avoid JavaScript Date.UTC() month rollover bug
+  // PROBLEM 1: Timezone conversion created wrong dates
+  // PROBLEM 2: Date.UTC() with day 31 + time 23:59:59.999 causes month rollover bug
+  //            Result: Month shows September instead of August, confusing Gurobi
+  // SOLUTION: Use precise calculation with year rollover support
   
-  // Last day of next month in UTC
-  const endDate = new Date(Date.UTC(
-    today.getFullYear(), 
-    today.getMonth() + 2, // Month after next
-    0, // Last day of previous month (so last day of target month)
-    23, 59, 59, 999 // End of day UTC
-  ));
+  let targetYear = today.getFullYear();
+  let targetMonth = today.getMonth() + 1; // Next month (0-indexed)
+  
+  // Handle year rollover (December → January)
+  if (targetMonth > 11) {
+    targetYear += 1;
+    targetMonth = 0; // January
+  }
+  
+  // Calculate actual last day of target month
+  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  
+  // Construct dates as ISO strings to avoid JavaScript Date object bugs
+  const startDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01T00:00:00.000Z`;
+  const endDateISO = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(lastDayOfTargetMonth).padStart(2, '0')}T23:59:59.999Z`;
+  
+  // Create Date objects from ISO strings (these are only for clearing operations)
+  const startDate = new Date(startDateISO);
+  const endDate = new Date(endDateISO);
   
   onProgress?.('�️ Rensar befintligt schema för målmånaden...', 2);
   
@@ -146,8 +152,8 @@ export const generateScheduleForNextMonth = async (
   const { error: clearError } = await supabase
     .from('shifts')
     .delete()
-    .gte('start_time', startDate.toISOString())
-    .lte('start_time', endDate.toISOString());
+    .gte('start_time', startDateISO)
+    .lte('start_time', endDateISO);
     
   if (clearError) {
     console.error("Error clearing existing shifts for target month:", clearError);
@@ -163,23 +169,22 @@ export const generateScheduleForNextMonth = async (
   
   console.log('🗓️ Generating schedule for next month with Gurobi:', {
     today: today.toISOString().split('T')[0],
-    targetMonthStart: startDate.toISOString().split('T')[0],
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0],
+    targetMonthStart: startDateISO.split('T')[0],
+    startDate: startDateISO.split('T')[0],
+    endDate: endDateISO.split('T')[0],
     currentViewParam: currentDate.toISOString().split('T')[0],
     employeeCount: profiles.length,
-    daysInMonth: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    daysInMonth: lastDayOfTargetMonth
   });
   
   // 🔍 DETAILED DATE VALIDATION
   console.log('🔍 DETAILED DATE ANALYSIS FOR GUROBI:');
   console.log('  Today (source):', today);
-  console.log('  Target month start (UTC):', startDate);
-  console.log('  Start date (to Gurobi):', startDate.toISOString());
-  console.log('  End date (to Gurobi):', endDate.toISOString());
-  console.log('  Expected month:', startDate.getMonth() + 1); // +1 because getMonth() is 0-indexed
-  console.log('  Start date month:', new Date(startDate).getMonth() + 1);
-  console.log('  End date month:', new Date(endDate).getMonth() + 1);
+  console.log('  Target month start (ISO):', startDateISO);
+  console.log('  Target month end (ISO):', endDateISO);
+  console.log('  Expected month:', targetMonth + 1);
+  console.log('  Start date object month:', startDate.getMonth() + 1);
+  console.log('  End date object month:', endDate.getMonth() + 1);
   
   // Validate inputs
   if (!profiles || profiles.length === 0) {
@@ -318,8 +323,10 @@ export const generateScheduleForNextMonth = async (
   
   // 🔍 FINAL DIAGNOSTIC: What we're sending to Gurobi
   console.log('📤 SENDING TO GUROBI API:');
-  console.log('  Start date:', startDate.toISOString());
-  console.log('  End date:', endDate.toISOString());
+  console.log('  Start date ISO:', startDateISO);
+  console.log('  End date ISO:', endDateISO);
+  console.log('  Start date object month:', startDate.getMonth() + 1);
+  console.log('  End date object month:', endDate.getMonth() + 1);
   console.log('  Employee preferences count:', employeePreferences.length);
   console.log('  🎯 CRITICAL - Full employee preferences being sent to Gurobi:', JSON.stringify(employeePreferences, null, 2));
   
@@ -331,8 +338,8 @@ export const generateScheduleForNextMonth = async (
   setTimeout(() => onProgress?.('🧮 Balanserar rättvisa och effektivitet...', 70), 1500);
   
   const response = await schedulerApi.generateSchedule(
-    startDate.toISOString(),
-    endDate.toISOString(),
+    startDateISO,
+    endDateISO,
     settings?.department || 'Akutmottagning',
     gurobiConfig.minStaffPerShift,
     gurobiConfig.minExperiencePerShift,
@@ -360,14 +367,14 @@ export const generateScheduleForNextMonth = async (
     });
     
     console.log('🔍 GUROBI RESPONSE DATE ANALYSIS:');
-    console.log('  Expected month:', startDate.getMonth() + 1);
-    console.log('  Expected year:', startDate.getFullYear());
+    console.log('  Expected month:', targetMonth + 1);
+    console.log('  Expected year:', targetYear);
     console.log('  Unique dates in response:', uniqueDates);
     console.log('  Date breakdown:', dateAnalysis);
     
     // Check for dates outside target month
     const wrongMonthDates = dateAnalysis.filter(d => 
-      d.month !== (startDate.getMonth() + 1) || d.year !== startDate.getFullYear()
+      d.month !== (targetMonth + 1) || d.year !== targetYear
     );
     
     if (wrongMonthDates.length > 0) {
