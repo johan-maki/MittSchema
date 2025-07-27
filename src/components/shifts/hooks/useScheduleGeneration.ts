@@ -227,54 +227,37 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       
       console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts for next month");
       
-      // Save shifts directly to Supabase
-      const saveResult = await saveScheduleToSupabase(generatedSchedule.schedule);
+      // DON'T save shifts yet - show summary first and let user decide
+      // Store the generated schedule temporarily for user approval
       
-      if (saveResult) {
-        // Calculate date range for summary using the same target month logic
-        const today = new Date();
-        const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        const summaryStartDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
-        summaryStartDate.setHours(0, 0, 0, 0);
-        
-        // Last day of the target month
-        const summaryEndDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
-        summaryEndDate.setHours(23, 59, 59, 999);
-        
-        console.log('📊 Summary date range for modal:', {
-          today: today.toISOString().split('T')[0],
-          targetMonth: targetMonth.toISOString().split('T')[0],
-          summaryStartDate: summaryStartDate.toISOString().split('T')[0],
-          summaryEndDate: summaryEndDate.toISOString().split('T')[0],
-          currentView: currentDate.toISOString().split('T')[0]
-        });
-        
-        // Set summary data and show modal
-        setSummaryData({
-          shifts: generatedSchedule.schedule,
-          startDate: summaryStartDate,
-          endDate: summaryEndDate,
-          staffingIssues: generatedSchedule.staffingIssues || []
-        });
-        setShowSummary(true);
-        
-        toast({
-          title: "Schema sparat",
-          description: `${generatedSchedule.schedule.length} arbetspass har lagts till i schemat för nästa månad.`,
-        });
-        
-        // Invalidate shifts query to refresh the calendar
-        queryClient.invalidateQueries({ queryKey: ['shifts'] });
-        return true;
-      } else {
-        toast({
-          title: "Kunde inte spara schema",
-          description: "Det gick inte att spara schemat. Försök igen.",
-          variant: "destructive",
-        });
-      }
+      // Calculate date range for summary using the same target month logic
+      const today = new Date();
+      const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const summaryStartDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+      summaryStartDate.setHours(0, 0, 0, 0);
       
-      return false;
+      // Last day of the target month
+      const summaryEndDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
+      summaryEndDate.setHours(23, 59, 59, 999);
+      
+      console.log('📊 Summary date range for modal:', {
+        today: today.toISOString().split('T')[0],
+        targetMonth: targetMonth.toISOString().split('T')[0],
+        summaryStartDate: summaryStartDate.toISOString().split('T')[0],
+        summaryEndDate: summaryEndDate.toISOString().split('T')[0],
+        currentView: currentDate.toISOString().split('T')[0]
+      });
+      
+      // Set summary data and show modal - user can then accept or cancel
+      setSummaryData({
+        shifts: generatedSchedule.schedule,
+        startDate: summaryStartDate,
+        endDate: summaryEndDate,
+        staffingIssues: generatedSchedule.staffingIssues || []
+      });
+      setShowSummary(true);
+      
+      return true;
     } catch (error) {
       console.error('Error generating schedule:', error);
       
@@ -318,6 +301,61 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     hasSettings: !!settings
   });
 
+  // Function to accept and save the generated schedule
+  const acceptSchedule = async () => {
+    if (!summaryData) {
+      console.error('No summary data available to accept');
+      return false;
+    }
+
+    try {
+      // Save the generated shifts to database
+      const saveResult = await saveScheduleToSupabase(summaryData.shifts);
+      
+      if (saveResult) {
+        toast({
+          title: "Schema accepterat och sparat",
+          description: `${summaryData.shifts.length} arbetspass har lagts till i schemat för nästa månad.`,
+        });
+        
+        // Invalidate shifts query to refresh the calendar
+        queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        
+        // Close summary modal
+        setShowSummary(false);
+        setSummaryData(null);
+        
+        return true;
+      } else {
+        toast({
+          title: "Kunde inte spara schema",
+          description: "Det gick inte att spara schemat. Försök igen.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error('Error accepting schedule:', error);
+      toast({
+        title: "Fel vid sparning",
+        description: "Ett fel uppstod när schemat skulle sparas.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  // Function to cancel/reject the generated schedule
+  const cancelSchedule = () => {
+    // Just close the modal and discard the generated schedule
+    setShowSummary(false);
+    setSummaryData(null);
+    toast({
+      title: "Schema avbrutet",
+      description: "Schemat har inte sparats.",
+    });
+  };
+
   return {
     isGenerating,
     isLoadingSettings,
@@ -328,6 +366,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     generatedShifts,
     setGeneratedShifts,
     generateSchedule,
+    acceptSchedule,
+    cancelSchedule,
     profiles,
     staffingIssues,
     showSummary,

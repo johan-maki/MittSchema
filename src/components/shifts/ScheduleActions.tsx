@@ -36,6 +36,8 @@ export const ScheduleActions = ({
     generatedShifts,
     setGeneratedShifts,
     generateSchedule,
+    acceptSchedule,
+    cancelSchedule,
     profiles,
     staffingIssues,
     showSummary,
@@ -104,21 +106,14 @@ export const ScheduleActions = ({
           startDate={summaryData.startDate}
           endDate={summaryData.endDate}
           staffingIssues={summaryData.staffingIssues || []}
-          onAccept={() => {
-            // Acceptera schemat och stäng modal
-            setShowSummary(false);
-            // TODO: Implementera acceptfunktionalitet (t.ex. spara som "godkänt")
-          }}
+          onAccept={acceptSchedule}
           onRegenerate={() => {
             // Stäng modal och generera om
             setShowSummary(false);
             // Återanropa generateSchedule
             generateSchedule();
           }}
-          onCancel={() => {
-            // Bara stäng modal utan att göra något
-            setShowSummary(false);
-          }}
+          onCancel={cancelSchedule}
         />
       )}
 

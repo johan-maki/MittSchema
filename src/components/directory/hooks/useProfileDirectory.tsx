@@ -17,7 +17,8 @@ export function useProfileDirectory() {
     role: '',
     department: '',
     phone: '',
-    experience_level: 1
+    experience_level: 1,
+    hourly_rate: 1000 // Default hourly rate for initial state
   });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -73,7 +74,8 @@ export function useProfileDirectory() {
       role: profile.role,
       department: profile.department || '',
       phone: profile.phone || '',
-      experience_level: profile.experience_level
+      experience_level: profile.experience_level,
+      hourly_rate: profile.hourly_rate || 1000 // Include current hourly rate
     });
     setIsEditDialogOpen(true);
   };
