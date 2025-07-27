@@ -628,81 +628,107 @@ export const generateScheduleForNextMonth = async (
       return isInTargetMonth;
     })
     .map((shift: GurobiShift, index: number) => {
-    // Find the employee name from profiles
-    const employee = profiles.find(p => p.id === shift.employee_id);
-    const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
-    
-    // 🔍 CRITICAL DEBUG: Check for date mismatches in conversion
-    const shiftDate = shift.date || shift.start_time?.split('T')[0];
-    const startDate = shift.start_time?.split('T')[0];
-    
-    if (shiftDate !== startDate) {
-      console.warn(`🚨 DATE MISMATCH IN CONVERSION for shift ${index}:`, {
-        shift_date: shiftDate,
-        start_time_date: startDate,
+      // Find the employee name from profiles
+      const employee = profiles.find(p => p.id === shift.employee_id);
+      const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
+      
+      // 🔧 CRITICAL FIX: Force end_time to be within target month if it spills over
+      // PROBLEM: Aug 31 22:00 → Sep 1 06:00 shows September end time
+      // SOLUTION: Keep original end_time for night shifts crossing month boundaries
+      let correctedEndTime = shift.end_time;
+      
+      // Check if this is a night shift that ends in the next month (September spillover)
+      if (shift.end_time && shift.start_time) {
+        const endTimeMonth = parseInt(shift.end_time.split('-')[1]);
+        const startTimeMonth = parseInt(shift.start_time.split('-')[1]);
+        
+        // If end_time is in next month but start_time is in target month
+        if (endTimeMonth === (targetMonth + 2) && startTimeMonth === (targetMonth + 1)) {
+          console.warn(`� NIGHT SHIFT BOUNDARY DETECTED for shift ${index}:`, {
+            original_start_time: shift.start_time,
+            original_end_time: shift.end_time,
+            start_month: startTimeMonth,
+            end_month: endTimeMonth,
+            employee_name: employeeName,
+            shift_type: shift.shift_type,
+            action: 'Keeping original end_time for proper night shift display'
+          });
+          // Keep the original end_time - this is correct for night shifts
+          correctedEndTime = shift.end_time;
+        }
+      }
+      
+      // �🔍 CRITICAL DEBUG: Check for date mismatches in conversion
+      const shiftDate = shift.date || shift.start_time?.split('T')[0];
+      const startDate = shift.start_time?.split('T')[0];
+      
+      if (shiftDate !== startDate) {
+        console.warn(`🚨 DATE MISMATCH IN CONVERSION for shift ${index}:`, {
+          shift_date: shiftDate,
+          start_time_date: startDate,
+          start_time: shift.start_time,
+          end_time: correctedEndTime,
+          employee_name: employeeName,
+          shift_type: shift.shift_type
+        });
+      }
+      
+      // 🔍 CRITICAL DEBUG: Check if start_time month differs from expected
+      const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
+      const dateMonth = shift.date ? parseInt(shift.date.split('-')[1]) : null;
+      
+      if (startTimeMonth && startTimeMonth !== (targetMonth + 1)) {
+        console.error(`🚨 WRONG MONTH IN START_TIME for shift ${index}:`, {
+          start_time: shift.start_time,
+          start_time_month: startTimeMonth,
+          date: shift.date,
+          date_month: dateMonth,
+          expected_month: targetMonth + 1,
+          employee_name: employeeName,
+          shift_type: shift.shift_type,
+          THIS_WILL_CAUSE_FETCH_ISSUE: 'YES - useShiftData filters by start_time'
+        });
+      }
+      
+      if (dateMonth && dateMonth !== (targetMonth + 1)) {
+        console.error(`🚨 WRONG MONTH IN DATE for shift ${index}:`, {
+          date: shift.date,
+          date_month: dateMonth,
+          start_time: shift.start_time,
+          start_time_month: startTimeMonth,
+          expected_month: targetMonth + 1,
+          employee_name: employeeName,
+          shift_type: shift.shift_type
+        });
+      }
+      
+      // Check if this is a night shift that crosses midnight
+      const startTime = shift.start_time ? new Date(shift.start_time) : null;
+      const endTime = correctedEndTime ? new Date(correctedEndTime) : null;
+      
+      if (startTime && endTime && endTime < startTime) {
+        console.warn(`🚨 MIDNIGHT-CROSSING SHIFT DETECTED for shift ${index}:`, {
+          date: shiftDate,
+          start_time: shift.start_time,
+          end_time: correctedEndTime,
+          employee_name: employeeName,
+          shift_type: shift.shift_type,
+          crosses_midnight: true
+        });
+      }
+      
+      return {
+        id: uuidv4(),
+        employee_id: shift.employee_id,
+        employee_name: employeeName, // Add missing employee_name field
+        date: shift.date, // Include date from Gurobi response
         start_time: shift.start_time,
-        end_time: shift.end_time,
-        employee_name: employeeName,
-        shift_type: shift.shift_type
-      });
-    }
-    
-    // 🔍 CRITICAL DEBUG: Check if start_time month differs from expected
-    const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
-    const dateMonth = shift.date ? parseInt(shift.date.split('-')[1]) : null;
-    
-    if (startTimeMonth && startTimeMonth !== (targetMonth + 1)) {
-      console.error(`🚨 WRONG MONTH IN START_TIME for shift ${index}:`, {
-        start_time: shift.start_time,
-        start_time_month: startTimeMonth,
-        date: shift.date,
-        date_month: dateMonth,
-        expected_month: targetMonth + 1,
-        employee_name: employeeName,
-        shift_type: shift.shift_type,
-        THIS_WILL_CAUSE_FETCH_ISSUE: 'YES - useShiftData filters by start_time'
-      });
-    }
-    
-    if (dateMonth && dateMonth !== (targetMonth + 1)) {
-      console.error(`🚨 WRONG MONTH IN DATE for shift ${index}:`, {
-        date: shift.date,
-        date_month: dateMonth,
-        start_time: shift.start_time,
-        start_time_month: startTimeMonth,
-        expected_month: targetMonth + 1,
-        employee_name: employeeName,
-        shift_type: shift.shift_type
-      });
-    }
-    
-    // Check if this is a night shift that crosses midnight
-    const startTime = shift.start_time ? new Date(shift.start_time) : null;
-    const endTime = shift.end_time ? new Date(shift.end_time) : null;
-    
-    if (startTime && endTime && endTime < startTime) {
-      console.warn(`🚨 MIDNIGHT-CROSSING SHIFT DETECTED for shift ${index}:`, {
-        date: shiftDate,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        employee_name: employeeName,
-        shift_type: shift.shift_type,
-        crosses_midnight: true
-      });
-    }
-    
-    return {
-      id: uuidv4(),
-      employee_id: shift.employee_id,
-      employee_name: employeeName, // Add missing employee_name field
-      date: shift.date, // Include date from Gurobi response
-      start_time: shift.start_time,
-      end_time: shift.end_time,
-      shift_type: shift.shift_type as ShiftType,
-      is_published: false,
-      department: shift.department || 'Akutmottagning'
-    };
-  });
+        end_time: correctedEndTime, // Use corrected end_time
+        shift_type: shift.shift_type as ShiftType,
+        is_published: false,
+        department: shift.department || 'Akutmottagning'
+      };
+    });
   
   console.log(`✅ Optimering genererade ${convertedSchedule.length} pass från Gurobi`);
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
