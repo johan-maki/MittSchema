@@ -86,6 +86,22 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     if (problemShifts.length > 0) {
       console.warn(`🚨 FOUND ${problemShifts.length} SHIFTS WITH WRONG DATES:`, problemShifts);
       console.warn('🚨 These shifts will cause September entries in database!');
+      
+      // 🔍 DETAILED ANALYSIS: Show every problem shift with all details
+      problemShifts.forEach((shift, index) => {
+        console.warn(`🚨 PROBLEM SHIFT ${index + 1}:`, {
+          originalIndex: shift.index,
+          date: shift.date,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          parsed_date: shift.date ? shift.date.split('-') : 'No date',
+          parsed_start: shift.start_time ? shift.start_time.split('T') : 'No start_time',
+          employee_id: shift.employee_id,
+          shift_type: shift.shift_type,
+          month_from_date: shift.month,
+          expected_month: 8
+        });
+      });
     }
     
     // Process shifts in batches to avoid database timeouts
@@ -100,6 +116,43 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       employee_id: shift.employee_id,
       is_published: false // Draft schedule - requires manual publishing by manager
     }));
+    
+    // 🔍 CRITICAL DEBUG: Log first and last few shifts being inserted to database
+    console.log('🔍 SAMPLE SHIFTS BEING INSERTED TO DATABASE:');
+    console.log('  First 5 shifts:', shiftsToInsert.slice(0, 5).map(s => ({
+      date: s.date,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      shift_type: s.shift_type,
+      employee_id: s.employee_id
+    })));
+    console.log('  Last 5 shifts:', shiftsToInsert.slice(-5).map(s => ({
+      date: s.date,
+      start_time: s.start_time,  
+      end_time: s.end_time,
+      shift_type: s.shift_type,
+      employee_id: s.employee_id
+    })));
+    
+    // Check for any shifts with September dates (month 9) that shouldn't be there
+    const septemberShifts = shiftsToInsert.filter(s => {
+      const date = s.date || s.start_time?.split('T')[0];
+      if (date) {
+        const [year, month] = date.split('-').map(Number);
+        return month === 9; // September
+      }
+      return false;
+    });
+    
+    if (septemberShifts.length > 0) {
+      console.error('🚨 SEPTEMBER SHIFTS DETECTED IN DATABASE INSERT:', septemberShifts.map(s => ({
+        date: s.date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        shift_type: s.shift_type,
+        employee_id: s.employee_id
+      })));
+    }
     
     // Note: Shifts are already cleared at the beginning of generateScheduleForNextMonth
     // This function now only handles insertion of new shifts
@@ -462,8 +515,31 @@ export const generateScheduleForNextMonth = async (
         start_time: shift.start_time,
         end_time: shift.end_time,
         employee_name: shift.employee_name,
-        shift_type: shift.shift_type
+        shift_type: shift.shift_type,
+        parsed_date: shift.date ? shift.date.split('-') : 'No date',
+        parsed_start: shift.start_time ? shift.start_time.split('T')[0] : 'No start_time',
+        expected_month: targetMonth + 1,
+        actual_month: shift.date ? parseInt(shift.date.split('-')[1]) : 'Unknown'
       })));
+      
+      // 🚨 CRITICAL: Also check if these are end-of-month boundary issues
+      const endOfMonthShifts = problemShifts.filter(shift => {
+        const date = shift.date || shift.start_time?.split('T')[0];
+        if (date) {
+          const day = parseInt(date.split('-')[2]);
+          return day === 31 || day === 1; // End or start of month
+        }
+        return false;
+      });
+      
+      if (endOfMonthShifts.length > 0) {
+        console.warn('🚨 MONTH BOUNDARY ISSUE DETECTED:', endOfMonthShifts.map(s => ({
+          date: s.date,
+          day: s.date ? parseInt(s.date.split('-')[2]) : 'Unknown',
+          start_time: s.start_time,
+          end_time: s.end_time
+        })));
+      }
     }
   }
   
@@ -478,6 +554,36 @@ export const generateScheduleForNextMonth = async (
     // Find the employee name from profiles
     const employee = profiles.find(p => p.id === shift.employee_id);
     const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
+    
+    // 🔍 CRITICAL DEBUG: Check for date mismatches in conversion
+    const shiftDate = shift.date || shift.start_time?.split('T')[0];
+    const startDate = shift.start_time?.split('T')[0];
+    
+    if (shiftDate !== startDate) {
+      console.warn(`🚨 DATE MISMATCH IN CONVERSION for shift ${index}:`, {
+        shift_date: shiftDate,
+        start_time_date: startDate,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        employee_name: employeeName,
+        shift_type: shift.shift_type
+      });
+    }
+    
+    // Check if this is a night shift that crosses midnight
+    const startTime = shift.start_time ? new Date(shift.start_time) : null;
+    const endTime = shift.end_time ? new Date(shift.end_time) : null;
+    
+    if (startTime && endTime && endTime < startTime) {
+      console.warn(`🚨 MIDNIGHT-CROSSING SHIFT DETECTED for shift ${index}:`, {
+        date: shiftDate,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        employee_name: employeeName,
+        shift_type: shift.shift_type,
+        crosses_midnight: true
+      });
+    }
     
     return {
       id: uuidv4(),
