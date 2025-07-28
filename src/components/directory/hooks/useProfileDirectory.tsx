@@ -11,6 +11,7 @@ export function useProfileDirectory() {
   const { roleFilter, searchQuery } = useDirectory();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [forceRefreshKey, setForceRefreshKey] = useState(0);
   const [editingProfile, setEditingProfile] = useState<InsertProfile>({
     id: '',
     first_name: '',
@@ -26,8 +27,14 @@ export function useProfileDirectory() {
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const { data: profiles = [], isLoading, error } = useQuery({
-    queryKey: ['profiles'],
+  // Force refresh function
+  const forceRefresh = () => {
+    console.log("🔄 Forcing manual refresh of profiles...");
+    setForceRefreshKey(prev => prev + 1);
+  };
+
+  const { data: profiles = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['profiles', forceRefreshKey],
     queryFn: async () => {
       console.log("🔍 useProfileDirectory: Starting to fetch profiles...");
       try {
@@ -69,15 +76,45 @@ export function useProfileDirectory() {
           console.log("🔄 Real-time update received:", payload);
           console.log("🔄 Forcing aggressive cache invalidation and refetch...");
           
-          // More aggressive cache update to ensure UI responds
-          await queryClient.removeQueries({ queryKey: ['profiles'] });
-          await queryClient.removeQueries({ queryKey: ['all-employees'] });
-          await queryClient.invalidateQueries({ queryKey: ['profiles'] });
-          await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
-          await queryClient.refetchQueries({ queryKey: ['profiles'] });
-          await queryClient.refetchQueries({ queryKey: ['all-employees'] });
-          
-          console.log("✅ Cache aggressively updated via real-time subscription");
+          // Multiple cache update strategies
+          try {
+            // Clear all cached data
+            await queryClient.removeQueries({ queryKey: ['profiles'] });
+            await queryClient.removeQueries({ queryKey: ['all-employees'] });
+            
+            // Invalidate queries
+            await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+            await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+            
+            // Force immediate refetch
+            await queryClient.refetchQueries({ 
+              queryKey: ['profiles'], 
+              type: 'active',
+              exact: false 
+            });
+            await queryClient.refetchQueries({ 
+              queryKey: ['all-employees'], 
+              type: 'active',
+              exact: false 
+            });
+            
+            // Reset queries as last resort
+            await queryClient.resetQueries({ queryKey: ['profiles'] });
+            
+            // Final fallback: Force refresh through state change
+            console.log("🔄 Real-time: Triggering force refresh as final fallback...");
+            setForceRefreshKey(prev => prev + 1);
+            
+            console.log("✅ Cache aggressively updated via real-time subscription");
+            
+            // Small delay to ensure UI update
+            setTimeout(() => {
+              console.log("🔄 Real-time subscription: UI should be updated now");
+            }, 200);
+            
+          } catch (error) {
+            console.error("❌ Error in real-time subscription cache update:", error);
+          }
         }
       )
       .subscribe();
@@ -259,6 +296,8 @@ export function useProfileDirectory() {
     handleEditProfile,
     handleDeleteProfile,
     confirmDelete,
-    handleUpdateProfile
+    handleUpdateProfile,
+    forceRefresh,
+    refetch
   };
 }

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogDescription, DialogTitle } 
 import { UserPlus, Trash2, Users } from "lucide-react";
 import { AddProfileDialog } from "@/components/directory/AddProfileDialog";
 import { useDirectory } from "@/contexts/DirectoryContext";
+import { useProfileDirectory } from "@/components/directory/hooks/useProfileDirectory";
 import { useToast } from "@/hooks/use-toast";
 import { InsertProfile } from "@/types/profile";
 import { addProfile, clearDatabase, generateTestData } from "@/services/profileService";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 
 export function DirectoryControls() {
   const { roleFilter, setRoleFilter, searchQuery, setSearchQuery } = useDirectory();
+  const { forceRefresh } = useProfileDirectory();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -39,20 +41,45 @@ export function DirectoryControls() {
   const handleAddProfile = async () => {
     setIsProcessing(true);
     try {
-      await addProfile(newProfile);
+      const newProfileResult = await addProfile(newProfile);
       
       // Force immediate cache update for instant UI feedback
-      console.log('🔄 Profile added, forcing immediate cache update...');
+      console.log('🔄 Profile added successfully:', newProfileResult);
+      console.log('🔄 Forcing immediate and aggressive cache update...');
       
-      // More aggressive cache invalidation to ensure UI updates
+      // Multiple strategies to ensure UI updates immediately
+      
+      // Strategy 1: Remove all cached data
       await queryClient.removeQueries({ queryKey: ['profiles'] });
       await queryClient.removeQueries({ queryKey: ['all-employees'] });
+      
+      // Strategy 2: Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
-      await queryClient.refetchQueries({ queryKey: ['profiles'] });
-      await queryClient.refetchQueries({ queryKey: ['all-employees'] });
       
-      console.log('✅ Cache updated, UI should refresh automatically');
+      // Strategy 3: Force refetch with specific options
+      await queryClient.refetchQueries({ 
+        queryKey: ['profiles'], 
+        type: 'active',
+        exact: false 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['all-employees'], 
+        type: 'active',
+        exact: false 
+      });
+      
+      // Strategy 4: Reset all queries to force complete refresh
+      await queryClient.resetQueries({ queryKey: ['profiles'] });
+      
+      console.log('✅ All cache update strategies completed, UI should refresh now');
+      
+      // Small delay to allow cache updates to propagate
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Final fallback: Force refresh through state change
+      console.log("🔄 Triggering force refresh as final fallback...");
+      forceRefresh();
       
       setNewProfile({
         id: '',
