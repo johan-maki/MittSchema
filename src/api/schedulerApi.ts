@@ -29,6 +29,7 @@ interface GurobiScheduleRequest {
     excluded_days?: string[];
     role?: string;
     experience_level?: number;
+    work_percentage?: number; // Add work_percentage for capacity calculations
   }>;
 }
 

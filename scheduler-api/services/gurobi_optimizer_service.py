@@ -110,10 +110,17 @@ class GurobiScheduleOptimizer:
             # Calculate max possible shifts considering work_percentage for each employee
             total_weeks = len(self.dates) / 7.0  # Convert days to weeks (can be fractional)
             
-            # Calculate total capacity based on each employee's work_percentage
+            # Calculate total capacity based on each employee's work_percentage from preferences
             total_capacity = 0
+            # Create a mapping from employee_id to work_percentage from preferences
+            work_percentage_map = {}
+            for pref in self.employee_preferences:
+                if hasattr(pref, 'work_percentage') and pref.work_percentage is not None:
+                    work_percentage_map[pref.employee_id] = pref.work_percentage
+                    
             for emp in self.employees:
-                work_percentage = emp.get('work_percentage', 100)  # Default to 100% if not specified
+                # Get work_percentage from preferences first, fallback to employee object, then default to 100%
+                work_percentage = work_percentage_map.get(emp.get('id'), emp.get('work_percentage', 100))
                 
                 # More accurate capacity calculation that respects very low percentages
                 if total_weeks < 1.0:

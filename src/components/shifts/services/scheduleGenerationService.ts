@@ -336,7 +336,7 @@ export const generateScheduleForNextMonth = async (
     const gurobiPreference = {
       employee_id: emp.id,
       preferred_shifts: effectivePreferredShifts.length > 0 ? effectivePreferredShifts : ["day", "evening"], // Default to day/evening if all excluded
-      max_shifts_per_week: Math.ceil((workPrefs.work_percentage || 100) / 20), // Convert percentage to days (20% = 1 day)
+      max_shifts_per_week: Math.ceil((workPrefs.work_percentage || 100) * 5 / 100), // Convert percentage to max shifts per week (100% = 5 shifts/week)
       available_days: effectiveAvailableDays.length > 0 ? effectiveAvailableDays : ["monday", "tuesday", "wednesday", "thursday", "friday"], // Default to weekdays if all excluded
       // Send specific exclusions instead of generic strict flags
       excluded_shifts: strictlyExcludedShifts,
@@ -347,8 +347,15 @@ export const generateScheduleForNextMonth = async (
       preferred_shifts_strict: strictlyPreferredShifts.length > 0,
       // Add employee metadata for better optimization
       role: profile?.role || 'Unknown',
-      experience_level: profile?.experience_level || 1
+      experience_level: profile?.experience_level || 1,
+      // Include work_percentage for Gurobi server capacity calculations
+      work_percentage: workPrefs.work_percentage || 100
     };
+    
+    // Log work_percentage calculations for debugging
+    if (workPrefs.work_percentage && workPrefs.work_percentage !== 100) {
+      console.log(`🔍 Work percentage for ${profile?.first_name} ${profile?.last_name}: ${workPrefs.work_percentage}% → max ${gurobiPreference.max_shifts_per_week} shifts/week`);
+    }
     
     // Reduced Gurobi format logging
     // console.log(`✅ Gurobi format for ${profile?.first_name} ${profile?.last_name}`);
