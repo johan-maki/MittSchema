@@ -414,14 +414,17 @@ export const generateScheduleForNextMonth = async (
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log('🔍 CAUGHT ERROR:', { error, errorMessage, type: typeof error });
     
-    // Check for connection/timeout errors first
-    const isConnectionError = errorMessage.includes('AbortError') || 
-                             errorMessage.includes('signal is aborted') ||
-                             errorMessage.includes('request timed out') ||
-                             errorMessage.includes('Unable to connect') ||
-                             errorMessage.includes('timeout') ||
-                             errorMessage.includes('ECONNREFUSED') ||
-                             errorMessage.includes('fetch failed');
+    // Check for connection/timeout errors first (but exclude known staffing errors wrapped in server errors)
+    const isConnectionError = (errorMessage.includes('AbortError') || 
+                               errorMessage.includes('signal is aborted') ||
+                               errorMessage.includes('request timed out') ||
+                               errorMessage.includes('timeout') ||
+                               errorMessage.includes('ECONNREFUSED') ||
+                               errorMessage.includes('fetch failed')) && 
+                               // Don't treat staffing errors wrapped in 500 errors as connection errors
+                               !(errorMessage.includes('Not enough employees') || 
+                                 errorMessage.includes('need ') || 
+                                 errorMessage.includes('but only'));
     
     const isStaffingError = errorMessage.includes('Not enough employees') || 
                            errorMessage.includes('need ') || 
@@ -483,14 +486,17 @@ export const generateScheduleForNextMonth = async (
         // If even relaxed constraints fail, provide a meaningful error message
         const relaxedErrorMessage = relaxedError instanceof Error ? relaxedError.message : String(relaxedError);
         
-        // Check for connection errors in relaxed attempt too
-        const isRelaxedConnectionError = relaxedErrorMessage.includes('AbortError') || 
+        // Check for connection errors in relaxed attempt too (but exclude staffing errors)
+        const isRelaxedConnectionError = (relaxedErrorMessage.includes('AbortError') || 
                                         relaxedErrorMessage.includes('signal is aborted') ||
                                         relaxedErrorMessage.includes('request timed out') ||
-                                        relaxedErrorMessage.includes('Unable to connect') ||
                                         relaxedErrorMessage.includes('timeout') ||
                                         relaxedErrorMessage.includes('ECONNREFUSED') ||
-                                        relaxedErrorMessage.includes('fetch failed');
+                                        relaxedErrorMessage.includes('fetch failed')) && 
+                                        // Don't treat staffing errors wrapped in 500 errors as connection errors
+                                        !(relaxedErrorMessage.includes('Not enough employees') || 
+                                          relaxedErrorMessage.includes('need ') || 
+                                          relaxedErrorMessage.includes('but only'));
         
         if (isRelaxedConnectionError) {
           console.error('🌐 CONNECTION ERROR i relaxed attempt: Render backend är inte tillgänglig');
