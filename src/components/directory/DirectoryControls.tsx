@@ -71,20 +71,19 @@ export function DirectoryControls() {
   };
 
   const handleClearDatabase = async () => {
-    if (!window.confirm('⚠️ Är du säker på att du vill rensa hela databasen? Detta kan inte ångras!')) {
-      return;
-    }
-
+    console.log('🗑️ Cleaning database for development purposes...');
     setIsClearing(true);
     try {
       await clearDatabase();
       
+      console.log('🔄 Refreshing cache after database clear...');
       await queryClient.removeQueries({ queryKey: ['profiles'] });
       await queryClient.removeQueries({ queryKey: ['all-employees'] });
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       await queryClient.refetchQueries({ queryKey: ['profiles'] });
       await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+      console.log('✅ Database cleared and cache refreshed');
       
       showToast({
         title: "✅ Databas rensad",
@@ -103,17 +102,20 @@ export function DirectoryControls() {
   };
 
   const handleGenerateTestData = async (count = 6) => {
+    console.log(`🧪 Generating ${count} test employees for development...`);
     const setter = count === 3 ? setIsGenerating3 : count === 5 ? setIsGenerating5 : setIsGenerating;
     setter(true);
     try {
       await generateTestData(count);
       
+      console.log('🔄 Refreshing cache after testdata generation...');
       await queryClient.removeQueries({ queryKey: ['profiles'] });
       await queryClient.removeQueries({ queryKey: ['all-employees'] });
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       await queryClient.refetchQueries({ queryKey: ['profiles'] });
       await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+      console.log(`✅ Generated ${count} test employees and refreshed cache`);
       
       showToast({
         title: "✅ Testdata genererad",

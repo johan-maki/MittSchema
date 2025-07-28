@@ -3,7 +3,6 @@ import { AppLayout } from "@/components/AppLayout";
 import { DirectoryProvider } from "@/contexts/DirectoryContext";
 import { DirectoryControls } from "@/components/directory/DirectoryControls";
 import { DirectoryTable } from "@/components/directory/DirectoryTable";
-import { EmployeeCacheDebug } from "@/components/debug/EmployeeCacheDebug";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Users, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,9 +94,6 @@ const Directory = () => {
               <div className="mb-6">
                 <DirectoryControls />
               </div>
-              
-              {/* Employee Cache Debug (temporary for debugging) */}
-              <EmployeeCacheDebug />
               
               {/* Table Container with Modern Styling */}
               <div className="bg-white rounded-xl shadow-sm border border-slate-200/50 overflow-hidden">
