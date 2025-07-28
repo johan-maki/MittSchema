@@ -182,7 +182,7 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   const totalCost = Math.round(totalCoveredHours * averageHourlyRate);
 
   // Calculate overall statistics
-  const averageShiftsPerEmployee = totalGeneratedShifts / employees.length;
+  const averageShiftsPerEmployee = totalAssignedShifts / employees.length;
   const averageHoursPerEmployee = totalCoveredHours / employees.length;
   
   // Helper functions for color coding
