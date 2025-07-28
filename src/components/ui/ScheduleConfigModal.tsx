@@ -177,13 +177,13 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
                           <br /><br />
                           <strong>Erfarenhetspoäng:</strong>
                           <br />
-                          • 1p = Nybörjare (0-6 mån)
+                          • 1p = Nybörjare
                           <br />
-                          • 2p = Erfaren (6-18 mån)
+                          • 2p = Erfaren
                           <br />
-                          • 3p = Välerfaren (1,5-3 år)
+                          • 3p = Välerfaren
                           <br />
-                          • 4p = Senior (3+ år)
+                          • 4p = Senior
                           <br />
                           • 5p = Expert/specialist
                         </p>
