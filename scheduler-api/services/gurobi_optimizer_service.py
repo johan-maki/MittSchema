@@ -125,11 +125,16 @@ class GurobiScheduleOptimizer:
             logger.info(f"Employee capacity: {max_possible_shifts} shifts possible ({max_shifts_per_employee} shifts/employee over {total_weeks:.1f} weeks)")
             
             if actual_shift_requirements > max_possible_shifts:
-                logger.error(f"Impossible to fulfill requirements: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible")
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Not enough employees: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible with {len(employees)} employees over {total_weeks:.1f} weeks"
-                )
+                if not allow_partial_coverage:
+                    logger.error(f"Impossible to fulfill requirements: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Not enough employees: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible with {len(employees)} employees over {total_weeks:.1f} weeks"
+                    )
+                else:
+                    logger.warning(f"Partial coverage enabled: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible - will generate best possible partial schedule")
+                    coverage_percentage = (max_possible_shifts / actual_shift_requirements) * 100
+                    logger.info(f"Expected coverage: {coverage_percentage:.1f}% ({max_possible_shifts}/{actual_shift_requirements} shifts)")
             
             # Create Gurobi model
             self.model = gp.Model("HealthcareScheduler")
