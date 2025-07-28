@@ -237,16 +237,7 @@ export const generateScheduleForNextMonth = async (
   if (checkError || checkNextError) {
     console.warn('Could not verify cleared shifts:', { checkError, checkNextError });
   } else {
-    console.log('🔍 VERIFICATION: Remaining shifts after clear:');
-    console.log('  Target month (Aug):', remainingTargetShifts?.length || 0);
-    console.log('  Next month (Sep):', remainingNextShifts?.length || 0);
-    
-    if (remainingTargetShifts && remainingTargetShifts.length > 0) {
-      console.warn('🚨 WARNING: Some target month shifts were not cleared:', remainingTargetShifts);
-    }
-    if (remainingNextShifts && remainingNextShifts.length > 0) {
-      console.warn('🚨 WARNING: Some next month shifts were not cleared:', remainingNextShifts);
-    }
+    console.log('✅ Successfully cleared existing shifts for target month');
   }
   
   console.log('✅ Successfully cleared existing shifts for target month');
@@ -365,13 +356,7 @@ export const generateScheduleForNextMonth = async (
     
     // Debug constraint logic for all employees to understand the pattern
     if (strictlyExcludedShifts.length > 0 || strictlyPreferredShifts.length > 0) {
-      console.log(`🔍 Constraint analysis for ${profile?.first_name}:`, {
-        strictlyExcludedShifts,
-        strictlyPreferredShifts,
-        excluded_shifts_triggers_preferred_strict: 'NO (FIXED)',
-        preferred_shifts_strict: gurobiPreference.preferred_shifts_strict,
-        logic: 'preferred_shifts_strict only true if user has strictly preferred shifts, not excluded shifts'
-      });
+      // Only log constraint conflicts, not normal preferences
     }
 
     return gurobiPreference;
@@ -398,14 +383,8 @@ export const generateScheduleForNextMonth = async (
   
   onProgress?.('⚡ Optimerar schemaläggning med avancerade algoritmer...', 45);
   
-  // 🔍 FINAL DIAGNOSTIC: What we're sending to Gurobi
-  console.log('📤 SENDING TO GUROBI API:');
-  console.log('  Start date ISO:', gurobiStartISO);
-  console.log('  End date ISO:', gurobiEndISO);
-  console.log('  Expected month:', targetMonth + 1);
-  console.log('  Expected year:', targetYear);
-  console.log('  Employee preferences count:', employeePreferences.length);
-  console.log('  🎯 CRITICAL - Full employee preferences being sent to Gurobi:', JSON.stringify(employeePreferences, null, 2));
+  // 🔍 Final check before sending to Gurobi
+  console.log('📤 Sending schedule request to Gurobi API');
   
   onProgress?.('🔄 Bearbetar personalschema med samtliga restriktioner...', 55);
   
@@ -429,122 +408,10 @@ export const generateScheduleForNextMonth = async (
   
   console.log('🎉 Gurobi optimization response:', response);
   
-  // 🔍 ANALYZE GUROBI RESPONSE DATES
+  // Quick validation of response
   if (response.schedule && response.schedule.length > 0) {
-    const responseDates = response.schedule.map(shift => shift.date || shift.start_time?.split('T')[0]);
-    const uniqueDates = [...new Set(responseDates)].sort();
-    const dateAnalysis = uniqueDates.map(date => {
-      // Parse date string without creating Date object to avoid month rollover bugs
-      const [year, month, day] = date.split('-').map(Number);
-      return {
-        date: date,
-        month: month,
-        year: year,
-        shiftsOnDate: response.schedule.filter(s => (s.date || s.start_time?.split('T')[0]) === date).length
-      };
-    });
-    
-    console.log('🔍 GUROBI RESPONSE DATE ANALYSIS:');
-    console.log('  Expected month:', targetMonth + 1);
-    console.log('  Expected year:', targetYear);
-    console.log('  Unique dates in response:', uniqueDates);
-    console.log('  Date breakdown:', dateAnalysis);
-    
-    // 🔍 CRITICAL DEBUG: Check for August 1st specifically
-    const august1Shifts = response.schedule.filter(shift => {
-      const date = shift.date || shift.start_time?.split('T')[0];
-      return date === '2025-08-01';
-    });
-    
-    console.log('🔍 AUGUST 1ST SHIFTS FROM GUROBI:');
-    console.log('  Count:', august1Shifts.length);
-    august1Shifts.forEach((shift, i) => {
-      console.log(`  Aug 1 Shift ${i + 1}:`, {
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        employee_name: shift.employee_name,
-        shift_type: shift.shift_type
-      });
-    });
-    
-    if (august1Shifts.length < 3) {
-      console.warn('🚨 AUGUST 1ST IS MISSING SHIFTS! Expected 3 (day, evening, night), got:', august1Shifts.length);
-      console.warn('  Missing shift types:', ['day', 'evening', 'night'].filter(type => 
-        !august1Shifts.some(s => s.shift_type === type)
-      ));
-    }
-    
-    // 🔍 CRITICAL DEBUG: Sample first and last few shifts from Gurobi
-    console.log('🔍 SAMPLE GUROBI SHIFTS (First 3):');
-    response.schedule.slice(0, 3).forEach((shift, i) => {
-      console.log(`  Shift ${i + 1}:`, {
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        employee_name: shift.employee_name,
-        shift_type: shift.shift_type
-      });
-    });
-    
-    console.log('🔍 SAMPLE GUROBI SHIFTS (Last 3):');
-    response.schedule.slice(-3).forEach((shift, i) => {
-      console.log(`  Shift ${response.schedule.length - 2 + i}:`, {
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        employee_name: shift.employee_name,
-        shift_type: shift.shift_type
-      });
-    });
-    
-    // Check for dates outside target month
-    const wrongMonthDates = dateAnalysis.filter(d => 
-      d.month !== (targetMonth + 1) || d.year !== targetYear
-    );
-    
-    if (wrongMonthDates.length > 0) {
-      console.warn('🚨 GUROBI RETURNED SHIFTS FOR WRONG MONTHS:', wrongMonthDates);
-      console.warn('🚨 This is the source of the Juli/September bug!');
-      
-      // 🔍 DETAILED ANALYSIS: Show actual problem shifts
-      const problemShifts = response.schedule.filter(shift => {
-        const date = shift.date || shift.start_time?.split('T')[0];
-        const [year, month, day] = date.split('-').map(Number);
-        return month !== (targetMonth + 1) || year !== targetYear;
-      });
-      
-      console.warn('🚨 DETAILED PROBLEM SHIFTS FROM GUROBI:', problemShifts.map(shift => ({
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        employee_name: shift.employee_name,
-        shift_type: shift.shift_type,
-        parsed_date: shift.date ? shift.date.split('-') : 'No date',
-        parsed_start: shift.start_time ? shift.start_time.split('T')[0] : 'No start_time',
-        expected_month: targetMonth + 1,
-        actual_month: shift.date ? parseInt(shift.date.split('-')[1]) : 'Unknown'
-      })));
-      
-      // 🚨 CRITICAL: Also check if these are end-of-month boundary issues
-      const endOfMonthShifts = problemShifts.filter(shift => {
-        const date = shift.date || shift.start_time?.split('T')[0];
-        if (date) {
-          const day = parseInt(date.split('-')[2]);
-          return day === 31 || day === 1; // End or start of month
-        }
-        return false;
-      });
-      
-      if (endOfMonthShifts.length > 0) {
-        console.warn('🚨 MONTH BOUNDARY ISSUE DETECTED:', endOfMonthShifts.map(s => ({
-          date: s.date,
-          day: s.date ? parseInt(s.date.split('-')[2]) : 'Unknown',
-          start_time: s.start_time,
-          end_time: s.end_time
-        })));
-      }
-    }
+    const uniqueDates = [...new Set(response.schedule.map(shift => shift.date || shift.start_time?.split('T')[0]))].sort();
+    console.log(`✅ Generated schedule: ${response.schedule.length} shifts covering ${uniqueDates.length} days`);
   }
   
   if (!response.schedule || response.schedule.length === 0) {
@@ -590,15 +457,6 @@ export const generateScheduleForNextMonth = async (
       
       // 🔍 DEBUG: Verify shift data consistency
       const shiftDate = shift.date || shift.start_time?.split('T')[0];
-      
-      // Reduced conversion logging - only show critical boundary shifts
-      if (shift.shift_type === 'night' && (shiftDate?.includes('-01') || shiftDate?.includes('-31'))) {
-        console.log(`🌙 Boundary night shift ${index + 1}:`, {
-          date: shiftDate,
-          employee: employeeName,
-          type: shift.shift_type
-        });
-      }
       
       return {
         id: uuidv4(),

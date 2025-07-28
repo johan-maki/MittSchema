@@ -57,11 +57,6 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
       
       const isMatch = (dayYear === shiftYear && dayMonth === shiftMonth && dayDate === shiftDateNum);
       
-      // Only log August 31st night shift when we find it - not every night shift
-      if ((day.getDate() === 31 && day.getMonth() === 7) && shift.shift_type === 'night' && isMatch) {
-        console.log(`✅ Found August 31st night shift: ${shift.profiles?.first_name} at ${shift.start_time}`);
-      }
-      
       return isMatch;
     });
     

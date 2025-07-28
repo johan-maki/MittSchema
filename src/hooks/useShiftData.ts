@@ -42,12 +42,6 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         endDate.setHours(23, 59, 59, 999);
         endDate = addDays(endDate, 1); // Include next day's early hours for night shifts
         endDate.setHours(5, 59, 59, 999); // Capture until 06:00 next day
-        
-        // � AUGUST 31 NIGHT SHIFT FIX ACTIVE
-        console.log(`📅 MONTH QUERY (EXTENDED): ${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(endDate, 'yyyy-MM-dd HH:mm')}`);
-        console.log(`� Original endDate: ${format(originalEndDate, 'yyyy-MM-dd HH:mm')}`);
-        console.log(`🔧 Extended endDate: ${format(endDate, 'yyyy-MM-dd HH:mm')}`);
-        console.log(`✅ Will capture August 31st night shift starting at 22:00`);
       }
       
       // Format dates to ISO strings in UTC
@@ -83,10 +77,6 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
           const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
           return shiftMonth === targetMonth;
         });
-        
-        console.log(`🎯 TARGET MONTH FILTER ANALYSIS:`);
-        console.log(`  Viewing month: ${targetMonth}`);
-        console.log(`  Total retrieved: ${shifts.length}`);
       // Quick analysis for debugging only when there are issues
       if (shifts && shifts.length > 0) {
         const actualMonthShifts = shifts.filter(shift => {
