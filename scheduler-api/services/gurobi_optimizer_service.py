@@ -281,14 +281,15 @@ class GurobiScheduleOptimizer:
                     # Don't use max(1, ...) to allow for very low percentages
                     exact_shifts_allowed = (work_percentage / 100.0) * base_max_shifts
                     
-                    # For very small percentages (like 10%), allow fractional accumulation
-                    # over multiple weeks, but use floor for individual weeks
+                    # Use floor for individual weeks, but allow the global constraint to handle
+                    # the exact percentage distribution over the entire period
                     max_shifts_this_week = int(exact_shifts_allowed)
                     
-                    # Special handling for very low percentages:
-                    # If work_percentage < 20%, they should get 0 shifts most weeks
-                    if work_percentage < 20 and max_shifts_this_week < 1:
-                        max_shifts_this_week = 0  # Allow 0 shifts per week for very low percentages
+                    # For very low percentages, we need to allow some weeks to have 1 shift
+                    # even if the weekly calculation gives 0, so the global constraint can work
+                    # Allow up to 1 shift per week for any non-zero percentage
+                    if work_percentage > 0 and max_shifts_this_week == 0:
+                        max_shifts_this_week = 1  # Allow 1 shift per week, global constraint will limit total
                     
                     logger.debug(f"Employee {emp.get('first_name', 'Unknown')} ({work_percentage}%): max {max_shifts_this_week} shifts this week (exact: {exact_shifts_allowed:.2f}, base: {base_max_shifts})")
                     
@@ -319,13 +320,14 @@ class GurobiScheduleOptimizer:
             total_max_shifts_exact = (work_percentage / 100.0) * total_weeks * 5  # 5 = max shifts per week
             total_max_shifts = int(total_max_shifts_exact)
             
-            # For very small percentages, ensure they get at least some minimal opportunity
-            # but still respect the percentage limit
-            if work_percentage >= 5:  # At least 5% should get some shifts
+            # Don't force a minimum - let the percentage be exactly respected
+            # Even 0% should be allowed to get 0 shifts
+            if work_percentage > 0 and total_max_shifts_exact >= 0.5:
+                # If the exact calculation is at least 0.5, round up to give at least 1 shift
                 total_max_shifts = max(1, total_max_shifts)
             else:
-                # Below 5%, allow 0 shifts
-                total_max_shifts = max(0, total_max_shifts)
+                # Otherwise, use the floor (which could be 0 for very low percentages)
+                total_max_shifts = total_max_shifts
             
             # Sum all shifts for this employee across the entire period
             employee_total_shifts = gp.quicksum(
