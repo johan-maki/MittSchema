@@ -500,10 +500,10 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                           <div className="flex-shrink-0 w-10 h-2 bg-gray-200 rounded-full mr-2">
                             <div
                               className="h-2 bg-green-500 rounded-full"
-                              style={{ width: `${(summary.experienceLevel / 10) * 100}%` }}
+                              style={{ width: `${(summary.experienceLevel / 5) * 100}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm text-gray-600">{summary.experienceLevel}/10</span>
+                          <span className="text-sm text-gray-600">{summary.experienceLevel}/5</span>
                         </div>
                       </td>
                     </tr>

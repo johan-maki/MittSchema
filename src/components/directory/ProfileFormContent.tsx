@@ -101,15 +101,15 @@ export const ProfileFormContent = ({
         />
         
         <FormField 
-          label="Erfarenhetsnivå (år)" 
+          label="Erfarenhetspoäng (1-5)" 
           value={profile.experience_level} 
           onChange={(value) => updateProfile('experience_level', value)} 
           type="number" 
-          min="0" 
-          max="50" 
+          min="1" 
+          max="5" 
           disabled={isProcessing}
           error={errors.experience_level}
-          placeholder="0"
+          placeholder="1"
         />
       </div>
       

@@ -36,7 +36,7 @@ def optimize_schedule(
         random_seed: Random seed for reproducible results
         optimizer: Optimizer type (only "gurobi" supported)
         min_staff_per_shift: Minimum staff required per shift
-        min_experience_per_shift: Minimum experience level required
+        min_experience_per_shift: Minimum experience points required per shift
         include_weekends: Whether to schedule weekend shifts
         allow_partial_coverage: Allow partial schedule when not enough staff
         employee_preferences: Individual employee work preferences

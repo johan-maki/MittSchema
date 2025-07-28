@@ -16,7 +16,7 @@ class EmployeePreference(BaseModel):
     preferred_shifts_strict: bool = Field(default=False, description="If True, preferred_shifts becomes a hard constraint")
     # Additional fields for metadata
     role: Optional[str] = Field(default=None, description="Employee role (e.g., 'Sjuksköterska', 'Läkare')")
-    experience_level: Optional[int] = Field(default=1, description="Employee experience level")
+    experience_level: Optional[int] = Field(default=1, description="Employee experience points (1-5)")
 
 class ScheduleRequest(BaseModel):
     start_date: str
@@ -25,7 +25,7 @@ class ScheduleRequest(BaseModel):
     random_seed: Optional[int] = None
     optimizer: Optional[str] = Field(default="gurobi", description="Optimizer to use: 'gurobi' only")
     min_staff_per_shift: Optional[int] = Field(default=1, description="Minimum staff required per shift")
-    min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience level required")
+    min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience points required per shift")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
     allow_partial_coverage: Optional[bool] = Field(default=False, description="Allow partial schedule when not enough staff")
     employee_preferences: Optional[List[EmployeePreference]] = Field(default=None, description="Individual employee work preferences")

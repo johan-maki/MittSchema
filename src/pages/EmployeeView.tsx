@@ -99,9 +99,11 @@ const EmployeeView = () => {
 
   const getExperienceBadge = (level: number) => {
     const levels = {
-      1: { label: 'Junior', color: 'bg-blue-100 text-blue-800' },
-      2: { label: 'Medel', color: 'bg-green-100 text-green-800' },
-      3: { label: 'Senior', color: 'bg-purple-100 text-purple-800' }
+      1: { label: 'Nybörjare', color: 'bg-blue-100 text-blue-800' },
+      2: { label: 'Erfaren', color: 'bg-green-100 text-green-800' },
+      3: { label: 'Välerfaren', color: 'bg-yellow-100 text-yellow-800' },
+      4: { label: 'Senior', color: 'bg-purple-100 text-purple-800' },
+      5: { label: 'Expert', color: 'bg-red-100 text-red-800' }
     };
     const config = levels[level as keyof typeof levels] || levels[1];
     return <Badge className={config.color}>{config.label}</Badge>;

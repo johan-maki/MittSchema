@@ -32,8 +32,8 @@ export const useProfileForm = ({
     }
     
     const expLevel = Number(profile.experience_level);
-    if (isNaN(expLevel) || expLevel < 0 || expLevel > 10) {
-      newErrors.experience_level = "Erfarenhetsnivå måste vara mellan 0 och 10 år";
+    if (isNaN(expLevel) || expLevel < 1 || expLevel > 5) {
+      newErrors.experience_level = "Erfarenhetspoäng måste vara mellan 1 och 5";
     }
     
     // Validate hourly_rate
@@ -74,10 +74,10 @@ export const useProfileForm = ({
   const updateProfile = (field: keyof InsertProfile, value: string | number) => {
     setProfile(prev => {
       if (field === 'experience_level') {
-        // Parse to number but enforce range (0-10)
+        // Parse to number but enforce range (1-5)
         const numValue = typeof value === 'number' ? value : parseInt(value);
         if (!isNaN(numValue)) {
-          return { ...prev, [field]: Math.min(Math.max(numValue, 0), 10) };
+          return { ...prev, [field]: Math.min(Math.max(numValue, 1), 5) };
         }
         return { ...prev, [field]: prev.experience_level };
       }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Settings, Users, Star, Calendar, HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './Tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ScheduleConfig {
   minStaffPerShift: number;
@@ -175,15 +175,15 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
                           <br />
                           ❌ 2 juniorer (1p + 1p) = 2 poäng
                           <br /><br />
-                          <strong>Erfarenhetsnivåer:</strong>
+                          <strong>Erfarenhetspoäng:</strong>
                           <br />
-                          • 1p = Junior (0-6 mån)
+                          • 1p = Nybörjare (0-6 mån)
                           <br />
-                          • 2p = Erfaren (6-24 mån)
+                          • 2p = Erfaren (6-18 mån)
                           <br />
-                          • 3p = Välerfaren (2-4 år)
+                          • 3p = Välerfaren (1,5-3 år)
                           <br />
-                          • 4p = Senior (4+ år)
+                          • 4p = Senior (3+ år)
                           <br />
                           • 5p = Expert/specialist
                         </p>

@@ -10,9 +10,9 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
   try {
     console.log("Adding new profile with data:", profileData);
     
-    // Ensure experience_level is within the valid range (0-10)
-    // Based on database constraint found in error messages
-    const experience = Math.min(Math.max(profileData.experience_level || 1, 0), 10);
+    // Ensure experience_level is within the valid range (1-5)
+    // Based on new experience points system
+    const experience = Math.min(Math.max(profileData.experience_level || 1, 1), 5);
     
     // Default work preferences for all new employees
     const defaultWorkPreferences = {
@@ -182,7 +182,7 @@ export const generateTestData = async (count: number): Promise<Profile[]> => {
         role: nameData.role,
         department: 'Akutmottagning',
         phone: `+46 70 ${String(Math.floor(Math.random() * 900) + 100)} ${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        experience_level: Math.floor(Math.random() * 3) + 1, // 1-3
+        experience_level: Math.floor(Math.random() * 5) + 1, // 1-5
         hourly_rate: 1000,
         is_manager: false,
         work_preferences: defaultWorkPreferences

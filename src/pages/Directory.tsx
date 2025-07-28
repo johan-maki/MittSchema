@@ -26,7 +26,7 @@ const DirectoryStats = () => {
 
   const totalPersonal = profiles.length;
   const departments = new Set(profiles.map(p => p.department).filter(d => d)).size;
-  const seniorStaff = profiles.filter(p => p.experience_level >= 3).length;
+  const seniorStaff = profiles.filter(p => p.experience_level >= 4).length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

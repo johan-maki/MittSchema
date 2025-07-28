@@ -86,11 +86,11 @@ Detta kan bero på:
 ## 5. Erfarenhetsnivåer - Rekommendationer
 
 ### Förslag på poängsystem:
-- **1 poäng**: Ny medarbetare (0-6 månader)
-- **2 poäng**: Erfaren (6-24 månader)
-- **3 poäng**: Välerfaren (2-4 år)
-- **4 poäng**: Senior (4+ år)
-- **5 poäng**: Expert/specialist (8+ år eller specialistutbildning)
+- **1 poäng**: Nybörjare (0-6 månader)
+- **2 poäng**: Erfaren (6-18 månader)
+- **3 poäng**: Välerfaren (1,5-3 år)
+- **4 poäng**: Senior (3+ år)
+- **5 poäng**: Expert/specialist (specialistutbildning/lång erfarenhet)
 
 ### Justera i systemet:
 1. Gå till medarbetarhantering

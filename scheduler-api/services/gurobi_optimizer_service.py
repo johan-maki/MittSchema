@@ -74,7 +74,7 @@ class GurobiScheduleOptimizer:
             start_date: Schedule start date
             end_date: Schedule end date
             min_staff_per_shift: Minimum staff required per shift
-            min_experience_per_shift: Minimum experience level required
+            min_experience_per_shift: Minimum experience points required per shift
             include_weekends: Whether to schedule weekend shifts
             random_seed: Random seed for reproducible results
             employee_preferences: Individual employee work preferences
