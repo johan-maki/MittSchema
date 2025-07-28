@@ -2,8 +2,9 @@ services:
   - type: web
     name: mittschema-gurobi-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt --no-cache-dir
+    startCommand: gunicorn app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120
+    plan: starter
     envVars:
       - key: SUPABASE_URL
         value: https://ebyvourlaomcwitpibdl.supabase.co
