@@ -27,25 +27,21 @@ const EmployeeView = () => {
   // Get current user to default to their own profile
   React.useEffect(() => {
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Look for employee record that matches the user's email
-        const { data: employee, error } = await supabase
-          .from('employees')
-          .select('id')
-          .eq('email', user.email)
-          .single();
+      // Since we don't have email matching, get the first employee as fallback
+      const { data: employees, error } = await supabase
+        .from('employees')
+        .select('id')
+        .limit(1);
           
-        if (employee && !error) {
-          console.log('👤 Found current user employee record:', employee.id);
-          setCurrentUserId(employee.id);
-          // Auto-select current user if no employee is selected
-          if (!selectedEmployeeId) {
-            setSelectedEmployeeId(employee.id);
-          }
-        } else {
-          console.log('👤 No employee record found for current user email:', user.email);
+      if (employees && employees.length > 0 && !error) {
+        console.log('👤 Using first employee as current user:', employees[0].id);
+        setCurrentUserId(employees[0].id);
+        // Auto-select current user if no employee is selected
+        if (!selectedEmployeeId) {
+          setSelectedEmployeeId(employees[0].id);
         }
+      } else {
+        console.log('👤 No employee records found');
       }
     };
     
@@ -59,7 +55,7 @@ const EmployeeView = () => {
       console.log('🔍 Fetching all employees...');
       const { data, error } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, role, department, experience_level, email')
+        .select('id, first_name, last_name, role, department, experience_level')
         .order('first_name');
 
       if (error) {
@@ -70,7 +66,7 @@ const EmployeeView = () => {
       console.log('✅ Fetched employees:', data?.length || 0);
       console.log('Employee data:', data);
       
-      return data as (Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'> & { email: string })[];
+      return data as (Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'>)[];
     }
   });
 
