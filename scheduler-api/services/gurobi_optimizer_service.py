@@ -216,6 +216,74 @@ class GurobiScheduleOptimizer:
             elif self.model.status == GRB.TIME_LIMIT and self.model.SolCount > 0:
                 logger.warning("Time limit reached but found feasible solution!")
                 return self._extract_solution()
+            elif self.model.status == GRB.INFEASIBLE or self.model.status == GRB.INF_OR_UNBD:
+                logger.warning(f"Initial optimization failed with status: {self.model.status}")
+                logger.warning("Attempting to find best-effort solution with relaxed constraints...")
+                
+                # Try progressive relaxation of experience constraints
+                original_experience_requirement = min_experience_per_shift
+                relaxation_attempts = []
+                
+                # Create a list of progressively lower experience requirements to try
+                if original_experience_requirement > 1:
+                    for experience_level in range(original_experience_requirement - 1, 0, -1):
+                        relaxation_attempts.append(experience_level)
+                
+                # Always try with minimum experience = 1 as final fallback
+                if 1 not in relaxation_attempts:
+                    relaxation_attempts.append(1)
+                
+                for attempt_experience in relaxation_attempts:
+                    logger.warning(f"Trying with relaxed experience requirement: {attempt_experience} (was {original_experience_requirement})")
+                    
+                    # Create new model for relaxed constraints
+                    self.model = gp.Model("ScheduleOptimization_Relaxed")
+                    self.shifts = {}
+                    
+                    # Recreate variables and constraints with relaxed requirements
+                    self._create_variables()
+                    self._add_constraints(min_staff_per_shift, attempt_experience, include_weekends, allow_partial_coverage)
+                    self._add_employee_preference_constraints()
+                    self._set_objective()
+                    
+                    # Try optimization with relaxed constraints
+                    self.model.setParam('OutputFlag', 0)  # Reduce output for fallback attempts
+                    self.model.setParam('TimeLimit', 15)  # Shorter time limit for fallback attempts
+                    self.model.optimize()
+                    
+                    if self.model.status == GRB.OPTIMAL or self.model.status == GRB.SUBOPTIMAL or (self.model.status == GRB.TIME_LIMIT and self.model.SolCount > 0):
+                        logger.warning(f"Found feasible solution with relaxed experience requirement: {attempt_experience}")
+                        logger.warning("Note: This schedule may not meet all original experience requirements")
+                        result = self._extract_solution()
+                        # Add a warning flag to indicate this is a relaxed solution
+                        result['relaxed_constraints'] = {
+                            'original_min_experience': original_experience_requirement,
+                            'actual_min_experience': attempt_experience,
+                            'warning': f"Could not meet original experience requirement of {original_experience_requirement}. Using {attempt_experience} instead."
+                        }
+                        return result
+                
+                # If all relaxation attempts failed, provide detailed error
+                logger.error("All optimization attempts failed, including with minimum constraints")
+                status_names = {
+                    GRB.INFEASIBLE: "INFEASIBLE",
+                    GRB.INF_OR_UNBD: "INFEASIBLE_OR_UNBOUNDED", 
+                    GRB.UNBOUNDED: "UNBOUNDED",
+                    GRB.CUTOFF: "CUTOFF",
+                    GRB.ITERATION_LIMIT: "ITERATION_LIMIT",
+                    GRB.NODE_LIMIT: "NODE_LIMIT",
+                    GRB.TIME_LIMIT: "TIME_LIMIT",
+                    GRB.SOLUTION_LIMIT: "SOLUTION_LIMIT",
+                    GRB.INTERRUPTED: "INTERRUPTED",
+                    GRB.NUMERIC: "NUMERIC_ERROR",
+                    GRB.SUBOPTIMAL: "SUBOPTIMAL",
+                    GRB.OPTIMAL: "OPTIMAL"
+                }
+                status_name = status_names.get(self.model.status, f"UNKNOWN({self.model.status})")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"No feasible schedule found even with relaxed constraints. Final Gurobi status: {status_name}. This may indicate insufficient staff or overly restrictive employee preferences."
+                )
             else:
                 logger.error(f"Optimization failed with status: {self.model.status}")
                 # Let's provide more detailed error information
