@@ -644,118 +644,65 @@ export const generateScheduleForNextMonth = async (
   // Convert Gurobi response to our Shift format
   const convertedSchedule: Shift[] = response.schedule
     .filter((shift: GurobiShift, index: number) => {
-      // 🔧 CRITICAL FIX: Filter out shifts that start outside target month
-      // PROBLEM: Gurobi returns boundary shifts like Aug 31 22:00 → Sep 1 06:00 
-      // SOLUTION: Only keep shifts that start within target month boundaries
+      // 🔧 ULTIMATE FIX: Only filter out the specific boundary shift (Aug 31 22:00 → Sep 1 06:00)
+      // PROBLEM: Previous logic was filtering out valid August night shifts
+      // SOLUTION: Only exclude night shifts that start on the last day and end in next month
+      
       const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
       const startTimeYear = shift.start_time ? parseInt(shift.start_time.split('-')[0]) : null;
+      const startTimeDay = shift.start_time ? parseInt(shift.start_time.split('-')[2].split('T')[0]) : null;
       
+      const endTimeMonth = shift.end_time ? parseInt(shift.end_time.split('-')[1]) : null;
+      
+      // Check if this is the specific boundary night shift (last day of month → next month)
+      const isLastDayOfMonth = startTimeDay === lastDayOfTargetMonth;
+      const endsInNextMonth = endTimeMonth === (targetMonth + 2); // September
+      const isNightShift = shift.shift_type === 'night';
+      
+      const isBoundaryShift = isLastDayOfMonth && endsInNextMonth && isNightShift;
+      
+      // Keep all shifts in target month EXCEPT the specific boundary night shift
       const isInTargetMonth = startTimeMonth === (targetMonth + 1) && startTimeYear === targetYear;
+      const shouldKeep = isInTargetMonth && !isBoundaryShift;
       
-      if (!isInTargetMonth) {
+      if (!shouldKeep) {
         console.warn(`🚨 FILTERING OUT BOUNDARY SHIFT ${index + 1}:`, {
           start_time: shift.start_time,
           end_time: shift.end_time,
           start_month: startTimeMonth,
+          start_day: startTimeDay,
+          end_month: endTimeMonth,
           expected_month: targetMonth + 1,
           employee_name: shift.employee_name,
           shift_type: shift.shift_type,
-          reason: 'Starts outside target month - boundary shift excluded'
+          is_last_day_of_month: isLastDayOfMonth,
+          ends_in_next_month: endsInNextMonth,
+          is_night_shift: isNightShift,
+          is_boundary_shift: isBoundaryShift,
+          reason: isBoundaryShift ? 'Boundary night shift (last day → next month)' : 'Outside target month'
         });
       }
       
-      return isInTargetMonth;
+      return shouldKeep;
     })
     .map((shift: GurobiShift, index: number) => {
       // Find the employee name from profiles
       const employee = profiles.find(p => p.id === shift.employee_id);
       const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
       
-      // 🔧 CRITICAL FIX: Handle boundary night shifts properly
-      // PROBLEM: Aug 31 22:00 → Sep 1 06:00 creates September spillover
-      // SOLUTION: Exclude boundary night shifts that would cross into next month
+      // No additional filtering needed - the filter above handles boundary shifts correctly
       const correctedEndTime = shift.end_time;
       
-      // Check if this is a night shift that ends in the next month (September spillover)
-      if (shift.end_time && shift.start_time) {
-        const endTimeMonth = parseInt(shift.end_time.split('-')[1]);
-        const startTimeMonth = parseInt(shift.start_time.split('-')[1]);
-        
-        // If end_time is in next month but start_time is in target month
-        if (endTimeMonth === (targetMonth + 2) && startTimeMonth === (targetMonth + 1)) {
-          console.warn(`🚨 BOUNDARY NIGHT SHIFT DETECTED - EXCLUDING for shift ${index}:`, {
-            original_start_time: shift.start_time,
-            original_end_time: shift.end_time,
-            start_month: startTimeMonth,
-            end_month: endTimeMonth,
-            employee_name: employeeName,
-            shift_type: shift.shift_type,
-            reason: 'Night shift crosses month boundary - excluded to prevent September spillover'
-          });
-          
-          // Return null to indicate this shift should be filtered out
-          return null;
-        }
-      }
-      
-      // �🔍 CRITICAL DEBUG: Check for date mismatches in conversion
+      // 🔍 DEBUG: Verify shift data consistency
       const shiftDate = shift.date || shift.start_time?.split('T')[0];
-      const startDate = shift.start_time?.split('T')[0];
       
-      if (shiftDate !== startDate) {
-        console.warn(`🚨 DATE MISMATCH IN CONVERSION for shift ${index}:`, {
-          shift_date: shiftDate,
-          start_time_date: startDate,
-          start_time: shift.start_time,
-          end_time: correctedEndTime,
-          employee_name: employeeName,
-          shift_type: shift.shift_type
-        });
-      }
-      
-      // 🔍 CRITICAL DEBUG: Check if start_time month differs from expected
-      const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
-      const dateMonth = shift.date ? parseInt(shift.date.split('-')[1]) : null;
-      
-      if (startTimeMonth && startTimeMonth !== (targetMonth + 1)) {
-        console.error(`🚨 WRONG MONTH IN START_TIME for shift ${index}:`, {
-          start_time: shift.start_time,
-          start_time_month: startTimeMonth,
-          date: shift.date,
-          date_month: dateMonth,
-          expected_month: targetMonth + 1,
-          employee_name: employeeName,
-          shift_type: shift.shift_type,
-          THIS_WILL_CAUSE_FETCH_ISSUE: 'YES - useShiftData filters by start_time'
-        });
-      }
-      
-      if (dateMonth && dateMonth !== (targetMonth + 1)) {
-        console.error(`🚨 WRONG MONTH IN DATE for shift ${index}:`, {
-          date: shift.date,
-          date_month: dateMonth,
-          start_time: shift.start_time,
-          start_time_month: startTimeMonth,
-          expected_month: targetMonth + 1,
-          employee_name: employeeName,
-          shift_type: shift.shift_type
-        });
-      }
-      
-      // Check if this is a night shift that crosses midnight
-      const startTime = shift.start_time ? new Date(shift.start_time) : null;
-      const endTime = correctedEndTime ? new Date(correctedEndTime) : null;
-      
-      if (startTime && endTime && endTime < startTime) {
-        console.warn(`🚨 MIDNIGHT-CROSSING SHIFT DETECTED for shift ${index}:`, {
-          date: shiftDate,
-          start_time: shift.start_time,
-          end_time: correctedEndTime,
-          employee_name: employeeName,
-          shift_type: shift.shift_type,
-          crosses_midnight: true
-        });
-      }
+      console.log(`✅ Converting shift ${index + 1}:`, {
+        date: shiftDate,
+        start_time: shift.start_time,
+        end_time: correctedEndTime,
+        employee_name: employeeName,
+        shift_type: shift.shift_type
+      });
       
       return {
         id: uuidv4(),
@@ -768,8 +715,7 @@ export const generateScheduleForNextMonth = async (
         is_published: false,
         department: shift.department || 'Akutmottagning'
       };
-    })
-    .filter((shift): shift is Shift => shift !== null); // Remove excluded boundary shifts
+    }); // All filtering is done in the .filter() step above
   
   console.log(`✅ Optimering genererade ${convertedSchedule.length} pass från Gurobi`);
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
