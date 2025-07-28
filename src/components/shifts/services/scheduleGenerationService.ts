@@ -393,29 +393,114 @@ export const generateScheduleForNextMonth = async (
   setTimeout(() => onProgress?.('⚙️ Kör matematisk optimering för schemaläggning...', 65), 1000);
   setTimeout(() => onProgress?.('🧮 Balanserar rättvisa och effektivitet...', 70), 1500);
   
-  const response = await schedulerApi.generateSchedule(
-    gurobiStartISO,
-    gurobiEndISO,
-    settings?.department || 'Akutmottagning',
-    gurobiConfig.minStaffPerShift,
-    gurobiConfig.minExperiencePerShift,
-    gurobiConfig.includeWeekends,
-    timestamp || Date.now(),
-    employeePreferences
-  );
+  let response;
+  
+  try {
+    // First attempt: Try with normal constraints
+    response = await schedulerApi.generateSchedule(
+      gurobiStartISO,
+      gurobiEndISO,
+      settings?.department || 'Akutmottagning',
+      gurobiConfig.minStaffPerShift,
+      gurobiConfig.minExperiencePerShift,
+      gurobiConfig.includeWeekends,
+      timestamp || Date.now(),
+      employeePreferences,
+      3, // retries
+      false // allowPartialCoverage = false for first attempt (strict requirements)
+    );
+  } catch (error) {
+    // Check if the error is due to insufficient staffing
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isStaffingError = errorMessage.includes('Not enough employees') || 
+                           errorMessage.includes('need ') || 
+                           errorMessage.includes('but only');
+    
+    if (isStaffingError) {
+      console.warn('⚠️ INSUFFICIENT STAFFING DETECTED - Attempting partial schedule generation...');
+      onProgress?.('⚠️ Otillräcklig bemanning - genererar partiellt schema...', 75);
+      
+      // Extract staffing info from error message for better user feedback
+      const staffingMatch = errorMessage.match(/need (\d+) shifts but only (\d+) possible/);
+      if (staffingMatch) {
+        const [, needed, possible] = staffingMatch;
+        const coveragePercent = Math.round((parseInt(possible) / parseInt(needed)) * 100);
+        console.log(`🔢 STAFFING ANALYSIS: Behöver ${needed} pass, kan bara fylla ${possible} (${coveragePercent}% täckning)`);
+      }
+      
+      try {
+        // Second attempt: Try with relaxed constraints to get partial coverage
+        // Reduce minimum staff requirements to allow partial scheduling
+        const relaxedMinStaff = Math.max(1, Math.floor(gurobiConfig.minStaffPerShift * 0.5));
+        const relaxedMinExperience = Math.max(1, Math.floor(gurobiConfig.minExperiencePerShift * 0.5));
+        
+        console.log(`🔧 RELAXED CONSTRAINTS: Försöker med minStaff=${relaxedMinStaff}, minExp=${relaxedMinExperience}`);
+        
+        response = await schedulerApi.generateSchedule(
+          gurobiStartISO,
+          gurobiEndISO,
+          settings?.department || 'Akutmottagning',
+          relaxedMinStaff, // Relaxed minimum staff
+          relaxedMinExperience, // Relaxed experience requirement
+          gurobiConfig.includeWeekends,
+          timestamp || Date.now(),
+          employeePreferences,
+          3, // retries
+          true // allowPartialCoverage = true for relaxed mode
+        );
+        
+        console.log('✅ PARTIAL SCHEDULE SUCCESS: Generated schedule with relaxed constraints');
+        
+      } catch (relaxedError) {
+        // If even relaxed constraints fail, provide a meaningful error message
+        const relaxedErrorMessage = relaxedError instanceof Error ? relaxedError.message : String(relaxedError);
+        
+        if (relaxedErrorMessage.includes('Not enough employees')) {
+          // Extract numbers from error for user-friendly message
+          const match = relaxedErrorMessage.match(/need (\d+) shifts but only (\d+) possible with (\d+) employees/);
+          if (match) {
+            const [, needed, possible, employees] = match;
+            const coveragePercent = Math.round((parseInt(possible) / parseInt(needed)) * 100);
+            throw new Error(`Otillräcklig bemanning för schemaläggning: ${employees} anställda kan bara täcka ${coveragePercent}% av behovet (${possible}/${needed} pass). För ett komplett schema behövs fler anställda eller flexiblare arbetstider.`);
+          }
+        }
+        
+        throw new Error(`Schemaläggning misslyckades trots relaxed constraints: ${relaxedErrorMessage}`);
+      }
+    } else {
+      // Re-throw non-staffing errors as-is
+      throw error;
+    }
+  }
   
   onProgress?.('📊 Analyserar optimeringsresultat och kvalitetskontroll...', 75);
   
   console.log('🎉 Gurobi optimization response:', response);
   
-  // Quick validation of response
+  // Enhanced validation for partial schedules
   if (response.schedule && response.schedule.length > 0) {
     const uniqueDates = [...new Set(response.schedule.map(shift => shift.date || shift.start_time?.split('T')[0]))].sort();
+    const coveragePercentage = response.coverage_stats?.coverage_percentage || 0;
+    
     console.log(`✅ Generated schedule: ${response.schedule.length} shifts covering ${uniqueDates.length} days`);
+    
+    // Provide user feedback for partial coverage
+    if (coveragePercentage < 100) {
+      console.warn(`⚠️ PARTIAL COVERAGE: ${coveragePercentage}% av nödvändiga pass är täckta. Vissa dagar/skift kan vara underbemannade.`);
+      onProgress?.(`⚠️ Partiellt schema genererat (${coveragePercentage}% täckning)`, 80);
+    } else {
+      onProgress?.('✅ Komplett schema genererat!', 80);
+    }
   }
   
+  // Allow empty schedule only if absolutely no solution is possible
   if (!response.schedule || response.schedule.length === 0) {
-    throw new Error('Optimering kunde inte generera ett schema med nuvarande begränsningar. Kontrollera personalens tillgänglighet och försök igen.');
+    // Check if we have coverage stats to provide better error message
+    const coverageMsg = response.coverage_stats ? 
+      `Täckning: ${response.coverage_stats.coverage_percentage || 0}%` : 
+      'Ingen täckningsdata tillgänglig';
+    
+    throw new Error(`Optimering kunde inte generera något schema. ${coverageMsg}. Kontrollera att personal har tillräcklig tillgänglighet och försök igen.`);
   }
 
   onProgress?.('🔧 Formaterar och validerar schemaresultat...', 85);
@@ -471,9 +556,28 @@ export const generateScheduleForNextMonth = async (
       };
     }); // All filtering is done in the .filter() step above
   
+  const coveragePercentage = response.coverage_stats?.coverage_percentage || 0;
+  const isPartialCoverage = coveragePercentage < 100;
+  
   console.log(`✅ Optimering genererade ${convertedSchedule.length} pass från Gurobi`);
-  console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
+  console.log(`📈 Täckning: ${coveragePercentage}%`);
   console.log(`⚖️ Rättvishet: ${response.fairness_stats?.shift_distribution_range || 0} pass spridning`);
+  
+  // Enhanced logging for partial coverage scenarios
+  if (isPartialCoverage) {
+    const totalNeeded = response.coverage_stats?.total_shifts || 0;
+    const filled = response.coverage_stats?.filled_shifts || convertedSchedule.length;
+    const uncoveredShifts = totalNeeded - filled;
+    
+    console.warn(`⚠️ PARTIELL TÄCKNING: ${uncoveredShifts} pass saknar bemanning (${coveragePercentage}% täckning)`);
+    console.warn(`📊 Schema-statistik: ${filled}/${totalNeeded} pass bemannade`);
+    
+    // Add coverage warning to progress
+    onProgress?.(`⚠️ Schema klart - ${coveragePercentage}% täckning`, 100);
+  } else {
+    console.log('🎉 FULLSTÄNDIG TÄCKNING: Alla pass har adekvat bemanning!');
+    onProgress?.('✅ Schema optimerat och klart för granskning!', 100);
+  }
   
   // Validate schedule for constraint violations (logging only)
   if (profiles && profiles.length > 0) {
@@ -484,8 +588,6 @@ export const generateScheduleForNextMonth = async (
       console.warn(violationMessage);
     }
   }
-  
-  onProgress?.('✅ Schema optimerat och klart för granskning!', 100);
   
   const finalResult = {
     schedule: convertedSchedule, // Use Gurobi result directly - no client-side modifications

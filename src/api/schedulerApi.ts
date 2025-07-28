@@ -16,6 +16,7 @@ interface GurobiScheduleRequest {
   fairness_weight?: number;
   balance_workload?: boolean;
   max_hours_per_nurse?: number;
+  allow_partial_coverage?: boolean; // NEW: Allow partial schedules when not enough staff
   employee_preferences?: Array<{
     employee_id: string;
     preferred_shifts: string[];
@@ -102,7 +103,8 @@ export const schedulerApi = {
       max_shifts_per_week: number;
       available_days: string[];
     }>,
-    retries = 3
+    retries = 3,
+    allowPartialCoverage: boolean = false // NEW: Allow partial schedules when not enough staff
   ): Promise<GurobiScheduleResponse> => {
     // Use local Gurobi API from environment config
     const url = `${SCHEDULER_API.BASE_URL}${SCHEDULER_API.ENDPOINTS.OPTIMIZE_SCHEDULE}`;
@@ -129,13 +131,14 @@ export const schedulerApi = {
       optimizer: "gurobi",
       min_staff_per_shift: minStaffPerShift,
       minimum_staff: minStaffPerShift, // Säkerställ att båda parametrarna är samma
-      staff_constraint: "strict", // Framtvinga strict compliance
+      staff_constraint: allowPartialCoverage ? "flexible" : "strict", // Use flexible for partial coverage
       min_experience_per_shift: minExperiencePerShift,
       include_weekends: includeWeekends,
       weekend_penalty_weight: automaticWeekendPenalty, // Automatisk beräkning för rättvisa
       fairness_weight: 1.0, // Maximal fokus på rättvis fördelning
       balance_workload: true, // Balansera arbetsbördan
       max_hours_per_nurse: 40, // Maximal arbetstid per sjuksköterska
+      allow_partial_coverage: allowPartialCoverage, // NEW: Signal backend to allow partial schedules
       employee_preferences: employeePreferences || [] // Lägg till employee preferences
     };
     
