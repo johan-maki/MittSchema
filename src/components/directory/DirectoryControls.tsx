@@ -18,6 +18,8 @@ export function DirectoryControls() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating3, setIsGenerating3] = useState(false);
+  const [isGenerating5, setIsGenerating5] = useState(false);
   const [newProfile, setNewProfile] = useState<InsertProfile>({
     id: '',
     first_name: '',
@@ -100,10 +102,11 @@ export function DirectoryControls() {
     }
   };
 
-  const handleGenerateTestData = async () => {
-    setIsGenerating(true);
+  const handleGenerateTestData = async (count = 6) => {
+    const setter = count === 3 ? setIsGenerating3 : count === 5 ? setIsGenerating5 : setIsGenerating;
+    setter(true);
     try {
-      await generateTestData(6);
+      await generateTestData(count);
       
       await queryClient.removeQueries({ queryKey: ['profiles'] });
       await queryClient.removeQueries({ queryKey: ['all-employees'] });
@@ -114,7 +117,7 @@ export function DirectoryControls() {
       
       showToast({
         title: "✅ Testdata genererad",
-        description: "6 test-anställda har lagts till i databasen"
+        description: `${count} test-anställda har lagts till i databasen`
       });
     } catch (error) {
       console.error('Error generating test data:', error);
@@ -124,7 +127,7 @@ export function DirectoryControls() {
         variant: "destructive"
       });
     } finally {
-      setIsGenerating(false);
+      setter(false);
     }
   };
 
@@ -192,7 +195,27 @@ export function DirectoryControls() {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={handleGenerateTestData}
+          onClick={() => handleGenerateTestData(3)}
+          disabled={isGenerating3}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {isGenerating3 ? "Genererar..." : "Testdata (3)"}
+        </Button>
+
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleGenerateTestData(5)}
+          disabled={isGenerating5}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {isGenerating5 ? "Genererar..." : "Testdata (5)"}
+        </Button>
+
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleGenerateTestData(6)}
           disabled={isGenerating}
         >
           <Users className="h-4 w-4 mr-2" />
