@@ -21,8 +21,8 @@ export function ProfilesTable({ profiles, onEdit, onDelete, onViewPreferences }:
   // Sorteringslogik
   const sortedProfiles = useMemo(() => {
     return [...profiles].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
 
       switch (sortField) {
         case 'name':
