@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Profile, InsertProfile, DatabaseProfile, convertDatabaseProfile } from "@/types/profile";
 import { useDirectory } from "@/contexts/DirectoryContext";
+import { WorkPreferencesService } from "@/services/workPreferencesService";
 
 export function useProfileDirectory() {
   const { roleFilter, searchQuery } = useDirectory();
@@ -154,24 +155,15 @@ export function useProfileDirectory() {
       console.log("Updating profile with ID:", editingProfile.id);
       console.log("New work_percentage:", editingProfile.work_percentage);
       
-      // Först hämta befintliga work_preferences så vi kan uppdatera work_percentage där också
-      const { data: currentProfile, error: fetchError } = await supabase
-        .from('employees')
-        .select('work_preferences')
-        .eq('id', editingProfile.id)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching current profile:', fetchError);
-        throw fetchError;
+      // Använd WorkPreferencesService för konsistent work_percentage uppdatering
+      if (editingProfile.work_percentage !== undefined) {
+        await WorkPreferencesService.updateWorkPercentage(
+          editingProfile.id, 
+          editingProfile.work_percentage
+        );
       }
       
-      // Uppdatera work_preferences.work_percentage också för att hålla det synkroniserat
-      const updatedWorkPreferences = {
-        ...currentProfile.work_preferences,
-        work_percentage: editingProfile.work_percentage || 100
-      };
-      
+      // Uppdatera övriga profilfält (inte work_percentage som redan är uppdaterad)
       const { data, error } = await supabase
         .from('employees')
         .update({
@@ -181,9 +173,7 @@ export function useProfileDirectory() {
           department: editingProfile.department || null,
           phone: editingProfile.phone || null,
           experience_level: editingProfile.experience_level,
-          hourly_rate: editingProfile.hourly_rate || 1000,
-          work_percentage: editingProfile.work_percentage || 100, // Uppdatera direct work_percentage kolumn
-          work_preferences: updatedWorkPreferences // Uppdatera work_preferences.work_percentage också
+          hourly_rate: editingProfile.hourly_rate || 1000
         })
         .eq('id', editingProfile.id)
         .select();
@@ -197,12 +187,7 @@ export function useProfileDirectory() {
       
       // Enhanced cache refresh to ensure UI updates correctly
       console.log('🔄 Refreshing cache after profile update...');
-      await queryClient.removeQueries({ queryKey: ['profiles'] });
-      await queryClient.removeQueries({ queryKey: ['all-employees'] });
-      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
-      await queryClient.refetchQueries({ queryKey: ['profiles'] });
-      await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+      await WorkPreferencesService.refreshCache(queryClient, editingProfile.id);
       console.log('✅ Profile updated and cache refreshed');
       
       toast({

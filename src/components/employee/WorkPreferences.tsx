@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 import { convertWorkPreferences } from "@/types/profile";
+import { WorkPreferencesService } from "@/services/workPreferencesService";
 import type { Json } from "@/integrations/supabase/types";
 import { Save, Clock, Calendar, Briefcase } from "lucide-react";
 
@@ -110,30 +111,18 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       console.log('🔄 Saving work preferences for employee:', employeeId);
       console.log('📄 Data being saved:', JSON.stringify(jsonObj, null, 2));
       
-      const { data, error } = await supabase
-        .from('employees')
-        .update({
-          work_preferences: jsonObj
-        })
-        .eq('id', employeeId)
-        .select('work_preferences');
+      // Använd WorkPreferencesService för konsistent uppdatering
+      await WorkPreferencesService.updateWorkPreferences(employeeId, preferences);
 
-      if (error) {
-        console.error('❌ Database error:', error);
-        throw error;
-      }
-
-      console.log('✅ Successfully saved to database:', data);
+      console.log('✅ Successfully saved using WorkPreferencesService');
 
       toast({
         title: "Inställningar sparade",
         description: "Dina arbetsinställningar har uppdaterats",
       });
 
-      // Invalidate multiple cache keys to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ['work-preferences'] });
-      await queryClient.invalidateQueries({ queryKey: ['employee-profile', employeeId] });
-      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+      // Använd centraliserad cache refresh för konsistens
+      await WorkPreferencesService.refreshCache(queryClient, employeeId);
       
       // Verify the save by re-fetching
       const { data: verifyData, error: verifyError } = await supabase
