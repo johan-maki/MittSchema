@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +52,36 @@ export function useProfileDirectory() {
     },
     enabled: true
   });
+
+  // Set up real-time subscription for automatic updates
+  useEffect(() => {
+    console.log("🔄 Setting up real-time subscription for employees table...");
+    
+    const subscription = supabase
+      .channel('employees-changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'employees' 
+        }, 
+        (payload) => {
+          console.log("🔄 Real-time update received:", payload);
+          console.log("🔄 Invalidating and refetching profiles...");
+          
+          // Invalidate the cache to trigger a fresh fetch
+          queryClient.invalidateQueries({ queryKey: ['profiles'] });
+          queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log("🔄 Cleaning up real-time subscription...");
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   // Filter profiles based on search query and role filter
   const filteredProfiles = profiles.filter((profile) => {

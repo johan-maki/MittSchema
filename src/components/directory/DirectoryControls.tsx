@@ -37,20 +37,13 @@ export function DirectoryControls() {
   const { toast: showToast } = useToast();
   
   const handleAddProfile = async () => {
+    setIsProcessing(true);
     try {
       await addProfile(newProfile);
       
-      // Force complete cache refresh
-      console.log('🔄 Forcing complete cache refresh after adding new profile...');
-      
-      await queryClient.removeQueries({ queryKey: ['profiles'] });
-      await queryClient.removeQueries({ queryKey: ['all-employees'] });
-      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
-      await queryClient.refetchQueries({ queryKey: ['profiles'] });
-      await queryClient.refetchQueries({ queryKey: ['all-employees'] });
-      
-      console.log('✅ Cache refresh completed - new employee should be visible');
+      // Real-time subscription will handle the cache update automatically
+      // But we can also force it immediately for instant feedback
+      console.log('🔄 Profile added, real-time subscription will update UI automatically');
       
       setNewProfile({
         id: '',
@@ -64,11 +57,13 @@ export function DirectoryControls() {
       });
       
       setIsDialogOpen(false);
-      toast.success('Employee added successfully');
+      toast.success('Medarbetare tillagd framgångsrikt!');
       
     } catch (error) {
       console.error('Error adding profile:', error);
-      toast.error('Failed to add employee');
+      toast.error('Kunde inte lägga till medarbetare');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
