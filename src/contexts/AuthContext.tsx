@@ -33,8 +33,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setError(null);
       
       // DEVELOPMENT MODE: Auto-login for testing
-      if (import.meta.env.DEV || window.location.hostname === 'localhost') {
+      // Enable for development, localhost, and the Vercel deployment for testing
+      if (import.meta.env.DEV || 
+          window.location.hostname === 'localhost' || 
+          window.location.hostname === 'mitt-schema.vercel.app') {
         console.log('🚀 DEVELOPMENT MODE: Auto-logging in as test user');
+        console.log('🌍 Environment:', {
+          hostname: window.location.hostname,
+          isDev: import.meta.env.DEV,
+          mode: import.meta.env.MODE
+        });
         
         const mockUser = {
           id: 'dev-user-123',

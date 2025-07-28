@@ -38,6 +38,15 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         // Problem: Extended range was showing September shifts in August view
         // Solution: Keep strict month boundaries for clean UI display
         // Note: scheduleGenerationService handles boundary shifts during generation
+        
+        // 🔍 DEBUG: Log the actual date range being used
+        console.log(`📅 MONTH VIEW DATE RANGE:`, {
+          currentDate: currentDate.toISOString(),
+          startOfMonth: startDate.toISOString(),
+          endOfMonth: endDate.toISOString(),
+          month: currentDate.getMonth() + 1,
+          year: currentDate.getFullYear()
+        });
       }
       
       // Format dates to ISO strings in UTC
