@@ -75,7 +75,8 @@ export function useProfileDirectory() {
       department: profile.department || '',
       phone: profile.phone || '',
       experience_level: profile.experience_level,
-      hourly_rate: profile.hourly_rate || 1000 // Include current hourly rate
+      hourly_rate: profile.hourly_rate || 1000, // Include current hourly rate
+      work_percentage: profile.work_percentage || 100 // Include current work_percentage
     });
     setIsEditDialogOpen(true);
   };

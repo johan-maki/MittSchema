@@ -10,6 +10,7 @@ export interface Profile {
   phone: string | null;
   experience_level: number;
   hourly_rate?: number; // SEK per hour
+  work_percentage?: number; // 0-100, represents percentage of full-time
   created_at: string;
   updated_at: string;
   work_preferences?: WorkPreferences;
