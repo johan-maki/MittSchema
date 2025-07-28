@@ -170,6 +170,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       // IMMEDIATELY invalidate cache so user sees empty schedule before backend processing
       console.log('🔄 Invalidating cache immediately for instant visual feedback');
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
       
       // Small delay to ensure UI updates visually
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -184,6 +185,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           // Cache invalidation callback - triggered immediately after backend clearing
           console.log('🔄 Backend cleared shifts - invalidating cache again for safety');
           await queryClient.invalidateQueries({ queryKey: ['shifts'] });
+          await queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
           console.log('✅ Double cache invalidation completed');
         }
       );
@@ -312,6 +314,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         
         // Invalidate shifts query to refresh the calendar
         queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
         
         // 🎯 CRITICAL FIX: Navigate to next month automatically after schedule acceptance
         // This ensures user sees the generated schedule immediately in the correct month

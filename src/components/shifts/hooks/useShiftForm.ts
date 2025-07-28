@@ -90,6 +90,7 @@ export const useShiftForm = ({
 
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error: any) {
       console.error('Error saving shift:', error);
       toast({
@@ -118,6 +119,7 @@ export const useShiftForm = ({
 
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error: any) {
       console.error('Error deleting shift:', error);
       toast({

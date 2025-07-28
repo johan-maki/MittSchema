@@ -18,9 +18,10 @@ export const useSchedulePublishing = () => {
 
       toast({
         title: "Schema publicerat",
-        description: "Alla schemalagda pass har publicerats.",
+        description: "Schemat är nu synligt för alla anställda och kan inte redigeras.",
       });
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error) {
       console.error('Error publishing schedule:', error);
       toast({
@@ -54,6 +55,7 @@ export const useSchedulePublishing = () => {
         description: "Schemat är nu redigerbart igen.",
       });
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error) {
       console.error('Error unpublishing schedule:', error);
       toast({
@@ -109,6 +111,7 @@ export const useSchedulePublishing = () => {
         description: "Hela schemat har rensats och är nu tomt.",
       });
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error) {
       console.error('Error clearing schedule:', error);
       toast({

@@ -61,6 +61,7 @@ export const useScheduleApplier = () => {
 
       onSuccess();
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
     } catch (error) {
       console.error('Error applying schedule:', error);
       toast({

@@ -81,7 +81,7 @@ const SHIFT_CONFIG = {
 
 export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'week' | 'month'>('week');
+  const [view, setView] = useState<'week' | 'month'>('month'); // Ändrat till månad som standard
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -442,11 +442,12 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
               <div>
                 <CardTitle className="text-xl">
                   {view === 'week' 
-                    ? `Vecka ${format(currentDate, 'w', { locale: sv })}`
-                    : format(currentDate, 'MMMM yyyy', { locale: sv })}
+                    ? `Vecka ${format(currentDate, 'w', { locale: sv })}` 
+                    : `${format(currentDate, 'MMMM yyyy', { locale: sv })}`}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {filteredShifts.length} pass • {totalHours} timmar
+                  {view === 'month' && ' • Månadvy är standard'}
                 </p>
               </div>
             </div>
@@ -478,18 +479,18 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
 
               <div className="flex items-center gap-1">
                 <Button
-                  variant={view === 'week' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setView('week')}
-                >
-                  Vecka
-                </Button>
-                <Button
                   variant={view === 'month' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setView('month')}
                 >
                   Månad
+                </Button>
+                <Button
+                  variant={view === 'week' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setView('week')}
+                >
+                  Vecka
                 </Button>
               </div>
 
@@ -517,98 +518,108 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
 
       {/* Week view */}
       {view === 'week' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-          {getWeekDays().map((day, index) => {
-            const dayShifts = getShiftsForDay(day);
-            const isCurrentDay = isToday(day);
-            
-            return (
-              <motion.div
-                key={day.toISOString()}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className={`h-full ${isCurrentDay ? 'ring-2 ring-primary' : ''}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {format(day, 'EEEE', { locale: sv })}
-                        </p>
-                        <p className={`text-lg font-semibold ${isCurrentDay ? 'text-primary' : ''}`}>
-                          {format(day, 'd')}
-                        </p>
-                      </div>
-                      {dayShifts.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          {dayShifts.length}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2">
-                      {dayShifts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                          Ledig
-                        </p>
-                      ) : (
-                        dayShifts.map((shift) => {
-                          const config = SHIFT_CONFIG[shift.shift_type];
-                          const Icon = config.icon;
-                          
-                          return (
-                            <div
-                              key={shift.id}
-                              className={`p-3 rounded-lg border ${config.color} transition-all hover:shadow-sm`}
-                            >
-                              <div className="flex items-start gap-2">
-                                <Icon className={`h-4 w-4 mt-0.5 ${config.iconColor}`} />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Badge className={`text-xs ${config.badgeColor}`}>
-                                      {config.label}
-                                    </Badge>
-                                    {!shift.is_published && (
-                                      <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                                        Utkast
+        <div className="space-y-4">
+          {filteredShifts.length === 0 ? (
+            <Card className="p-12 text-center">
+              <CalendarDays className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Inga pass denna vecka</h3>
+              <p className="text-muted-foreground">
+                Du har inga schemalagda pass för vecka {format(currentDate, 'w', { locale: sv })}.
+              </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-4">
+              {getWeekDays().map((day, index) => {
+                const dayShifts = getShiftsForDay(day);
+                const isCurrentDay = isToday(day);
+                
+                return (
+                  <motion.div
+                    key={day.toISOString()}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className={`h-full min-h-[300px] ${isCurrentDay ? 'ring-2 ring-primary' : ''}`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                              {format(day, 'EEEE', { locale: sv })}
+                            </p>
+                            <p className={`text-lg font-semibold ${isCurrentDay ? 'text-primary' : ''}`}>
+                              {format(day, 'd')}
+                            </p>
+                          </div>
+                          {dayShifts.length > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {dayShifts.length}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-3">
+                        <div className="space-y-2">
+                          {dayShifts.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-6">
+                              Ledig
+                            </p>
+                          ) : (
+                            dayShifts.map((shift) => {
+                              const config = SHIFT_CONFIG[shift.shift_type];
+                              const Icon = config.icon;
+                              
+                              return (
+                                <div
+                                  key={shift.id}
+                                  className={`p-2.5 rounded-lg border ${config.color} transition-all hover:shadow-sm`}
+                                >
+                                  {/* Mer kompakt layout för veckovis visning */}
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1">
+                                      <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${config.iconColor}`} />
+                                      <Badge className={`text-xs px-1.5 py-0.5 ${config.badgeColor}`}>
+                                        {config.label}
                                       </Badge>
-                                    )}
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1 text-sm">
-                                      <Clock className="h-3 w-3" />
-                                      <span>
-                                        {format(parseISO(shift.start_time), 'HH:mm')} - {format(parseISO(shift.end_time), 'HH:mm')}
+                                    </div>
+                                    
+                                    <div className="text-sm font-medium">
+                                      {format(parseISO(shift.start_time), 'HH:mm')} - {format(parseISO(shift.end_time), 'HH:mm')}
+                                    </div>
+                                    
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      {shift.department}
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-muted-foreground">
+                                        {getShiftDuration(shift)}h
                                       </span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-sm">
-                                      <MapPin className="h-3 w-3" />
-                                      <span className="truncate">{shift.department}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <TimerIcon className="h-3 w-3" />
-                                      <span>{getShiftDuration(shift)} timmar</span>
+                                      {!shift.is_published && (
+                                        <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200 px-1">
+                                          Utkast
+                                        </Badge>
+                                      )}
                                     </div>
                                   </div>
+                                  
+                                  {shift.notes && (
+                                    <p className="text-xs text-muted-foreground mt-2 italic line-clamp-2">
+                                      {shift.notes}
+                                    </p>
+                                  )}
                                 </div>
-                              </div>
-                              {shift.notes && (
-                                <p className="text-xs text-muted-foreground mt-2 italic">
-                                  {shift.notes}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+                              );
+                            })
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

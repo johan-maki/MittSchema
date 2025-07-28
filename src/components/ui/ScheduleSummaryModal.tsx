@@ -6,6 +6,7 @@ import type { Profile } from '@/types/profile';
 import type { StaffingIssue } from '@/components/shifts/utils/staffingUtils';
 import { format, parseISO, getDaysInMonth } from 'date-fns';
 import { sv } from 'date-fns/locale';
+import { EmployeePreferencesModal } from '@/components/directory/EmployeePreferencesModal';
 
 interface EmployeeSummary {
   id: string;
@@ -47,6 +48,16 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   staffingIssues = []
 }) => {
   const [showCoverageDetails, setShowCoverageDetails] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
+  const [showEmployeePreferences, setShowEmployeePreferences] = useState(false);
+  
+  const handleEmployeeClick = (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (employee) {
+      setSelectedEmployee(employee);
+      setShowEmployeePreferences(true);
+    }
+  };
   
   if (!isOpen) return null;
 
@@ -183,7 +194,7 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                 <BarChart3 className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Schema Sammanfattning</h2>
+                <h2 className="text-xl font-bold">Schema sammanfattning</h2>
                 <p className="text-green-100 text-sm">
                   {format(startDate, 'd MMMM', { locale: sv })} - {format(endDate, 'd MMMM yyyy', { locale: sv })}
                 </p>
@@ -398,7 +409,12 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                     <tr key={summary.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{summary.name}</div>
+                          <button
+                            onClick={() => handleEmployeeClick(summary.id)}
+                            className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                          >
+                            {summary.name}
+                          </button>
                           <div className="text-sm text-gray-500">{summary.role}</div>
                         </div>
                       </td>
@@ -526,5 +542,19 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return (
+    <>
+      {createPortal(modalContent, document.body)}
+      
+      {/* Employee Preferences Modal */}
+      <EmployeePreferencesModal
+        employee={selectedEmployee}
+        isOpen={showEmployeePreferences}
+        onClose={() => {
+          setShowEmployeePreferences(false);
+          setSelectedEmployee(null);
+        }}
+      />
+    </>
+  );
 };

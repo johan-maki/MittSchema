@@ -52,14 +52,14 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         to="/directory" 
         className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md dark:text-white dark:hover:bg-gray-800"
       >
-        Personal
+        Personalkatalog
       </Link>
       <Link 
         to="/employee" 
         className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1 dark:text-white dark:hover:bg-gray-800"
       >
         <UserCircle2 className="w-4 h-4" />
-        Anställda vy
+        Anställdas vy
       </Link>
       <Link 
         to="/help" 
