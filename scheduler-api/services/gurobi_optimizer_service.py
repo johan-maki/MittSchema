@@ -62,6 +62,7 @@ class GurobiScheduleOptimizer:
         min_staff_per_shift: int = 1,
         min_experience_per_shift: int = 1,
         include_weekends: bool = True,
+        allow_partial_coverage: bool = False,
         random_seed: Optional[int] = None,
         employee_preferences: Optional[List] = None
     ) -> Dict[str, Any]:
@@ -146,7 +147,7 @@ class GurobiScheduleOptimizer:
             self._create_variables()
             
             # Add constraints
-            self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends)
+            self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends, allow_partial_coverage)
             
             # Add employee preference constraints (CRITICAL: This was missing!)
             self._add_employee_preference_constraints()
@@ -214,9 +215,9 @@ class GurobiScheduleOptimizer:
         
         logger.info(f"Created {len(self.shifts)} decision variables")
     
-    def _add_constraints(self, min_staff_per_shift: int, min_experience_per_shift: int, include_weekends: bool):
+    def _add_constraints(self, min_staff_per_shift: int, min_experience_per_shift: int, include_weekends: bool, allow_partial_coverage: bool = False):
         """Add all constraints to the model."""
-        logger.info("Adding constraints...")
+        logger.info(f"Adding constraints... (allow_partial_coverage={allow_partial_coverage})")
         
         # 1. Each employee works at most 1 shift per day
         for emp in self.employees:
@@ -282,13 +283,18 @@ class GurobiScheduleOptimizer:
                     self.shifts[(emp['id'], d, shift)] for emp in self.employees
                 )
                 
-                if required_staff > 0:
+                # Only enforce minimum staff constraint if NOT allowing partial coverage
+                if required_staff > 0 and not allow_partial_coverage:
                     self.model.addConstr(
                         total_staff >= required_staff,
                         name=f"min_staff_{d}_{shift}"
                     )
+                elif allow_partial_coverage:
+                    # When allowing partial coverage, minimum staff becomes a soft constraint
+                    # The optimizer will try to maximize coverage without failing if impossible
+                    logger.info(f"Allowing partial coverage for {date} {shift} shift")
                 
-                # Ensure exact staff per shift (no overstaffing)
+                # Ensure exact staff per shift (no overstaffing) - always apply this
                 self.model.addConstr(
                     total_staff <= min_staff_per_shift,
                     name=f"max_staff_{d}_{shift}"
@@ -804,6 +810,7 @@ def optimize_schedule_with_gurobi(
     min_staff_per_shift: int = 1,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
+    allow_partial_coverage: bool = False,
     random_seed: Optional[int] = None,
     employee_preferences: Optional[List] = None
 ) -> Dict[str, Any]:
@@ -821,6 +828,7 @@ def optimize_schedule_with_gurobi(
         min_staff_per_shift=min_staff_per_shift,
         min_experience_per_shift=min_experience_per_shift,
         include_weekends=include_weekends,
+        allow_partial_coverage=allow_partial_coverage,
         random_seed=random_seed,
         employee_preferences=employee_preferences
     )

@@ -67,6 +67,7 @@ async def handle_optimization_request(request: ScheduleRequest):
             min_staff_per_shift=request.min_staff_per_shift or 1,
             min_experience_per_shift=request.min_experience_per_shift or 1,
             include_weekends=request.include_weekends if request.include_weekends is not None else True,
+            allow_partial_coverage=request.allow_partial_coverage or False,
             employee_preferences=request.employee_preferences
         )
         

@@ -17,6 +17,7 @@ def optimize_schedule(
     min_staff_per_shift: int = 1,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
+    allow_partial_coverage: bool = False,
     employee_preferences: Optional[List] = None
 ):
     """
@@ -37,6 +38,7 @@ def optimize_schedule(
         min_staff_per_shift: Minimum staff required per shift
         min_experience_per_shift: Minimum experience level required
         include_weekends: Whether to schedule weekend shifts
+        allow_partial_coverage: Allow partial schedule when not enough staff
         employee_preferences: Individual employee work preferences
     
     Returns:
@@ -66,6 +68,7 @@ def optimize_schedule(
             min_staff_per_shift=min_staff_per_shift,
             min_experience_per_shift=min_experience_per_shift,
             include_weekends=include_weekends,
+            allow_partial_coverage=allow_partial_coverage,
             random_seed=random_seed,
             employee_preferences=employee_preferences
         )

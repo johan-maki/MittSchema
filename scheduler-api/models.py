@@ -27,6 +27,7 @@ class ScheduleRequest(BaseModel):
     min_staff_per_shift: Optional[int] = Field(default=1, description="Minimum staff required per shift")
     min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience level required")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
+    allow_partial_coverage: Optional[bool] = Field(default=False, description="Allow partial schedule when not enough staff")
     employee_preferences: Optional[List[EmployeePreference]] = Field(default=None, description="Individual employee work preferences")
 
 class ShiftResponse(BaseModel):
