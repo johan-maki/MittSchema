@@ -563,6 +563,31 @@ export const generateScheduleForNextMonth = async (
     console.log('  Unique dates in response:', uniqueDates);
     console.log('  Date breakdown:', dateAnalysis);
     
+    // 🔍 CRITICAL DEBUG: Check for August 1st specifically
+    const august1Shifts = response.schedule.filter(shift => {
+      const date = shift.date || shift.start_time?.split('T')[0];
+      return date === '2025-08-01';
+    });
+    
+    console.log('🔍 AUGUST 1ST SHIFTS FROM GUROBI:');
+    console.log('  Count:', august1Shifts.length);
+    august1Shifts.forEach((shift, i) => {
+      console.log(`  Aug 1 Shift ${i + 1}:`, {
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        employee_name: shift.employee_name,
+        shift_type: shift.shift_type
+      });
+    });
+    
+    if (august1Shifts.length < 3) {
+      console.warn('🚨 AUGUST 1ST IS MISSING SHIFTS! Expected 3 (day, evening, night), got:', august1Shifts.length);
+      console.warn('  Missing shift types:', ['day', 'evening', 'night'].filter(type => 
+        !august1Shifts.some(s => s.shift_type === type)
+      ));
+    }
+    
     // 🔍 CRITICAL DEBUG: Sample first and last few shifts from Gurobi
     console.log('🔍 SAMPLE GUROBI SHIFTS (First 3):');
     response.schedule.slice(0, 3).forEach((shift, i) => {
