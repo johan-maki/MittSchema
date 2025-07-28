@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Fetch all employees for the selector (managers can view anyone's schedule)
   const { data: employees, isLoading: loadingEmployees } = useQuery({
@@ -81,6 +82,8 @@ const EmployeeView = () => {
     if (!selectedEmployeeId && employees?.length) {
       console.log('📌 Auto-selecting first employee:', employees[0].id, employees[0].first_name);
       setSelectedEmployeeId(employees[0].id);
+      // Set first employee as current user for demo purposes
+      setCurrentUserId(employees[0].id);
     }
   }, [employees, selectedEmployeeId]);
 
@@ -149,7 +152,8 @@ const EmployeeView = () => {
                       {currentUserId && employees?.find(emp => emp.id === currentUserId) && (
                         <>
                           {(() => {
-                            const currentUser = employees.find(emp => emp.id === currentUserId)!;
+                            const currentUser = employees.find(emp => emp.id === currentUserId);
+                            if (!currentUser) return null;
                             return (
                               <SelectItem key={currentUser.id} value={currentUser.id}>
                                 <div className="flex items-center gap-2">
