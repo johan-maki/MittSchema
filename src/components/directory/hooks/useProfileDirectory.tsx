@@ -65,13 +65,19 @@ export function useProfileDirectory() {
           schema: 'public', 
           table: 'employees' 
         }, 
-        (payload) => {
+        async (payload) => {
           console.log("🔄 Real-time update received:", payload);
-          console.log("🔄 Invalidating and refetching profiles...");
+          console.log("🔄 Forcing aggressive cache invalidation and refetch...");
           
-          // Invalidate the cache to trigger a fresh fetch
-          queryClient.invalidateQueries({ queryKey: ['profiles'] });
-          queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+          // More aggressive cache update to ensure UI responds
+          await queryClient.removeQueries({ queryKey: ['profiles'] });
+          await queryClient.removeQueries({ queryKey: ['all-employees'] });
+          await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+          await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+          await queryClient.refetchQueries({ queryKey: ['profiles'] });
+          await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+          
+          console.log("✅ Cache aggressively updated via real-time subscription");
         }
       )
       .subscribe();

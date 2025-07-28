@@ -41,9 +41,18 @@ export function DirectoryControls() {
     try {
       await addProfile(newProfile);
       
-      // Real-time subscription will handle the cache update automatically
-      // But we can also force it immediately for instant feedback
-      console.log('🔄 Profile added, real-time subscription will update UI automatically');
+      // Force immediate cache update for instant UI feedback
+      console.log('🔄 Profile added, forcing immediate cache update...');
+      
+      // More aggressive cache invalidation to ensure UI updates
+      await queryClient.removeQueries({ queryKey: ['profiles'] });
+      await queryClient.removeQueries({ queryKey: ['all-employees'] });
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+      await queryClient.refetchQueries({ queryKey: ['profiles'] });
+      await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+      
+      console.log('✅ Cache updated, UI should refresh automatically');
       
       setNewProfile({
         id: '',
