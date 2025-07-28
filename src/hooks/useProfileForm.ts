@@ -44,6 +44,14 @@ export const useProfileForm = ({
       }
     }
     
+    // Validate work_percentage
+    if (profile.work_percentage !== undefined) {
+      const workPercentage = Number(profile.work_percentage);
+      if (isNaN(workPercentage) || workPercentage < 0 || workPercentage > 100) {
+        newErrors.work_percentage = "Arbetstid måste vara mellan 0 och 100%";
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -81,6 +89,15 @@ export const useProfileForm = ({
           return { ...prev, [field]: Math.min(Math.max(numValue, 0), 10000) };
         }
         return { ...prev, [field]: prev.hourly_rate };
+      }
+      
+      if (field === 'work_percentage') {
+        // Parse to number and validate range (0-100)
+        const numValue = typeof value === 'number' ? value : parseInt(value);
+        if (!isNaN(numValue)) {
+          return { ...prev, [field]: Math.min(Math.max(numValue, 0), 100) };
+        }
+        return { ...prev, [field]: prev.work_percentage };
       }
       
       // For nullable fields, convert empty strings to null

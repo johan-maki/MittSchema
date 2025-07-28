@@ -46,13 +46,14 @@ export const EmployeePreferencesModal = ({ employee, isOpen, onClose }: Employee
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
         {/* Header */}
         <DialogHeader className="relative">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg -mx-6 -mt-6 mb-6 p-6 text-white">
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+              className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-all duration-200"
+              aria-label="Stäng dialog"
             >
               <X className="w-5 h-5" />
             </button>
