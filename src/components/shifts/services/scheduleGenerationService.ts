@@ -671,10 +671,10 @@ export const generateScheduleForNextMonth = async (
       const employee = profiles.find(p => p.id === shift.employee_id);
       const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : shift.employee_name || 'Unknown Employee';
       
-      // 🔧 CRITICAL FIX: Force end_time to be within target month if it spills over
-      // PROBLEM: Aug 31 22:00 → Sep 1 06:00 shows September end time
-      // SOLUTION: Keep original end_time for night shifts crossing month boundaries
-      let correctedEndTime = shift.end_time;
+      // 🔧 CRITICAL FIX: Handle boundary night shifts properly
+      // PROBLEM: Aug 31 22:00 → Sep 1 06:00 creates September spillover
+      // SOLUTION: Exclude boundary night shifts that would cross into next month
+      const correctedEndTime = shift.end_time;
       
       // Check if this is a night shift that ends in the next month (September spillover)
       if (shift.end_time && shift.start_time) {
@@ -683,22 +683,18 @@ export const generateScheduleForNextMonth = async (
         
         // If end_time is in next month but start_time is in target month
         if (endTimeMonth === (targetMonth + 2) && startTimeMonth === (targetMonth + 1)) {
-          console.warn(`� NIGHT SHIFT BOUNDARY DETECTED for shift ${index}:`, {
+          console.warn(`🚨 BOUNDARY NIGHT SHIFT DETECTED - EXCLUDING for shift ${index}:`, {
             original_start_time: shift.start_time,
             original_end_time: shift.end_time,
             start_month: startTimeMonth,
             end_month: endTimeMonth,
             employee_name: employeeName,
             shift_type: shift.shift_type,
-            action: 'Truncating end_time to stay within target month'
+            reason: 'Night shift crosses month boundary - excluded to prevent September spillover'
           });
           
-          // Truncate the end_time to the last moment of the target month
-          const startDate = shift.start_time.split('T')[0]; // Get YYYY-MM-DD from start_time
-          const [year, month, day] = startDate.split('-');
-          correctedEndTime = `${year}-${month}-${day}T23:59:59`;
-          
-          console.warn(`🔧 CORRECTED END_TIME: ${shift.end_time} → ${correctedEndTime}`);
+          // Return null to indicate this shift should be filtered out
+          return null;
         }
       }
       
@@ -772,7 +768,8 @@ export const generateScheduleForNextMonth = async (
         is_published: false,
         department: shift.department || 'Akutmottagning'
       };
-    });
+    })
+    .filter((shift): shift is Shift => shift !== null); // Remove excluded boundary shifts
   
   console.log(`✅ Optimering genererade ${convertedSchedule.length} pass från Gurobi`);
   console.log(`📈 Täckning: ${response.coverage_stats?.coverage_percentage || 0}%`);
