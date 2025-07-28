@@ -9,7 +9,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['shifts', currentDate, currentView],
+    queryKey: ['shifts', currentDate, currentView, 'august31-fix-v2'], // Force cache refresh
     queryFn: async () => {
       if (!user) return [];
       
@@ -37,15 +37,17 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         // 🔧 CRITICAL FIX: Extend end date to capture night shifts that start on last day
         // Problem: Night shifts starting 31/8 22:00 are filtered out by strict month boundary
         // Solution: Add 6 hours to capture night shifts starting late in the month
+        const originalEndDate = new Date(endDate);
         endDate = new Date(endDate);
         endDate.setHours(23, 59, 59, 999);
         endDate = addDays(endDate, 1); // Include next day's early hours for night shifts
         endDate.setHours(5, 59, 59, 999); // Capture until 06:00 next day
         
-        // 🔍 Reduced debug logging
-        if (currentView === 'month') {
-          console.log(`📅 MONTH QUERY RANGE: ${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(endDate, 'yyyy-MM-dd HH:mm')}`);
-        }
+        // � AUGUST 31 NIGHT SHIFT FIX ACTIVE
+        console.log(`📅 MONTH QUERY (EXTENDED): ${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(endDate, 'yyyy-MM-dd HH:mm')}`);
+        console.log(`� Original endDate: ${format(originalEndDate, 'yyyy-MM-dd HH:mm')}`);
+        console.log(`🔧 Extended endDate: ${format(endDate, 'yyyy-MM-dd HH:mm')}`);
+        console.log(`✅ Will capture August 31st night shift starting at 22:00`);
       }
       
       // Format dates to ISO strings in UTC

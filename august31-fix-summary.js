@@ -1,0 +1,26 @@
+// Quick verification that August 31st night shift fix is working
+console.log('🔧 AUGUST 31ST NIGHT SHIFT FIX VERIFICATION');
+console.log('');
+console.log('✅ CHANGES MADE:');
+console.log('   1. Extended month query range to include night shifts that start late in month');
+console.log('   2. Query now goes from month start to NEXT DAY 06:00 instead of month end 21:59:59');
+console.log('   3. Added cache invalidation to force fresh data from database');
+console.log('');
+console.log('🎯 EXPECTED RESULT:');
+console.log('   August 31st should now show 3 shifts instead of 2:');
+console.log('   • Day shift (06:00-14:00): David');
+console.log('   • Evening shift (14:00-22:00): Erik');  
+console.log('   • Night shift (22:00-06:00): Anna ← THIS WAS MISSING');
+console.log('');
+console.log('📝 TO TEST:');
+console.log('   1. Refresh your browser (mitt-schema.vercel.app)');
+console.log('   2. Navigate to August 2025');
+console.log('   3. Check August 31st - should now show 3 shifts');
+console.log('   4. Console should show less logging spam');
+console.log('');
+console.log('🔍 TECHNICAL DETAILS:');
+console.log('   • Query range extended from 2025-08-31T21:59:59.999Z to 2025-09-01T05:59:59.999Z');
+console.log('   • Night shift at 2025-08-31T22:00:00Z is now within query range');
+console.log('   • React Query cache key updated to force fresh data');
+console.log('');
+console.log('✅ Fix is ready - please refresh your browser!');

@@ -52,60 +52,22 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       return false;
     }
     
-    console.log(`Saving ${shifts.length} Gurobi-optimized shifts to database`);
+    console.log(`Saving ${shifts.length} shifts to database`);
     
-    // 🔍 CRITICAL DEBUG: Inspect all shift dates before saving to catch wrong month shifts
-    const dateAnalysis = {};
-    const problemShifts = [];
-    
-    shifts.forEach((shift, index) => {
+    // Quick validation - only show critical issues
+    const dateIssues = shifts.filter(shift => {
       const shiftDate = shift.date || shift.start_time?.split('T')[0];
       if (shiftDate) {
-        const [year, month, day] = shiftDate.split('-').map(Number);
-        dateAnalysis[month] = (dateAnalysis[month] || 0) + 1;
-        
-        // Flag shifts that are not in target month (should be consistent with generateScheduleForNextMonth logic)
+        const month = parseInt(shiftDate.split('-')[1]);
         const today = new Date();
-        let expectedMonth = today.getMonth() + 2; // Next month (0-indexed + 1 for next month + 1 for 1-indexed months)
-        if (expectedMonth > 12) expectedMonth = expectedMonth - 12;
-        
-        if (month !== expectedMonth) {
-          problemShifts.push({
-            index,
-            date: shiftDate,
-            month,
-            start_time: shift.start_time,
-            end_time: shift.end_time,
-            employee_id: shift.employee_id,
-            shift_type: shift.shift_type
-          });
-        }
+        const expectedMonth = (today.getMonth() + 2) > 12 ? (today.getMonth() + 2) - 12 : today.getMonth() + 2;
+        return month !== expectedMonth;
       }
+      return false;
     });
     
-    console.log('🔍 SHIFT DATE ANALYSIS BEFORE SAVING:');
-    console.log('  Total shifts to save:', shifts.length);
-    console.log('  Date distribution by month:', dateAnalysis);
-    
-    if (problemShifts.length > 0) {
-      console.warn(`🚨 FOUND ${problemShifts.length} SHIFTS WITH WRONG DATES:`, problemShifts);
-      console.warn('🚨 These shifts will cause September entries in database!');
-      
-      // 🔍 DETAILED ANALYSIS: Show every problem shift with all details
-      problemShifts.forEach((shift, index) => {
-        console.warn(`🚨 PROBLEM SHIFT ${index + 1}:`, {
-          originalIndex: shift.index,
-          date: shift.date,
-          start_time: shift.start_time,
-          end_time: shift.end_time,
-          parsed_date: shift.date ? shift.date.split('-') : 'No date',
-          parsed_start: shift.start_time ? shift.start_time.split('T') : 'No start_time',
-          employee_id: shift.employee_id,
-          shift_type: shift.shift_type,
-          month_from_date: shift.month,
-          expected_month: expectedMonth
-        });
-      });
+    if (dateIssues.length > 0) {
+      console.warn(`🚨 Found ${dateIssues.length} shifts with wrong month - this may cause display issues`);
     }
     
     // Process shifts in batches to avoid database timeouts
@@ -121,67 +83,9 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       is_published: false // Draft schedule - requires manual publishing by manager
     }));
     
-    // 🔍 CRITICAL DEBUG: Log first and last few shifts being inserted to database
-    console.log('🔍 SAMPLE SHIFTS BEING INSERTED TO DATABASE:');
-    console.log('  First 5 shifts:');
-    shiftsToInsert.slice(0, 5).forEach((s, i) => {
-      console.log(`    Shift ${i + 1}:`, {
-        date: s.date,
-        start_time: s.start_time,
-        end_time: s.end_time,
-        shift_type: s.shift_type,
-        employee_id: s.employee_id
-      });
-    });
-    
-    console.log('  Last 5 shifts:');
-    shiftsToInsert.slice(-5).forEach((s, i) => {
-      console.log(`    Shift ${shiftsToInsert.length - 4 + i}:`, {
-        date: s.date,
-        start_time: s.start_time,  
-        end_time: s.end_time,
-        shift_type: s.shift_type,
-        employee_id: s.employee_id
-      });
-    });
-    
-    // Check for any shifts with September dates (month 9) that shouldn't be there
-    const septemberShifts = shiftsToInsert.filter(s => {
-      const date = s.date || s.start_time?.split('T')[0];
-      if (date) {
-        const [year, month] = date.split('-').map(Number);
-        return month === 9; // September
-      }
-      return false;
-    });
-    
-    if (septemberShifts.length > 0) {
-      console.error('🚨 SEPTEMBER SHIFTS DETECTED IN DATABASE INSERT:', septemberShifts.map(s => ({
-        date: s.date,
-        start_time: s.start_time,
-        end_time: s.end_time,
-        shift_type: s.shift_type,
-        employee_id: s.employee_id
-      })));
-    }
-    
-    // Note: Shifts are already cleared at the beginning of generateScheduleForNextMonth
-    // This function now only handles insertion of new shifts
-    
-    // Insert shifts in batches
+    // Insert shifts in batches with minimal logging
     for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {
       const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
-      console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
-      
-      // Only log boundary night shifts for critical debugging
-      const boundaryNightShifts = batch.filter(shift => 
-        shift.shift_type === 'night' && (shift.date?.includes('-01') || shift.date?.includes('-31'))
-      );
-      
-      if (boundaryNightShifts.length > 0) {
-        console.log(`🌙 Batch ${Math.floor(i/BATCH_SIZE) + 1} boundary night shifts:`, 
-          boundaryNightShifts.map(s => `${s.date} ${s.start_time} (${s.shift_type})`));
-      }
       
       const { error: insertError } = await supabase
         .from('shifts')
@@ -191,10 +95,9 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
         console.error("Error inserting batch:", insertError);
         throw new Error(`Could not save batch: ${insertError.message}`);
       }
-      
-      console.log(`✅ Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}`);
     }
-    }
+    
+    console.log(`✅ Successfully saved ${shiftsToInsert.length} shifts to database`);
     
     return true;
   } catch (error) {
@@ -353,24 +256,11 @@ export const generateScheduleForNextMonth = async (
   
   onProgress?.('�📅 Analyserar personalens tillgänglighet och preferenser...', 5);
   
-  console.log('🗓️ Generating schedule for next month with Gurobi:', {
-    today: today.toISOString().split('T')[0],
-    targetMonthStart: gurobiStartISO.split('T')[0],
-    startDate: gurobiStartISO.split('T')[0],
-    endDate: gurobiEndISO.split('T')[0],
-    currentViewParam: currentDate.toISOString().split('T')[0],
+  console.log('🗓️ Generating schedule for next month:', {
+    targetMonth: targetMonth + 1,
     employeeCount: profiles.length,
     daysInMonth: lastDayOfTargetMonth
   });
-  
-  // 🔍 DETAILED DATE VALIDATION
-  console.log('🔍 DETAILED DATE ANALYSIS FOR GUROBI:');
-  console.log('  Today (source):', today);
-  console.log('  Target month start (ISO):', gurobiStartISO);
-  console.log('  Target month end (ISO):', gurobiEndISO);
-  console.log('  Expected month:', targetMonth + 1);
-  console.log('  Expected year:', targetYear);
-  console.log('  Last day of month:', lastDayOfTargetMonth);
   
   // Validate inputs
   if (!profiles || profiles.length === 0) {
