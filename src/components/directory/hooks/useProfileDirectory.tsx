@@ -154,6 +154,24 @@ export function useProfileDirectory() {
       console.log("Updating profile with ID:", editingProfile.id);
       console.log("New work_percentage:", editingProfile.work_percentage);
       
+      // Först hämta befintliga work_preferences så vi kan uppdatera work_percentage där också
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('employees')
+        .select('work_preferences')
+        .eq('id', editingProfile.id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching current profile:', fetchError);
+        throw fetchError;
+      }
+      
+      // Uppdatera work_preferences.work_percentage också för att hålla det synkroniserat
+      const updatedWorkPreferences = {
+        ...currentProfile.work_preferences,
+        work_percentage: editingProfile.work_percentage || 100
+      };
+      
       const { data, error } = await supabase
         .from('employees')
         .update({
@@ -164,7 +182,8 @@ export function useProfileDirectory() {
           phone: editingProfile.phone || null,
           experience_level: editingProfile.experience_level,
           hourly_rate: editingProfile.hourly_rate || 1000,
-          work_percentage: editingProfile.work_percentage || 100 // Add missing work_percentage field
+          work_percentage: editingProfile.work_percentage || 100, // Uppdatera direct work_percentage kolumn
+          work_preferences: updatedWorkPreferences // Uppdatera work_preferences.work_percentage också
         })
         .eq('id', editingProfile.id)
         .select();

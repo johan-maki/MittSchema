@@ -16,7 +16,7 @@ interface ProfilesTableProps {
 
 export function ProfilesTable({ profiles, onEdit, onDelete, onViewPreferences }: ProfilesTableProps) {
   const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc'); // Default descending på förnamn
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc'); // Default alfabetisk ordning (A-Ö)
 
   // Sorteringslogik
   const sortedProfiles = useMemo(() => {

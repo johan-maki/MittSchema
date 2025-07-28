@@ -79,6 +79,8 @@ export type DatabaseProfile = Omit<Profile, 'work_preferences'> & {
 
 // Helper function to convert database profile to our internal Profile type
 export const convertDatabaseProfile = (dbProfile: DatabaseProfile): Profile => {
+  const workPreferences = convertWorkPreferences(dbProfile.work_preferences);
+  
   const converted: Profile = {
     id: dbProfile.id,
     first_name: dbProfile.first_name,
@@ -88,7 +90,8 @@ export const convertDatabaseProfile = (dbProfile: DatabaseProfile): Profile => {
     department: dbProfile.department || 'Unknown',
     experience_level: dbProfile.experience_level || 1,
     hourly_rate: dbProfile.hourly_rate || 500,
-    work_preferences: convertWorkPreferences(dbProfile.work_preferences),
+    work_percentage: workPreferences.work_percentage, // Extract work_percentage from work_preferences
+    work_preferences: workPreferences,
     created_at: dbProfile.created_at,
     updated_at: dbProfile.updated_at
   };
