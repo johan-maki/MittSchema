@@ -8,28 +8,23 @@ export const useProfileData = () => {
   const { data: profiles = [], isLoading, error } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
-      console.log("🔍 useProfileData: Fetching all profiles from database...");
       const { data, error } = await supabase
         .from('employees')
         .select('*');
 
       if (error) {
-        console.error('🔍 useProfileData: Error fetching profiles:', error);
+        console.error('❌ useProfileData: Error fetching profiles:', error);
         throw error;
       }
 
       const convertedProfiles = (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
-      console.log('🔍 useProfileData: Fetched and converted profiles:', convertedProfiles.length, convertedProfiles);
+      // Only log when data is actually fetched, not on every render
+      if (convertedProfiles.length > 0) {
+        console.log(`✅ Loaded ${convertedProfiles.length} employee profiles`);
+      }
       return convertedProfiles;
     },
     refetchOnWindowFocus: false
-  });
-
-  console.log('🔍 useProfileData: Current state:', {
-    profilesCount: profiles.length,
-    isLoading,
-    error,
-    profiles: profiles
   });
 
   return { profiles, isLoading, error };

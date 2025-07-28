@@ -293,14 +293,6 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     return false;
   };
 
-  // Debug logging to see hook state
-  console.log('🔗 useScheduleGeneration state:', {
-    isGenerating,
-    isLoadingSettings,
-    profilesCount: profiles?.length || 0,
-    hasSettings: !!settings
-  });
-
   // Function to accept and save the generated schedule
   const acceptSchedule = async () => {
     if (!summaryData) {

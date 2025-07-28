@@ -87,92 +87,24 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         console.log(`🎯 TARGET MONTH FILTER ANALYSIS:`);
         console.log(`  Viewing month: ${targetMonth}`);
         console.log(`  Total retrieved: ${shifts.length}`);
-        console.log(`  In target month: ${actualMonthShifts.length}`);
-        console.log(`  Filter range: ${startDateStr} to ${endDateStr}`);
-        
-        if (actualMonthShifts.length !== shifts.length) {
-          const wrongMonthShifts = shifts.filter(shift => {
-            const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
-            return shiftMonth !== targetMonth;
-          });
-          
-          console.warn(`🚨 RETRIEVED SHIFTS FROM WRONG MONTHS: ${wrongMonthShifts.length}`, 
-            wrongMonthShifts.map(s => ({
-              id: s.id,
-              start_time: s.start_time,
-              month: s.start_time ? parseInt(s.start_time.split('-')[1]) : null,
-              expected_month: targetMonth
-            }))
-          );
-        }
-      }
-      
-      // 🔍 CRITICAL DEBUG: Analyze retrieved shifts for date issues
+      // Quick analysis for debugging only when there are issues
       if (shifts && shifts.length > 0) {
-        const dateAnalysis = {};
-        const problemShifts = [];
-        
-        shifts.forEach((shift, index) => {
-          const startTime = shift.start_time;
-          const dateFromStartTime = startTime ? startTime.split('T')[0] : null;
-          
-          if (dateFromStartTime) {
-            const [year, month, day] = dateFromStartTime.split('-').map(Number);
-            dateAnalysis[month] = (dateAnalysis[month] || 0) + 1;
-            
-            if (month !== 8) {
-              problemShifts.push({
-                index,
-                id: shift.id,
-                start_time: startTime,
-                end_time: shift.end_time,
-                shift_type: shift.shift_type,
-                employee_id: shift.employee_id,
-                start_month: month,
-                date_from_start_time: dateFromStartTime
-              });
-            }
-          }
+        const actualMonthShifts = shifts.filter(shift => {
+          const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
+          return shiftMonth === targetMonth;
         });
         
-        console.log('🔍 RETRIEVED SHIFTS DATE ANALYSIS:');
-        console.log('  Date distribution by month:', dateAnalysis);
-        
-        if (problemShifts.length > 0) {
-          console.warn(`🚨 FOUND ${problemShifts.length} RETRIEVED SHIFTS WITH WRONG START_TIME MONTH:`, problemShifts);
-        }
-        
-        // Sample first and last shifts
-        console.log('🔍 SAMPLE RETRIEVED SHIFTS (First 3):');
-        shifts.slice(0, 3).forEach((shift, i) => {
-          console.log(`  Retrieved Shift ${i + 1}:`, {
-            id: shift.id,
-            start_time: shift.start_time,
-            end_time: shift.end_time,
-            shift_type: shift.shift_type,
-            date_from_start_time: shift.start_time ? shift.start_time.split('T')[0] : null
-          });
-        });
-        
-        if (shifts.length > 3) {
-          console.log('🔍 SAMPLE RETRIEVED SHIFTS (Last 3):');
-          shifts.slice(-3).forEach((shift, i) => {
-            console.log(`  Retrieved Shift ${shifts.length - 2 + i}:`, {
-              id: shift.id,
-              start_time: shift.start_time,
-              end_time: shift.end_time,
-              shift_type: shift.shift_type,
-              date_from_start_time: shift.start_time ? shift.start_time.split('T')[0] : null
-            });
-          });
+        // Only log when there are potential issues
+        if (actualMonthShifts.length !== shifts.length && shifts.length > 0) {
+          console.warn(`⚠️ Month boundary issue: Retrieved ${shifts.length} shifts, ${actualMonthShifts.length} in target month ${targetMonth}`);
         }
       }
       
       // Filter out shifts with invalid profile data and type-safe transform
       const validShifts: Shift[] = (shifts || [])
         .filter(shift => {
-          // 🔧 CRITICAL FIX: Additional safety filter for strict month boundaries
-          // Remove any shifts that don't belong to the target month (for month view)
+          // 🔧 IMPROVED MONTH BOUNDARY FILTERING
+          // For month view, we need special handling of night shifts that cross month boundaries
           if (currentView === 'month') {
             const targetMonth = currentDate.getMonth() + 1; // 1-indexed month
             const targetYear = currentDate.getFullYear();
@@ -180,19 +112,38 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
             
             if (shiftStartTime) {
               const [shiftYear, shiftMonth] = shiftStartTime.split('-').map(Number);
-              // Only include shifts that start in the exact target month and year
-              if (shiftMonth !== targetMonth || shiftYear !== targetYear) {
-                console.warn(`🚨 FILTERING OUT BOUNDARY SHIFT IN UI:`, {
-                  id: shift.id,
-                  start_time: shiftStartTime,
-                  shift_month: shiftMonth,
-                  target_month: targetMonth,
-                  shift_year: shiftYear,
-                  target_year: targetYear,
-                  reason: 'Boundary shift excluded from month view'
-                });
-                return false;
+              
+              // ✅ KEEP: Shifts that start in the target month (normal case)
+              if (shiftMonth === targetMonth && shiftYear === targetYear) {
+                return true;
               }
+              
+              // ✅ SPECIAL CASE: Previous month's night shifts that belong to target month's first day
+              // Example: July 31st 22:00 night shift should appear on August 1st
+              if (shiftMonth === (targetMonth === 1 ? 12 : targetMonth - 1) && 
+                  shift.shift_type === 'night') {
+                const shiftDate = new Date(shiftStartTime);
+                const shiftDay = shiftDate.getUTCDate();
+                const daysInPrevMonth = new Date(targetYear, targetMonth - 1, 0).getDate();
+                
+                // Only include if it's the last day of previous month (night shift spillover)
+                if (shiftDay === daysInPrevMonth) {
+                  return true;
+                }
+              }
+              
+              // ❌ EXCLUDE: All other shifts from wrong months
+              console.warn(`🚨 FILTERING OUT BOUNDARY SHIFT IN UI:`, {
+                id: shift.id,
+                start_time: shiftStartTime,
+                shift_month: shiftMonth,
+                target_month: targetMonth,
+                shift_year: shiftYear,
+                target_year: targetYear,
+                shift_type: shift.shift_type,
+                reason: 'Boundary shift excluded from month view'
+              });
+              return false;
             }
           }
           

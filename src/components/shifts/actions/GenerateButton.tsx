@@ -28,14 +28,6 @@ export const GenerateButton = ({
 }: GenerateButtonProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Debug logging to see what's happening
-  console.log('🔘 GenerateButton render:', {
-    isGenerating,
-    isLoadingSettings,
-    disabled: isGenerating || isLoadingSettings,
-    progress: generationProgress
-  });
-
   const getProgressIcon = () => {
     if (generationProgress >= 100) return <CheckCircle className="h-4 w-4" />;
     if (generationProgress >= 75) return <Calculator className="h-4 w-4" />;
