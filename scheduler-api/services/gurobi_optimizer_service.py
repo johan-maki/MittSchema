@@ -91,7 +91,7 @@ class GurobiScheduleOptimizer:
             self.employee_preferences = employee_preferences or []
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
-            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, include_weekends={include_weekends}")
+            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}")
             logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
             
             # Log employee preferences for debugging
@@ -134,7 +134,7 @@ class GurobiScheduleOptimizer:
                         max_shifts_for_this_emp = 1
                 
                 total_capacity += max_shifts_for_this_emp
-                logger.debug(f"Employee {emp.get('first_name', 'Unknown')} ({work_percentage}%): max {max_shifts_for_this_emp} shifts over {total_weeks:.1f} weeks (exact: {max_shifts_exact:.2f})")
+                logger.debug(f"Employee {emp.get('first_name', 'Unknown')} ({work_percentage}%): max {max_shifts_for_this_emp} shifts over {total_weeks:.1f} weeks (exact: {max_shifts_exact:.2f}, experience: {emp.get('experience_level', 1)})")
             
             max_possible_shifts = total_capacity
             
@@ -153,6 +153,23 @@ class GurobiScheduleOptimizer:
                     logger.warning(f"Partial coverage enabled: need {actual_shift_requirements} shifts but only {max_possible_shifts} possible - will generate best possible partial schedule")
                     coverage_percentage = (max_possible_shifts / actual_shift_requirements) * 100
                     logger.info(f"Expected coverage: {coverage_percentage:.1f}% ({max_possible_shifts}/{actual_shift_requirements} shifts)")
+            
+            # Check if we have enough experience for coverage
+            if min_experience_per_shift > 1:  # Only check if we require more than basic experience
+                total_experience_available = sum(emp.get('experience_level', 1) for emp in self.employees)
+                required_experience_per_day = len(self.shift_types) * min_experience_per_shift
+                total_required_experience = working_days * required_experience_per_day
+                
+                logger.info(f"Experience check: need {total_required_experience} total experience points, have {total_experience_available * max_possible_shifts} theoretical maximum")
+                logger.info(f"Experience per shift requirement: {min_experience_per_shift} points per shift")
+                
+                # Simple heuristic check: if we don't have enough total experience even with max shifts
+                if total_experience_available < min_experience_per_shift and not allow_partial_coverage:
+                    logger.error(f"Insufficient experience: highest experience level is {max(emp.get('experience_level', 1) for emp in self.employees)} but need {min_experience_per_shift}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Insufficient experience: need {min_experience_per_shift} experience points per shift but highest employee experience is {max(emp.get('experience_level', 1) for emp in self.employees)}"
+                    )
             
             # Create Gurobi model
             self.model = gp.Model("HealthcareScheduler")
@@ -378,10 +395,27 @@ class GurobiScheduleOptimizer:
                     logger.info(f"Allowing partial coverage for {date} {shift} shift")
                 
                 # Ensure exact staff per shift (no overstaffing) - always apply this
+                # Note: For now, we enforce exact staffing (min = max) but this could be configurable
                 self.model.addConstr(
                     total_staff <= min_staff_per_shift,
                     name=f"max_staff_{d}_{shift}"
                 )
+                
+                # 4. Minimum experience level per shift
+                # Calculate total experience points for this shift
+                if min_experience_per_shift > 0:
+                    total_experience = gp.quicksum(
+                        self.shifts[(emp['id'], d, shift)] * emp.get('experience_level', 1)
+                        for emp in self.employees
+                    )
+                    
+                    # Only enforce minimum experience constraint if we require staff for this shift
+                    if required_staff > 0 and not allow_partial_coverage:
+                        self.model.addConstr(
+                            total_experience >= min_experience_per_shift,
+                            name=f"min_experience_{d}_{shift}"
+                        )
+                        logger.debug(f"Added experience constraint: {date} {shift} requires {min_experience_per_shift} experience points")
         
         logger.info(f"Scheduling {len(self.scheduled_days)} days out of {len(self.dates)} total days")
         logger.info("All constraints added successfully")
@@ -796,6 +830,7 @@ class GurobiScheduleOptimizer:
                         shift_assignment = {
                             "employee_id": emp['id'],
                             "employee_name": f"{emp.get('first_name', '')} {emp.get('last_name', '')}",
+                            "experience_level": emp.get('experience_level', 1),
                             "date": date.strftime('%Y-%m-%d'),
                             "shift_type": shift,
                             "start_time": shift_start_datetime,
@@ -867,6 +902,30 @@ class GurobiScheduleOptimizer:
         for shift_type, stats in shift_type_stats.items():
             logger.info(f"Fairness - {shift_type} shifts range: {stats['range']}")
         logger.info(f"Fairness - Weekend shifts range: {fairness_stats['weekend_shifts']['range']}")
+        
+        # Validate experience requirements for each shift
+        experience_violations = 0
+        for d in range(len(self.dates)):
+            date = self.dates[d]
+            for shift in self.shift_types:
+                # Calculate total experience for this shift
+                shift_experience = 0
+                shift_staff = 0
+                for emp in self.employees:
+                    if (emp['id'], d, shift) in self.shifts and self.shifts[(emp['id'], d, shift)].x > 0.5:
+                        shift_experience += emp.get('experience_level', 1)
+                        shift_staff += 1
+                
+                if shift_staff > 0:  # Only check shifts that are actually scheduled
+                    logger.debug(f"Shift {date.strftime('%Y-%m-%d')} {shift}: {shift_staff} staff, {shift_experience} experience points")
+                    if shift_experience < 1:  # Basic validation - should have at least some experience
+                        experience_violations += 1
+                        logger.warning(f"Experience concern: {date.strftime('%Y-%m-%d')} {shift} has {shift_experience} experience points with {shift_staff} staff")
+        
+        if experience_violations > 0:
+            logger.warning(f"Found {experience_violations} shifts with potential experience issues")
+        else:
+            logger.info("All scheduled shifts meet basic experience requirements")
         
         return {
             "schedule": schedule,
