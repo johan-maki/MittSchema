@@ -53,10 +53,14 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   const [showEmployeePreferences, setShowEmployeePreferences] = useState(false);
   
   const handleEmployeeClick = (employeeId: string) => {
+    console.log('🖱️ Employee clicked:', employeeId);
     const employee = employees.find(emp => emp.id === employeeId);
     if (employee) {
+      console.log('✅ Employee found, opening preferences modal:', employee.first_name, employee.last_name);
       setSelectedEmployee(employee);
       setShowEmployeePreferences(true);
+    } else {
+      console.error('❌ Employee not found with ID:', employeeId);
     }
   };
   
@@ -455,7 +459,8 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                         <div>
                           <button
                             onClick={() => handleEmployeeClick(summary.id)}
-                            className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                            className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline transition-all duration-200 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded px-1 py-0.5"
+                            title="Klicka för att visa medarbetarens preferenser"
                           >
                             {summary.name}
                           </button>

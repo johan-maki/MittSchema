@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { createPortal } from 'react-dom';
 import { Badge } from '@/components/ui/badge';
 import { Profile } from '@/types/profile';
 import { X, Clock, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -44,34 +44,45 @@ export const EmployeePreferencesModal = ({ employee, isOpen, onClose }: Employee
     return colors[index];
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
+  if (!isOpen || !employee) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4" style={{ zIndex: 10001 }}>
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+        style={{ zIndex: 10000 }}
+      />
+      
+      {/* Modal */}
+      <div className="relative w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[90vh] flex flex-col" style={{ zIndex: 10002 }}>
         {/* Header */}
-        <DialogHeader className="relative">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-lg -mx-6 -mt-6 mb-6 p-6 text-white">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-all duration-200"
-              aria-label="Stäng dialog"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white flex-shrink-0">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl ${getAvatarColor(employee.first_name + employee.last_name)}`}>
                 {getInitials(employee.first_name, employee.last_name)}
               </div>
               <div>
-                <DialogTitle className="text-2xl font-bold text-white mb-1">
+                <h2 className="text-2xl font-bold text-white mb-1">
                   {employee.first_name} {employee.last_name}
-                </DialogTitle>
+                </h2>
                 <p className="text-blue-100 text-lg">{employee.role} • {employee.department}</p>
               </div>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-        </DialogHeader>
+        </div>
 
-        <div className="space-y-6">
+        {/* Content */}
+        <div className="p-6 overflow-y-auto flex-1">
+          <div className="space-y-6">
           {/* Max Days per Week */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
@@ -187,22 +198,25 @@ export const EmployeePreferencesModal = ({ employee, isOpen, onClose }: Employee
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Förklaring:</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-gray-600">Tillgänglig/Föredrar</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-gray-300 rounded border border-gray-400"></div>
-                <span className="text-gray-600">Inte tillgänglig</span>
+            {/* Legend */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Förklaring:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <span className="text-gray-600">Tillgänglig/Föredrar</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-gray-300 rounded border border-gray-400"></div>
+                  <span className="text-gray-600">Inte tillgänglig</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
