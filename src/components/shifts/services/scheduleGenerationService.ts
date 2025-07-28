@@ -412,9 +412,19 @@ export const generateScheduleForNextMonth = async (
   } catch (error) {
     // Check if the error is due to insufficient staffing
     const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log('🔍 CAUGHT ERROR:', { error, errorMessage, type: typeof error });
+    
     const isStaffingError = errorMessage.includes('Not enough employees') || 
                            errorMessage.includes('need ') || 
                            errorMessage.includes('but only');
+    
+    console.log('🔍 STAFFING ERROR CHECK:', { 
+      isStaffingError, 
+      hasNotEnoughEmployees: errorMessage.includes('Not enough employees'),
+      hasNeed: errorMessage.includes('need '),
+      hasButOnly: errorMessage.includes('but only'),
+      fullErrorMessage: errorMessage
+    });
     
     if (isStaffingError) {
       console.warn('⚠️ INSUFFICIENT STAFFING DETECTED - Attempting partial schedule generation...');
