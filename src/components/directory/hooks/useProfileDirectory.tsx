@@ -151,6 +151,7 @@ export function useProfileDirectory() {
     
     try {
       console.log("Updating profile with ID:", editingProfile.id);
+      console.log("New work_percentage:", editingProfile.work_percentage);
       
       const { data, error } = await supabase
         .from('employees')
@@ -161,7 +162,8 @@ export function useProfileDirectory() {
           department: editingProfile.department || null,
           phone: editingProfile.phone || null,
           experience_level: editingProfile.experience_level,
-          hourly_rate: editingProfile.hourly_rate || 1000 // Include hourly_rate in update
+          hourly_rate: editingProfile.hourly_rate || 1000,
+          work_percentage: editingProfile.work_percentage || 100 // Add missing work_percentage field
         })
         .eq('id', editingProfile.id)
         .select();
@@ -173,13 +175,21 @@ export function useProfileDirectory() {
       
       console.log("Update response:", data);
       
+      // Enhanced cache refresh to ensure UI updates correctly
+      console.log('🔄 Refreshing cache after profile update...');
+      await queryClient.removeQueries({ queryKey: ['profiles'] });
+      await queryClient.removeQueries({ queryKey: ['all-employees'] });
+      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+      await queryClient.refetchQueries({ queryKey: ['profiles'] });
+      await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+      console.log('✅ Profile updated and cache refreshed');
+      
       toast({
         title: "Profil uppdaterad",
         description: "Ändringar har sparats framgångsrikt",
       });
       
-      await queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
       setIsEditDialogOpen(false);
     } catch (error: unknown) {
       console.error('Error updating profile:', error);
