@@ -90,27 +90,64 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
     queryFn: async () => {
       console.log('🔍 Fetching shifts for employee:', employeeId);
       
-      // Try without JOIN first to see if that's the issue
+      // Get shifts for the last 3 months and next 3 months to provide comprehensive view
+      const now = new Date();
+      const startDate = subMonths(now, 3);
+      const endDate = addMonths(now, 3);
+      
       const { data, error } = await supabase
         .from('shifts')
-        .select('*')
+        .select(`
+          id,
+          start_time,
+          end_time,
+          shift_type,
+          department,
+          is_published,
+          notes,
+          employee_id,
+          employees!inner (
+            first_name,
+            last_name,
+            experience_level
+          )
+        `)
         .eq('employee_id', employeeId)
+        .gte('start_time', startDate.toISOString())
+        .lte('start_time', endDate.toISOString())
         .order('start_time');
 
       if (error) {
         console.error('❌ Error fetching shifts:', error);
-        throw error;
+        // Fallback to simpler query if JOIN fails
+        console.log('🔄 Attempting fallback query without JOIN...');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('shifts')
+          .select('*')
+          .eq('employee_id', employeeId)
+          .gte('start_time', startDate.toISOString())
+          .lte('start_time', endDate.toISOString())
+          .order('start_time');
+          
+        if (fallbackError) {
+          console.error('❌ Fallback query also failed:', fallbackError);
+          throw fallbackError;
+        }
+        
+        console.log('✅ Fallback query successful:', fallbackData?.length || 0, 'shifts');
+        return fallbackData as Shift[];
       }
       
-      console.log('✅ Fetched shifts:', data?.length || 0, 'shifts for employee', employeeId);
+      console.log('✅ Fetched shifts with employee data:', data?.length || 0, 'shifts for employee', employeeId);
       console.log('Shifts data:', data);
       
-      return data as Shift[];
+      return data as ExtendedShift[];
     },
-    // Add staleTime to reduce caching issues and refetchOnWindowFocus
-    staleTime: 0,
+    // Optimize caching for better UX
+    staleTime: 5 * 60 * 1000, // 5 minutes - reasonable for schedule data
     refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchOnMount: true,
+    retry: 2 // Retry failed requests twice
   });
 
   const handleDateChange = (direction: 'prev' | 'next') => {
@@ -157,7 +194,7 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
     );
   };
 
-  const handleExportToExcel = () => {
+  const handleExportToExcel = async () => {
     try {
       const filteredShifts = getFilteredShifts();
       if (!filteredShifts.length) {
@@ -169,35 +206,97 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
         return;
       }
 
-      const excelData = filteredShifts.map(shift => ({
-        'Datum': format(parseISO(shift.start_time), 'yyyy-MM-dd'),
-        'Starttid': format(parseISO(shift.start_time), 'HH:mm'),
-        'Sluttid': format(parseISO(shift.end_time), 'HH:mm'),
-        'Avdelning': shift.department,
-        'Typ': SHIFT_CONFIG[shift.shift_type].label,
-        'Timmar': getShiftDuration(shift)
-      }));
+      // Get employee information for better export
+      const { data: employeeData } = await supabase
+        .from('employees')
+        .select('first_name, last_name, role, department')
+        .eq('id', employeeId)
+        .single();
+
+      const employeeName = employeeData 
+        ? `${employeeData.first_name}_${employeeData.last_name}` 
+        : 'employee';
+
+      // Enhanced Excel data with more useful information
+      const excelData = filteredShifts.map((shift, index) => {
+        const shiftDate = parseISO(shift.start_time);
+        const duration = getShiftDuration(shift);
+        
+        return {
+          'Nr': index + 1,
+          'Datum': format(shiftDate, 'yyyy-MM-dd'),
+          'Veckodag': format(shiftDate, 'EEEE', { locale: sv }),
+          'Starttid': format(parseISO(shift.start_time), 'HH:mm'),
+          'Sluttid': format(parseISO(shift.end_time), 'HH:mm'),
+          'Passtyp': SHIFT_CONFIG[shift.shift_type].label,
+          'Avdelning': shift.department,
+          'Timmar': duration,
+          'Status': shift.is_published ? 'Publicerat' : 'Utkast',
+          'Anteckningar': shift.notes || ''
+        };
+      });
+
+      // Add summary row
+      const totalHours = filteredShifts.reduce((sum, shift) => sum + getShiftDuration(shift), 0);
+      const shiftTypeCounts = filteredShifts.reduce((acc, shift) => {
+        acc[shift.shift_type] = (acc[shift.shift_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      excelData.push({
+        'Nr': '',
+        'Datum': '',
+        'Veckodag': '',
+        'Starttid': '',
+        'Sluttid': '',
+        'Passtyp': 'TOTALT:',
+        'Avdelning': '',
+        'Timmar': totalHours,
+        'Status': '',
+        'Anteckningar': `Dagpass: ${shiftTypeCounts.day || 0}, Kvällspass: ${shiftTypeCounts.evening || 0}, Nattpass: ${shiftTypeCounts.night || 0}`
+      });
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
+      
+      // Set column widths for better readability
+      const columnWidths = [
+        { wch: 5 },  // Nr
+        { wch: 12 }, // Datum
+        { wch: 10 }, // Veckodag
+        { wch: 8 },  // Starttid
+        { wch: 8 },  // Sluttid
+        { wch: 12 }, // Passtyp
+        { wch: 15 }, // Avdelning
+        { wch: 8 },  // Timmar
+        { wch: 10 }, // Status
+        { wch: 30 }  // Anteckningar
+      ];
+      ws['!cols'] = columnWidths;
+      
       XLSX.utils.book_append_sheet(wb, ws, 'Mitt Schema');
       
-      // Get employee name from first shift for filename - simplified without JOIN
-      const employeeName = 'schema';
       const periodText = view === 'week' 
-        ? `vecka-${format(currentDate, 'w', { locale: sv })}`
+        ? `vecka-${format(currentDate, 'w', { locale: sv })}-${format(currentDate, 'yyyy')}`
         : format(currentDate, 'yyyy-MM');
-      XLSX.writeFile(wb, `${employeeName}-schema-${periodText}.xlsx`);
+      
+      const filename = `${employeeName}-schema-${periodText}.xlsx`;
+      XLSX.writeFile(wb, filename);
 
       toast({
-        title: "Schema exporterat",
-        description: "Ditt schema har exporterats som Excel-fil.",
+        title: "Schema exporterat! 📊",
+        description: `Ditt schema har exporterats som ${filename}`,
         variant: "default",
       });
     } catch (error) {
+      console.error('Export error:', error);
       toast({
         title: "Exportering misslyckades",
         description: "Ett fel uppstod vid exportering av schemat.",
+        variant: "destructive",
+      });
+    }
+  };
         variant: "destructive",
       });
     }
@@ -244,9 +343,100 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
 
   const filteredShifts = getFilteredShifts();
   const totalHours = filteredShifts.reduce((sum, shift) => sum + getShiftDuration(shift), 0);
+  
+  // Calculate statistics for current period
+  const stats = {
+    totalShifts: filteredShifts.length,
+    totalHours,
+    averageHoursPerShift: filteredShifts.length > 0 ? Math.round((totalHours / filteredShifts.length) * 10) / 10 : 0,
+    shiftTypes: filteredShifts.reduce((acc, shift) => {
+      acc[shift.shift_type] = (acc[shift.shift_type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+    weekends: filteredShifts.filter(shift => {
+      const day = parseISO(shift.start_time).getDay();
+      return day === 0 || day === 6; // Sunday or Saturday
+    }).length,
+    publishedShifts: filteredShifts.filter(shift => shift.is_published).length
+  };
 
   return (
     <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Calendar className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-600">{stats.totalShifts}</p>
+              <p className="text-sm text-muted-foreground">Pass totalt</p>
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Clock className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{stats.totalHours}</p>
+              <p className="text-sm text-muted-foreground">Timmar totalt</p>
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <TimerIcon className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-purple-600">{stats.averageHoursPerShift}</p>
+              <p className="text-sm text-muted-foreground">Snitt per pass</p>
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <CalendarDays className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-orange-600">{stats.weekends}</p>
+              <p className="text-sm text-muted-foreground">Helgpass</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Shift type breakdown */}
+      {stats.totalShifts > 0 && (
+        <Card className="p-4">
+          <CardTitle className="text-lg mb-4">Fördelning av passtyper</CardTitle>
+          <div className="grid grid-cols-3 gap-4">
+            {Object.entries(SHIFT_CONFIG).map(([type, config]) => {
+              const count = stats.shiftTypes[type] || 0;
+              const percentage = stats.totalShifts > 0 ? Math.round((count / stats.totalShifts) * 100) : 0;
+              const Icon = config.icon;
+              
+              return (
+                <div key={type} className="text-center">
+                  <div className={`p-3 rounded-lg ${config.color} mb-2`}>
+                    <Icon className={`h-6 w-6 mx-auto ${config.iconColor}`} />
+                  </div>
+                  <p className="text-2xl font-bold">{count}</p>
+                  <p className="text-sm text-muted-foreground">{config.label}</p>
+                  <p className="text-xs text-muted-foreground">{percentage}%</p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
       {/* Header with controls */}
       <Card>
         <CardHeader className="pb-4">
@@ -384,6 +574,11 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
                                     <Badge className={`text-xs ${config.badgeColor}`}>
                                       {config.label}
                                     </Badge>
+                                    {!shift.is_published && (
+                                      <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                                        Utkast
+                                      </Badge>
+                                    )}
                                   </div>
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-1 text-sm">
@@ -459,6 +654,11 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
                               {isThisWeekShift && (
                                 <Badge variant="outline" className="text-xs">
                                   Denna vecka
+                                </Badge>
+                              )}
+                              {!shift.is_published && (
+                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                                  Utkast
                                 </Badge>
                               )}
                             </div>

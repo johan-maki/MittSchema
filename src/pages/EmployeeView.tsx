@@ -22,15 +22,44 @@ import { Badge } from "@/components/ui/badge";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Fetch all employees for the selector
+  // Get current user to default to their own profile
+  React.useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Look for employee record that matches the user's email
+        const { data: employee, error } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+          
+        if (employee && !error) {
+          console.log('👤 Found current user employee record:', employee.id);
+          setCurrentUserId(employee.id);
+          // Auto-select current user if no employee is selected
+          if (!selectedEmployeeId) {
+            setSelectedEmployeeId(employee.id);
+          }
+        } else {
+          console.log('👤 No employee record found for current user email:', user.email);
+        }
+      }
+    };
+    
+    getCurrentUser();
+  }, [selectedEmployeeId]);
+
+  // Fetch all employees for the selector (managers can view anyone's schedule)
   const { data: employees, isLoading: loadingEmployees } = useQuery({
     queryKey: ['all-employees'],
     queryFn: async () => {
       console.log('🔍 Fetching all employees...');
       const { data, error } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, role, department, experience_level')
+        .select('id, first_name, last_name, role, department, experience_level, email')
         .order('first_name');
 
       if (error) {
@@ -41,7 +70,7 @@ const EmployeeView = () => {
       console.log('✅ Fetched employees:', data?.length || 0);
       console.log('Employee data:', data);
       
-      return data as Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'>[];
+      return data as (Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'> & { email: string })[];
     }
   });
 
@@ -112,6 +141,11 @@ const EmployeeView = () => {
                   <div>
                     <CardTitle className="text-2xl">
                       {profile ? `${profile.first_name} ${profile.last_name}` : 'Välkommen'}
+                      {currentUserId === selectedEmployeeId && (
+                        <Badge variant="outline" className="ml-3 text-xs bg-green-50 text-green-700 border-green-200">
+                          Det här är du
+                        </Badge>
+                      )}
                     </CardTitle>
                     {profile && (
                       <div className="flex items-center gap-3 mt-2">
@@ -133,7 +167,33 @@ const EmployeeView = () => {
                       <SelectValue placeholder="Välj anställd" />
                     </SelectTrigger>
                     <SelectContent>
-                      {employees?.map((employee) => (
+                      {/* Show current user first if available */}
+                      {currentUserId && employees?.find(emp => emp.id === currentUserId) && (
+                        <>
+                          {(() => {
+                            const currentUser = employees.find(emp => emp.id === currentUserId)!;
+                            return (
+                              <SelectItem key={currentUser.id} value={currentUser.id}>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    {currentUser.first_name} {currentUser.last_name}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {currentUser.role}
+                                  </Badge>
+                                  <Badge className="text-xs bg-green-100 text-green-800">
+                                    Du
+                                  </Badge>
+                                </div>
+                              </SelectItem>
+                            );
+                          })()}
+                          <div className="h-px bg-border my-1" />
+                        </>
+                      )}
+                      
+                      {/* Show other employees */}
+                      {employees?.filter(emp => emp.id !== currentUserId).map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">
