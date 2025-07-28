@@ -44,25 +44,26 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
 
   const getShiftsForDay = (day: Date): Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }> => {
     const dayShifts = shifts.filter((shift) => {
-      // Use the date from start_time but compare only the date part to avoid timezone issues
+      // Use UTC date components to avoid timezone conversion issues
       const shiftDate = new Date(shift.start_time);
       const dayYear = day.getFullYear();
       const dayMonth = day.getMonth();
       const dayDate = day.getDate();
       
-      const shiftYear = shiftDate.getFullYear();
-      const shiftMonth = shiftDate.getMonth();
-      const shiftDateNum = shiftDate.getDate();
+      // Use UTC methods to get the actual date components from the shift timestamp
+      const shiftYear = shiftDate.getUTCFullYear();
+      const shiftMonth = shiftDate.getUTCMonth();
+      const shiftDateNum = shiftDate.getUTCDate();
       
       const isMatch = (dayYear === shiftYear && dayMonth === shiftMonth && dayDate === shiftDateNum);
       
       // Debug logging for August 1st specifically
       if (day.getDate() === 1 && day.getMonth() === 7) { // August 1st (month is 0-indexed)
-        console.log('🔍 August 1st shift matching (FIXED):', {
+        console.log('🔍 August 1st shift matching (UTC FIX):', {
           shift_type: shift.shift_type,
           employee_name: shift.profiles?.first_name,
           start_time: shift.start_time,
-          shift_date_components: `${shiftYear}-${shiftMonth + 1}-${shiftDateNum}`,
+          shift_date_components_UTC: `${shiftYear}-${shiftMonth + 1}-${shiftDateNum}`,
           target_date_components: `${dayYear}-${dayMonth + 1}-${dayDate}`,
           is_same_day: isMatch
         });
