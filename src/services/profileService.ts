@@ -16,7 +16,7 @@ export const addProfile = async (profileData: Omit<InsertProfile, 'id'>): Promis
     
     // Default work preferences for all new employees
     const defaultWorkPreferences = {
-      max_shifts_per_week: 5,
+      work_percentage: profileData.work_percentage || 100, // Use form value or default to 100%
       day_constraints: {
         monday: { available: true, strict: false },
         tuesday: { available: true, strict: false },
@@ -156,9 +156,9 @@ export const generateTestData = async (count: number): Promise<Profile[]> => {
     for (let i = 0; i < count; i++) {
       const nameData = testNames[i % testNames.length];
       
-      // Default work preferences allowing all shifts and all days, max 5 days per week
+      // Default work preferences allowing all shifts and all days, 100% work percentage
       const defaultWorkPreferences = {
-        max_shifts_per_week: 5,
+        work_percentage: 100, // Default to 100% (full-time)
         day_constraints: {
           monday: { available: true, strict: false },
           tuesday: { available: true, strict: false },

@@ -20,7 +20,7 @@ interface GurobiScheduleRequest {
   employee_preferences?: Array<{
     employee_id: string;
     preferred_shifts: string[];
-    max_shifts_per_week: number;
+    max_shifts_per_week: number; // Keep for backward compatibility - converted from work_percentage
     available_days: string[];
     available_days_strict?: boolean;
     preferred_shifts_strict?: boolean;
@@ -100,7 +100,7 @@ export const schedulerApi = {
     employeePreferences?: Array<{
       employee_id: string;
       preferred_shifts: string[];
-      max_shifts_per_week: number;
+      max_shifts_per_week: number; // Keep for backward compatibility - converted from work_percentage
       available_days: string[];
     }>,
     retries = 3,

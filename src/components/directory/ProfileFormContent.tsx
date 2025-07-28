@@ -6,6 +6,7 @@ import { FormField } from "./FormField";
 import { FormSelectField } from "./FormSelectField";
 import { RoleSelector } from "./RoleSelector";
 import { HourlyRateSlider } from "./HourlyRateSlider";
+import { WorkPercentageSlider } from "./WorkPercentageSlider";
 import { InsertProfile } from "@/types/profile";
 import { useProfileForm } from "@/hooks/useProfileForm";
 
@@ -116,6 +117,12 @@ export const ProfileFormContent = ({
         <HourlyRateSlider
           value={profile.hourly_rate || 1000}
           onChange={(value) => updateProfile('hourly_rate', value)}
+          disabled={isProcessing}
+        />
+        
+        <WorkPercentageSlider
+          value={profile.work_percentage || 100}
+          onChange={(value) => updateProfile('work_percentage', value)}
           disabled={isProcessing}
         />
       </div>

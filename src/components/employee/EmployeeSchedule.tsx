@@ -244,7 +244,7 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
       }, {} as Record<string, number>);
 
       excelData.push({
-        'Nr': '',
+        'Nr': 0,
         'Datum': '',
         'Veckodag': '',
         'Starttid': '',
@@ -293,10 +293,6 @@ export const EmployeeSchedule = ({ employeeId }: EmployeeScheduleProps) => {
       toast({
         title: "Exportering misslyckades",
         description: "Ett fel uppstod vid exportering av schemat.",
-        variant: "destructive",
-      });
-    }
-  };
         variant: "destructive",
       });
     }

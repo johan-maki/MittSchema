@@ -79,9 +79,9 @@ export const EmployeePreferencesModal = ({ employee, isOpen, onClose }: Employee
             </h3>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-700 font-medium">Max dagar per vecka:</span>
+                <span className="text-gray-700 font-medium">Arbetstid:</span>
                 <Badge variant="outline" className="text-lg px-3 py-1 bg-blue-100 text-blue-800 border-blue-300">
-                  {work_preferences.max_shifts_per_week} dagar
+                  {work_preferences.work_percentage || 100}% av heltid
                 </Badge>
               </div>
             </div>

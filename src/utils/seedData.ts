@@ -13,7 +13,7 @@ const sampleEmployees = [
     phone: "+46 70 123 4567",
     work_preferences: {
       preferred_shifts: ["day", "evening"],
-      max_shifts_per_week: 5,
+      work_percentage: 100, // Full-time
       unavailable_dates: []
     }
   },
@@ -28,7 +28,7 @@ const sampleEmployees = [
     phone: "+46 70 234 5678",
     work_preferences: {
       preferred_shifts: ["day", "night"],
-      max_shifts_per_week: 4,
+      work_percentage: 80, // Part-time manager
       unavailable_dates: []
     }
   },

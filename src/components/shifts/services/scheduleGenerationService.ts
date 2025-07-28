@@ -336,7 +336,7 @@ export const generateScheduleForNextMonth = async (
     const gurobiPreference = {
       employee_id: emp.id,
       preferred_shifts: effectivePreferredShifts.length > 0 ? effectivePreferredShifts : ["day", "evening"], // Default to day/evening if all excluded
-      max_shifts_per_week: workPrefs.max_shifts_per_week || 5,
+      max_shifts_per_week: Math.ceil((workPrefs.work_percentage || 100) / 20), // Convert percentage to days (20% = 1 day)
       available_days: effectiveAvailableDays.length > 0 ? effectiveAvailableDays : ["monday", "tuesday", "wednesday", "thursday", "friday"], // Default to weekdays if all excluded
       // Send specific exclusions instead of generic strict flags
       excluded_shifts: strictlyExcludedShifts,

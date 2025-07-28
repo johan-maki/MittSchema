@@ -34,6 +34,7 @@ export type InsertProfile = {
   phone?: string | null;
   experience_level?: number;
   hourly_rate?: number; // SEK per hour
+  work_percentage?: number; // 0-100, represents percentage of full-time
 };
 
 export type DayConstraint = {
@@ -47,7 +48,7 @@ export type ShiftConstraint = {
 };
 
 export interface WorkPreferences {
-  max_shifts_per_week: number;
+  work_percentage: number; // 0-100, represents percentage of full-time (5% increments)
   // Granular constraints per day
   day_constraints: {
     monday: DayConstraint;
@@ -96,7 +97,7 @@ export const convertDatabaseProfile = (dbProfile: DatabaseProfile): Profile => {
 // Helper function to safely convert Json to WorkPreferences
 export function convertWorkPreferences(json: Json): WorkPreferences {
   const defaultPreferences: WorkPreferences = {
-    max_shifts_per_week: 5,
+    work_percentage: 100, // Default to 100% (full-time equivalent to 5 days)
     day_constraints: {
       monday: { available: true, strict: false },
       tuesday: { available: true, strict: false },
@@ -154,9 +155,17 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
     }
     
     return {
-      max_shifts_per_week: typeof jsonObj.max_shifts_per_week === 'number' 
-        ? jsonObj.max_shifts_per_week 
-        : defaultPreferences.max_shifts_per_week,
+      work_percentage: (() => {
+        // Handle both new work_percentage and legacy max_shifts_per_week
+        if (typeof jsonObj.work_percentage === 'number') {
+          return Math.min(100, Math.max(0, Math.round(jsonObj.work_percentage / 5) * 5)); // Round to nearest 5%
+        }
+        if (typeof jsonObj.max_shifts_per_week === 'number') {
+          // Convert old max_shifts_per_week to percentage (5 days = 100%)
+          return Math.min(100, Math.max(0, Math.round((jsonObj.max_shifts_per_week / 5) * 100 / 5) * 5));
+        }
+        return defaultPreferences.work_percentage;
+      })(),
       day_constraints: convertedDayConstraints as WorkPreferences['day_constraints'],
       shift_constraints: jsonObj.shift_constraints as WorkPreferences['shift_constraints'] || defaultPreferences.shift_constraints,
     };
@@ -182,9 +191,17 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
 
   // Convert legacy to granular format
   const converted: WorkPreferences = {
-    max_shifts_per_week: typeof jsonObj.max_shifts_per_week === 'number' 
-      ? jsonObj.max_shifts_per_week 
-      : defaultPreferences.max_shifts_per_week,
+    work_percentage: (() => {
+      // Handle both new work_percentage and legacy max_shifts_per_week
+      if (typeof jsonObj.work_percentage === 'number') {
+        return Math.min(100, Math.max(0, Math.round(jsonObj.work_percentage / 5) * 5)); // Round to nearest 5%
+      }
+      if (typeof jsonObj.max_shifts_per_week === 'number') {
+        // Convert old max_shifts_per_week to percentage (5 days = 100%)
+        return Math.min(100, Math.max(0, Math.round((jsonObj.max_shifts_per_week / 5) * 100 / 5) * 5));
+      }
+      return defaultPreferences.work_percentage;
+    })(),
     day_constraints: {
       monday: { available: legacyAvailableDays.includes('monday'), strict: legacyDaysStrict },
       tuesday: { available: legacyAvailableDays.includes('tuesday'), strict: legacyDaysStrict },

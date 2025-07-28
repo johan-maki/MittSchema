@@ -24,7 +24,7 @@ interface WorkPreferencesProps {
 }
 
 const defaultPreferences: WorkPreferencesType = {
-  max_shifts_per_week: 5,
+  work_percentage: 100,
   day_constraints: {
     monday: { available: true, strict: false },
     tuesday: { available: true, strict: false },
@@ -53,7 +53,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   // Helper function to convert WorkPreferences to a Json-compatible object
   const toJsonObject = () => {
     return {
-      max_shifts_per_week: preferences.max_shifts_per_week,
+      work_percentage: preferences.work_percentage,
       day_constraints: preferences.day_constraints,
       shift_constraints: preferences.shift_constraints
     };
@@ -189,7 +189,39 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   }
 
   return (
-    <div className="space-y-8">
+    <>
+      <style>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 24px;
+          height: 24px;
+          background: #8b5cf6;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+          transition: all 0.2s ease;
+        }
+        .slider::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+        .slider::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+          background: #8b5cf6;
+          border-radius: 50%;
+          cursor: pointer;
+          border: 3px solid white;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+          transition: all 0.2s ease;
+        }
+        .slider::-moz-range-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+      `}</style>
+      <div className="space-y-8">
       {/* Önskade arbetspass */}
       <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
         <div className="flex items-center gap-3 mb-6">
@@ -250,34 +282,70 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         </div>
       </Card>
 
-      {/* Max antal pass per vecka */}
+      {/* Procent av heltidstjänst */}
       <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-purple-500/10 rounded-lg">
             <Clock className="h-5 w-5 text-purple-600" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-800">Max antal pass per vecka</h3>
+          <h3 className="text-xl font-semibold text-slate-800">Procent av heltidstjänst</h3>
         </div>
-        <Select
-          value={preferences.max_shifts_per_week.toString()}
-          onValueChange={(value) => 
-            setPreferences(prev => ({
-              ...prev,
-              max_shifts_per_week: parseInt(value)
-            }))
-          }
-        >
-          <SelectTrigger className="w-48 h-12 bg-white border-slate-200 hover:border-slate-300 transition-colors">
-            <SelectValue placeholder="Välj antal pass" />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4, 5, 6, 7].map((num) => (
-              <SelectItem key={num} value={num.toString()}>
-                {num} pass
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-600">0%</span>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-600 mb-1">
+                {preferences.work_percentage}%
+              </div>
+              <div className="text-sm text-slate-500">
+                {preferences.work_percentage === 0 ? 'Inte tillgänglig' : 
+                 preferences.work_percentage === 100 ? 'Heltid' : 
+                 `${(preferences.work_percentage / 20).toFixed(1)} dagar/vecka`}
+              </div>
+            </div>
+            <span className="text-sm font-medium text-slate-600">100%</span>
+          </div>
+          
+          <div className="relative">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={preferences.work_percentage}
+              onChange={(e) => setPreferences(prev => ({
+                ...prev,
+                work_percentage: parseInt(e.target.value)
+              }))}
+              className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer slider"
+              style={{
+                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${preferences.work_percentage}%, #e2e8f0 ${preferences.work_percentage}%, #e2e8f0 100%)`
+              }}
+            />
+            <div className="flex justify-between text-xs text-slate-400 mt-2">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
+            </div>
+          </div>
+          
+          <div className="bg-slate-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span>
+                {preferences.work_percentage === 0 ? 'Ej tillgänglig för schemaläggning' :
+                 preferences.work_percentage <= 20 ? 'Mycket begränsad tillgänglighet' :
+                 preferences.work_percentage <= 40 ? 'Deltid - begränsad tillgänglighet' :
+                 preferences.work_percentage <= 60 ? 'Deltid - måttlig tillgänglighet' :
+                 preferences.work_percentage <= 80 ? 'Deltid - hög tillgänglighet' :
+                 'Heltid - full tillgänglighet'}
+              </span>
+            </div>
+          </div>
+        </div>
       </Card>
 
       {/* Tillgängliga dagar */}
@@ -360,6 +428,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
           )}
         </Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
