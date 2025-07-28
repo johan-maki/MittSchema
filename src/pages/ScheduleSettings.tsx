@@ -70,7 +70,7 @@ export default function ScheduleSettings() {
       min_weekly_rest_hours: 36,
       senior_experience_threshold: 3,
       require_night_shift_qualification: true,
-      day_shift: {
+      morning_shift: {
         start_time: '07:00',
         end_time: '15:00',
         min_staff: 3,
