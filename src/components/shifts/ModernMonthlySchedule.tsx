@@ -57,15 +57,12 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
       
       const isMatch = (dayYear === shiftYear && dayMonth === shiftMonth && dayDate === shiftDateNum);
       
-      // Debug logging for August 1st and August 31st specifically
-      if ((day.getDate() === 1 && day.getMonth() === 7) || (day.getDate() === 31 && day.getMonth() === 7)) { // August 1st and 31st (month is 0-indexed)
-        console.log(`🔍 August ${day.getDate()} shift matching (UTC FIX):`, {
-          shift_type: shift.shift_type,
-          employee_name: shift.profiles?.first_name,
+      // Reduced debug logging - only for critical issues
+      if ((day.getDate() === 31 && day.getMonth() === 7) && shift.shift_type === 'night') { // August 31st night shifts only
+        console.log(`🌙 Aug 31 night shift check:`, {
+          employee: shift.profiles?.first_name,
           start_time: shift.start_time,
-          shift_date_components_UTC: `${shiftYear}-${shiftMonth + 1}-${shiftDateNum}`,
-          target_date_components: `${dayYear}-${dayMonth + 1}-${dayDate}`,
-          is_same_day: isMatch
+          matches: isMatch
         });
       }
       

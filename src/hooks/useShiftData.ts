@@ -34,27 +34,23 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
         
-        // 🔧 CRITICAL FIX: Use strict month boundaries for UI display
-        // Problem: Extended range was showing September shifts in August view
-        // Solution: Keep strict month boundaries for clean UI display
-        // Note: scheduleGenerationService handles boundary shifts during generation
+        // 🔧 CRITICAL FIX: Extend end date to capture night shifts that start on last day
+        // Problem: Night shifts starting 31/8 22:00 are filtered out by strict month boundary
+        // Solution: Add 6 hours to capture night shifts starting late in the month
+        endDate = new Date(endDate);
+        endDate.setHours(23, 59, 59, 999);
+        endDate = addDays(endDate, 1); // Include next day's early hours for night shifts
+        endDate.setHours(5, 59, 59, 999); // Capture until 06:00 next day
         
-        // 🔍 DEBUG: Log the actual date range being used
-        console.log(`📅 MONTH VIEW DATE RANGE:`, {
-          currentDate: currentDate.toISOString(),
-          startOfMonth: startDate.toISOString(),
-          endOfMonth: endDate.toISOString(),
-          month: currentDate.getMonth() + 1,
-          year: currentDate.getFullYear()
-        });
+        // 🔍 Reduced debug logging
+        if (currentView === 'month') {
+          console.log(`📅 MONTH QUERY RANGE: ${format(startDate, 'yyyy-MM-dd HH:mm')} to ${format(endDate, 'yyyy-MM-dd HH:mm')}`);
+        }
       }
       
       // Format dates to ISO strings in UTC
       const startDateStr = startDate.toISOString();
       const endDateStr = endDate.toISOString();
-      
-      console.log(`Fetching shifts from ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
-      console.log(`🔍 QUERY FILTERS: start_time >= '${startDateStr}' AND start_time <= '${endDateStr}'`);
       
       // Get shifts from Supabase
       const { data: shifts, error } = await supabase

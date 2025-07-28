@@ -173,20 +173,15 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
       const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
       console.log(`Inserting batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(shiftsToInsert.length/BATCH_SIZE)}, size: ${batch.length}`);
       
-      // 🔍 CRITICAL DEBUG: Log exactly what we're inserting to database
-      console.log(`🔍 BATCH ${Math.floor(i/BATCH_SIZE) + 1} DETAILED ANALYSIS:`);
-      batch.forEach((shift, batchIndex) => {
-        const globalIndex = i + batchIndex + 1;
-        console.log(`  Shift ${globalIndex}:`, {
-          date: shift.date,
-          start_time: shift.start_time,
-          end_time: shift.end_time,
-          shift_type: shift.shift_type,
-          employee_id: shift.employee_id,
-          date_month: shift.date ? parseInt(shift.date.split('-')[1]) : 'No date',
-          start_time_month: shift.start_time ? parseInt(shift.start_time.split('-')[1]) : 'No start_time'
-        });
-      });
+      // Only log boundary night shifts for critical debugging
+      const boundaryNightShifts = batch.filter(shift => 
+        shift.shift_type === 'night' && (shift.date?.includes('-01') || shift.date?.includes('-31'))
+      );
+      
+      if (boundaryNightShifts.length > 0) {
+        console.log(`🌙 Batch ${Math.floor(i/BATCH_SIZE) + 1} boundary night shifts:`, 
+          boundaryNightShifts.map(s => `${s.date} ${s.start_time} (${s.shift_type})`));
+      }
       
       const { error: insertError } = await supabase
         .from('shifts')
@@ -197,7 +192,8 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
         throw new Error(`Could not save batch: ${insertError.message}`);
       }
       
-      console.log(`Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+      console.log(`✅ Successfully inserted batch ${Math.floor(i/BATCH_SIZE) + 1}`);
+    }
     }
     
     return true;
@@ -414,10 +410,9 @@ export const generateScheduleForNextMonth = async (
     
     const workPrefs = convertWorkPreferences(emp.work_preferences);
     
-    console.log(`🔍 Converting preferences for ${profile?.first_name} ${profile?.last_name} (${emp.id}):`, {
-      rawPrefs: emp.work_preferences,
-      convertedPrefs: workPrefs
-    });
+    // Reduced preference conversion logging
+    // console.log(`🔍 Converting preferences for ${profile?.first_name} ${profile?.last_name}`);
+    
     
     // Convert granular constraints back to legacy format for Gurobi API
     const availableDays = Object.entries(workPrefs.day_constraints)
@@ -474,7 +469,9 @@ export const generateScheduleForNextMonth = async (
       experience_level: profile?.experience_level || 1
     };
     
-    console.log(`✅ Gurobi format for ${profile?.first_name} ${profile?.last_name}:`, gurobiPreference);
+    // Reduced Gurobi format logging
+    // console.log(`✅ Gurobi format for ${profile?.first_name} ${profile?.last_name}`);
+    
     
     // Debug constraint logic for all employees to understand the pattern
     if (strictlyExcludedShifts.length > 0 || strictlyPreferredShifts.length > 0) {
@@ -704,13 +701,14 @@ export const generateScheduleForNextMonth = async (
       // 🔍 DEBUG: Verify shift data consistency
       const shiftDate = shift.date || shift.start_time?.split('T')[0];
       
-      console.log(`✅ Converting shift ${index + 1}:`, {
-        date: shiftDate,
-        start_time: shift.start_time,
-        end_time: correctedEndTime,
-        employee_name: employeeName,
-        shift_type: shift.shift_type
-      });
+      // Reduced conversion logging - only show critical boundary shifts
+      if (shift.shift_type === 'night' && (shiftDate?.includes('-01') || shiftDate?.includes('-31'))) {
+        console.log(`🌙 Boundary night shift ${index + 1}:`, {
+          date: shiftDate,
+          employee: employeeName,
+          type: shift.shift_type
+        });
+      }
       
       return {
         id: uuidv4(),
