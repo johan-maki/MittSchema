@@ -107,22 +107,29 @@ class GurobiScheduleOptimizer:
             
             actual_shift_requirements = working_days * len(self.shift_types) * min_staff_per_shift
             
-            # Calculate max possible shifts correctly: 5 shifts per week per employee
-            # BUT ensure that for short periods (< 1 week), we allow at least 1 shift per day per employee
+            # Calculate max possible shifts considering work_percentage for each employee
             total_weeks = len(self.dates) / 7.0  # Convert days to weeks (can be fractional)
             
-            if total_weeks < 1.0:
-                # For periods shorter than a week, allow 1 shift per day per employee
-                max_shifts_per_employee = len(self.dates)  # 1 shift per day maximum for short periods
-            else:
-                # For longer periods, use the weekly constraint
-                max_shifts_per_employee = int(total_weeks * 5)  # 5 shifts per week maximum
+            # Calculate total capacity based on each employee's work_percentage
+            total_capacity = 0
+            for emp in self.employees:
+                work_percentage = emp.get('work_percentage', 100)  # Default to 100% if not specified
+                
+                if total_weeks < 1.0:
+                    # For periods shorter than a week, allow work_percentage of available days
+                    max_shifts_for_this_emp = max(1, int((work_percentage / 100.0) * len(self.dates)))
+                else:
+                    # For longer periods, use work_percentage of 5 shifts per week
+                    max_shifts_for_this_emp = max(1, int((work_percentage / 100.0) * total_weeks * 5))
+                
+                total_capacity += max_shifts_for_this_emp
+                logger.debug(f"Employee {emp.get('first_name', 'Unknown')} ({work_percentage}%): max {max_shifts_for_this_emp} shifts over {total_weeks:.1f} weeks")
             
-            max_possible_shifts = len(employees) * max_shifts_per_employee
+            max_possible_shifts = total_capacity
             
             logger.info(f"Period: {len(self.dates)} days ({total_weeks:.1f} weeks)")
             logger.info(f"Shift requirements: {actual_shift_requirements} shifts needed")
-            logger.info(f"Employee capacity: {max_possible_shifts} shifts possible ({max_shifts_per_employee} shifts/employee over {total_weeks:.1f} weeks)")
+            logger.info(f"Employee capacity: {max_possible_shifts} shifts possible (considering work_percentage for {len(employees)} employees)")
             
             if actual_shift_requirements > max_possible_shifts:
                 if not allow_partial_coverage:
@@ -243,6 +250,9 @@ class GurobiScheduleOptimizer:
         
         if total_weeks >= 0.7:  # Only apply weekly constraint for periods 5+ days
             for emp in self.employees:
+                # Calculate max shifts per week based on work_percentage
+                work_percentage = emp.get('work_percentage', 100)  # Default to 100% if not specified
+                
                 # Split dates into weeks
                 for week_start in range(0, len(self.dates), 7):
                     week_end = min(week_start + 7, len(self.dates))
@@ -250,7 +260,15 @@ class GurobiScheduleOptimizer:
                     
                     # For partial weeks, adjust the limit proportionally
                     days_in_week = len(week_days)
-                    max_shifts_this_week = min(5, days_in_week)  # Max 5 or all days if fewer
+                    
+                    # Calculate max shifts based on work_percentage
+                    # Full-time (100%) = max 5 days per week
+                    # Part-time should be proportional: 20% = 1 day per week, 40% = 2 days, etc.
+                    base_max_shifts = min(5, days_in_week)  # Legal limit is still 5 days max
+                    percentage_adjusted_shifts = max(1, int((work_percentage / 100.0) * base_max_shifts))
+                    max_shifts_this_week = min(percentage_adjusted_shifts, base_max_shifts)
+                    
+                    logger.debug(f"Employee {emp.get('first_name', 'Unknown')} ({work_percentage}%): max {max_shifts_this_week} shifts this week (base: {base_max_shifts})")
                     
                     # Sum all shifts for this employee in this week
                     weekly_shifts = gp.quicksum(
