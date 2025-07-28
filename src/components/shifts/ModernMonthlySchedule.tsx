@@ -45,7 +45,21 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
   const getShiftsForDay = (day: Date) => {
     return shifts.filter(shift => {
       const shiftDate = parseISO(shift.start_time);
-      return isSameDay(shiftDate, day);
+      const isSame = isSameDay(shiftDate, day);
+      
+      // 🔍 DEBUG: Log August 1st shift matching for debugging Erik's missing night shift
+      if (format(day, 'yyyy-MM-dd') === '2025-08-01') {
+        console.log(`🔍 August 1st shift matching:`, {
+          shift_type: shift.shift_type,
+          employee_name: shift.profiles?.first_name,
+          start_time: shift.start_time,
+          parsed_shift_date: format(shiftDate, 'yyyy-MM-dd HH:mm:ss'),
+          target_day: format(day, 'yyyy-MM-dd'),
+          is_same_day: isSame
+        });
+      }
+      
+      return isSame;
     });
   };
 
