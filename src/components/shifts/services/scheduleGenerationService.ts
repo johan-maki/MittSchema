@@ -410,21 +410,39 @@ export const generateScheduleForNextMonth = async (
       false // allowPartialCoverage = false for first attempt (strict requirements)
     );
   } catch (error) {
-    // Check if the error is due to insufficient staffing
+    // Enhanced error classification
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log('🔍 CAUGHT ERROR:', { error, errorMessage, type: typeof error });
+    
+    // Check for connection/timeout errors first
+    const isConnectionError = errorMessage.includes('AbortError') || 
+                             errorMessage.includes('signal is aborted') ||
+                             errorMessage.includes('request timed out') ||
+                             errorMessage.includes('Unable to connect') ||
+                             errorMessage.includes('timeout') ||
+                             errorMessage.includes('ECONNREFUSED') ||
+                             errorMessage.includes('fetch failed');
     
     const isStaffingError = errorMessage.includes('Not enough employees') || 
                            errorMessage.includes('need ') || 
                            errorMessage.includes('but only');
     
-    console.log('🔍 STAFFING ERROR CHECK:', { 
+    console.log('🔍 ERROR CLASSIFICATION:', { 
+      isConnectionError,
       isStaffingError, 
       hasNotEnoughEmployees: errorMessage.includes('Not enough employees'),
       hasNeed: errorMessage.includes('need '),
       hasButOnly: errorMessage.includes('but only'),
+      hasTimeout: errorMessage.includes('timeout'),
+      hasAbortError: errorMessage.includes('AbortError'),
       fullErrorMessage: errorMessage
     });
+    
+    // Handle connection errors differently from staffing errors
+    if (isConnectionError) {
+      console.error('🌐 CONNECTION ERROR: Render backend är inte tillgänglig');
+      throw new Error(`Anslutningsproblem till schemaläggnings-servern. Detta kan bero på att servern startar upp (cold start) eller är överbelastad. Försök igen om 30-60 sekunder.`);
+    }
     
     if (isStaffingError) {
       console.warn('⚠️ INSUFFICIENT STAFFING DETECTED - Attempting partial schedule generation...');
@@ -464,6 +482,20 @@ export const generateScheduleForNextMonth = async (
       } catch (relaxedError) {
         // If even relaxed constraints fail, provide a meaningful error message
         const relaxedErrorMessage = relaxedError instanceof Error ? relaxedError.message : String(relaxedError);
+        
+        // Check for connection errors in relaxed attempt too
+        const isRelaxedConnectionError = relaxedErrorMessage.includes('AbortError') || 
+                                        relaxedErrorMessage.includes('signal is aborted') ||
+                                        relaxedErrorMessage.includes('request timed out') ||
+                                        relaxedErrorMessage.includes('Unable to connect') ||
+                                        relaxedErrorMessage.includes('timeout') ||
+                                        relaxedErrorMessage.includes('ECONNREFUSED') ||
+                                        relaxedErrorMessage.includes('fetch failed');
+        
+        if (isRelaxedConnectionError) {
+          console.error('🌐 CONNECTION ERROR i relaxed attempt: Render backend är inte tillgänglig');
+          throw new Error(`Anslutningsproblem till schemaläggnings-servern. Detta kan bero på att servern startar upp (cold start) eller är överbelastad. Försök igen om 30-60 sekunder.`);
+        }
         
         if (relaxedErrorMessage.includes('Not enough employees')) {
           // Extract numbers from error for user-friendly message
