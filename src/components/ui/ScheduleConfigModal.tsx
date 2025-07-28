@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Settings, Users, Star, Calendar } from 'lucide-react';
+import { X, Settings, Users, Star, Calendar, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './Tooltip';
 
 interface ScheduleConfig {
   minStaffPerShift: number;
@@ -104,10 +105,32 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
               <Users className="h-6 w-6 text-blue-600" />
-              <div>
-                <label className="text-lg font-semibold text-gray-700">
-                  Minimum personal per pass
-                </label>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <label className="text-lg font-semibold text-gray-700">
+                    Minimum personal per pass
+                  </label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-gray-400 hover:text-blue-600 transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">
+                          <strong>Bestämmer hur många personer som måste arbeta varje pass.</strong>
+                          <br /><br />
+                          • <strong>1 person:</strong> Passar för mindre enheter eller dagpass med låg aktivitet
+                          <br />
+                          • <strong>2 personer:</strong> Standard för de flesta vårdavdelningar, säkerställer backup
+                          <br />
+                          • <strong>3+ personer:</strong> För intensivvård eller enheter med höga säkerhetskrav
+                          <br /><br />
+                          <em>Systemet kommer schema exakt detta antal personer per pass.</em>
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <p className="text-sm text-gray-500">Minst så här många måste jobba varje pass</p>
               </div>
             </div>
@@ -130,10 +153,44 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
               <Star className="h-6 w-6 text-yellow-600" />
-              <div>
-                <label className="text-lg font-semibold text-gray-700">
-                  Minimum erfarenhetspoäng per pass
-                </label>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <label className="text-lg font-semibold text-gray-700">
+                    Minimum erfarenhetspoäng per pass
+                  </label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-gray-400 hover:text-yellow-600 transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">
+                          <strong>Säkerställer tillräcklig kompetens per pass genom att summera erfarenhetspoäng.</strong>
+                          <br /><br />
+                          <strong>Exempel med 4 poäng krav:</strong>
+                          <br />
+                          ✅ 1 senior (4p) + 1 junior (1p) = 5 poäng
+                          <br />
+                          ✅ 2 erfarna (2p + 2p) = 4 poäng
+                          <br />
+                          ❌ 2 juniorer (1p + 1p) = 2 poäng
+                          <br /><br />
+                          <strong>Erfarenhetsnivåer:</strong>
+                          <br />
+                          • 1p = Junior (0-6 mån)
+                          <br />
+                          • 2p = Erfaren (6-24 mån)
+                          <br />
+                          • 3p = Välerfaren (2-4 år)
+                          <br />
+                          • 4p = Senior (4+ år)
+                          <br />
+                          • 5p = Expert/specialist
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <p className="text-sm text-gray-500">Total erfarenhet som krävs per pass</p>
               </div>
             </div>

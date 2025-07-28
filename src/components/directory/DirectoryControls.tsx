@@ -20,6 +20,8 @@ export function DirectoryControls() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerating3, setIsGenerating3] = useState(false);
   const [isGenerating5, setIsGenerating5] = useState(false);
+  const [isGenerating10, setIsGenerating10] = useState(false);
+  const [isGenerating20, setIsGenerating20] = useState(false);
   const [newProfile, setNewProfile] = useState<InsertProfile>({
     id: '',
     first_name: '',
@@ -103,7 +105,11 @@ export function DirectoryControls() {
 
   const handleGenerateTestData = async (count = 6) => {
     console.log(`🧪 Generating ${count} test employees for development...`);
-    const setter = count === 3 ? setIsGenerating3 : count === 5 ? setIsGenerating5 : setIsGenerating;
+    const setter = count === 3 ? setIsGenerating3 : 
+                  count === 5 ? setIsGenerating5 : 
+                  count === 10 ? setIsGenerating10 :
+                  count === 20 ? setIsGenerating20 :
+                  setIsGenerating;
     setter(true);
     try {
       await generateTestData(count);
@@ -222,6 +228,26 @@ export function DirectoryControls() {
         >
           <Users className="h-4 w-4 mr-2" />
           {isGenerating ? "Genererar..." : "Testdata (6)"}
+        </Button>
+
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleGenerateTestData(10)}
+          disabled={isGenerating10}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {isGenerating10 ? "Genererar..." : "Testdata (10)"}
+        </Button>
+
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleGenerateTestData(20)}
+          disabled={isGenerating20}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {isGenerating20 ? "Genererar..." : "Testdata (20)"}
         </Button>
       </div>
     </div>

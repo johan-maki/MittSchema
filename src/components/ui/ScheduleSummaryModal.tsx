@@ -19,7 +19,8 @@ interface EmployeeSummary {
   nightShifts: number;
   weekendShifts: number;
   experienceLevel: number;
-  workloadPercentage: number; // New field for workload percentage
+  workloadPercentage: number; // Actual workload achieved
+  targetWorkPercentage: number; // Target workload set by employee
 }
 
 interface ScheduleSummaryModalProps {
@@ -106,6 +107,7 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
 
     // Calculate workload percentage based on full-time equivalent
     const workloadPercentage = Math.round((totalHours / fullTimeHoursPerMonth) * 100);
+    const targetWorkPercentage = employee.work_percentage || 100; // Default to 100% if not set
 
     return {
       id: employee.id,
@@ -118,7 +120,8 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
       nightShifts,
       weekendShifts,
       experienceLevel: employee.experience_level,
-      workloadPercentage
+      workloadPercentage,
+      targetWorkPercentage
     };
   }).sort((a, b) => b.totalShifts - a.totalShifts);
 
@@ -163,10 +166,25 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
     return 'text-red-600 bg-red-50 border-red-200';
   };
 
-  const getWorkloadColor = (percentage: number) => {
-    if (percentage >= 90 && percentage <= 110) return 'text-green-600 bg-green-50 border-green-200';
-    if ((percentage >= 80 && percentage < 90) || (percentage > 110 && percentage <= 120)) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    return 'text-red-600 bg-red-50 border-red-200';
+  const getWorkloadColor = (actualPercentage: number, targetPercentage: number) => {
+    // Calculate the deviation from target percentage
+    const deviation = Math.abs(actualPercentage - targetPercentage);
+    const relativeDeviation = targetPercentage > 0 ? (deviation / targetPercentage) * 100 : 0;
+    
+    // Smart color logic based on how close actual is to target
+    // Green: Within 15% relative deviation OR within 10 percentage points for low targets
+    const isCloseToTarget = relativeDeviation <= 15 || deviation <= 10;
+    
+    // Yellow: Within 30% relative deviation OR within 20 percentage points  
+    const isModeratelyOff = relativeDeviation <= 30 || deviation <= 20;
+    
+    if (isCloseToTarget) {
+      return 'text-green-600 bg-green-50 border-green-200';
+    } else if (isModeratelyOff) {
+      return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    } else {
+      return 'text-red-600 bg-red-50 border-red-200';
+    }
   };
 
   const getCoverageIcon = (percentage: number) => {
@@ -428,20 +446,25 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
-                          <div className={`w-16 h-2 rounded-full ${getWorkloadColor(summary.workloadPercentage)}`}>
+                          <div className={`w-16 h-2 rounded-full ${getWorkloadColor(summary.workloadPercentage, summary.targetWorkPercentage)}`}>
                             <div 
                               className="h-full rounded-full bg-current opacity-60" 
                               style={{ width: `${Math.min(summary.workloadPercentage, 100)}%` }}
                             />
                           </div>
-                          <span className={`text-sm font-medium ${
-                            summary.workloadPercentage > 120 ? 'text-red-700' : 
-                            summary.workloadPercentage > 100 ? 'text-orange-700' : 
-                            summary.workloadPercentage > 80 ? 'text-green-700' : 
-                            'text-gray-700'
-                          }`}>
-                            {summary.workloadPercentage}%
-                          </span>
+                          <div className="flex flex-col">
+                            <span className={`text-sm font-medium ${
+                              summary.workloadPercentage > 120 ? 'text-red-700' : 
+                              summary.workloadPercentage > 100 ? 'text-orange-700' : 
+                              summary.workloadPercentage > 80 ? 'text-green-700' : 
+                              'text-gray-700'
+                            }`}>
+                              {summary.workloadPercentage}%
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              (mål: {summary.targetWorkPercentage}%)
+                            </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
