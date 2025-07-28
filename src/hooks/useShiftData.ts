@@ -34,11 +34,10 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
         startDate = startOfMonth(currentDate);
         endDate = endOfMonth(currentDate);
         
-        // 🔧 CRITICAL FIX: Extend endDate to catch timezone-converted shifts
-        // Problem: Shifts saved as '2025-08-30T06:00:00' get stored in UTC
-        // but our filter ends at '2025-08-31T21:59:59.999Z' which can miss
-        // the last day's shifts due to timezone conversion
-        endDate = addDays(endDate, 1); // Add one extra day to be safe
+        // 🔧 CRITICAL FIX: Use strict month boundaries for UI display
+        // Problem: Extended range was showing September shifts in August view
+        // Solution: Keep strict month boundaries for clean UI display
+        // Note: scheduleGenerationService handles boundary shifts during generation
       }
       
       // Format dates to ISO strings in UTC
@@ -165,6 +164,31 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       // Filter out shifts with invalid profile data and type-safe transform
       const validShifts: Shift[] = (shifts || [])
         .filter(shift => {
+          // 🔧 CRITICAL FIX: Additional safety filter for strict month boundaries
+          // Remove any shifts that don't belong to the target month (for month view)
+          if (currentView === 'month') {
+            const targetMonth = currentDate.getMonth() + 1; // 1-indexed month
+            const targetYear = currentDate.getFullYear();
+            const shiftStartTime = shift.start_time;
+            
+            if (shiftStartTime) {
+              const [shiftYear, shiftMonth] = shiftStartTime.split('-').map(Number);
+              // Only include shifts that start in the exact target month and year
+              if (shiftMonth !== targetMonth || shiftYear !== targetYear) {
+                console.warn(`🚨 FILTERING OUT BOUNDARY SHIFT IN UI:`, {
+                  id: shift.id,
+                  start_time: shiftStartTime,
+                  shift_month: shiftMonth,
+                  target_month: targetMonth,
+                  shift_year: shiftYear,
+                  target_year: targetYear,
+                  reason: 'Boundary shift excluded from month view'
+                });
+                return false;
+              }
+            }
+          }
+          
           if (!shift.profiles || typeof shift.profiles !== 'object') {
             console.warn('Invalid profile data for shift:', shift.id);
             return false;
