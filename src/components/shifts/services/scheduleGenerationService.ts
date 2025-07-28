@@ -669,46 +669,29 @@ export const generateScheduleForNextMonth = async (
   // Convert Gurobi response to our Shift format
   const convertedSchedule: Shift[] = response.schedule
     .filter((shift: GurobiShift, index: number) => {
-      // 🔧 ULTIMATE FIX: Only filter out the specific boundary shift (Aug 31 22:00 → Sep 1 06:00)
-      // PROBLEM: Previous logic was filtering out valid August night shifts
-      // SOLUTION: Only exclude night shifts that start on the last day and end in next month
+      // 🔧 CRITICAL FIX: Don't filter out night shifts that belong to the target month
+      // The night shift on August 31st (22:00-06:00) SHOULD be displayed on August 31st
+      // Only filter out shifts that actually start outside the target month
       
       const startTimeMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
       const startTimeYear = shift.start_time ? parseInt(shift.start_time.split('-')[0]) : null;
-      const startTimeDay = shift.start_time ? parseInt(shift.start_time.split('-')[2].split('T')[0]) : null;
       
-      const endTimeMonth = shift.end_time ? parseInt(shift.end_time.split('-')[1]) : null;
-      
-      // Check if this is the specific boundary night shift (last day of month → next month)
-      const isLastDayOfMonth = startTimeDay === lastDayOfTargetMonth;
-      const endsInNextMonth = endTimeMonth === (targetMonth + 2); // September
-      const isNightShift = shift.shift_type === 'night';
-      
-      const isBoundaryShift = isLastDayOfMonth && endsInNextMonth && isNightShift;
-      
-      // Keep all shifts in target month EXCEPT the specific boundary night shift
+      // Keep ALL shifts that start in the target month, regardless of when they end
       const isInTargetMonth = startTimeMonth === (targetMonth + 1) && startTimeYear === targetYear;
-      const shouldKeep = isInTargetMonth && !isBoundaryShift;
       
-      if (!shouldKeep) {
-        console.warn(`🚨 FILTERING OUT BOUNDARY SHIFT ${index + 1}:`, {
+      if (!isInTargetMonth) {
+        console.warn(`🚨 FILTERING OUT NON-TARGET MONTH SHIFT ${index + 1}:`, {
           start_time: shift.start_time,
           end_time: shift.end_time,
           start_month: startTimeMonth,
-          start_day: startTimeDay,
-          end_month: endTimeMonth,
           expected_month: targetMonth + 1,
           employee_name: shift.employee_name,
           shift_type: shift.shift_type,
-          is_last_day_of_month: isLastDayOfMonth,
-          ends_in_next_month: endsInNextMonth,
-          is_night_shift: isNightShift,
-          is_boundary_shift: isBoundaryShift,
-          reason: isBoundaryShift ? 'Boundary night shift (last day → next month)' : 'Outside target month'
+          reason: 'Shift starts outside target month'
         });
       }
       
-      return shouldKeep;
+      return isInTargetMonth;
     })
     .map((shift: GurobiShift, index: number) => {
       // Find the employee name from profiles
