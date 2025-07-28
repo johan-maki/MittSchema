@@ -169,12 +169,11 @@ async function debugFrontendFiltering() {
       });
     }
   } else {
-    console.log('\n  console.log('
-✅ All August 1st shifts passed frontend filtering!');
+    console.log('\n✅ All August 1st shifts passed frontend filtering!');
+  }
 
   // NEW: Debug UI Rendering Logic
-  console.log('
-🎨 UI RENDERING SIMULATION:');
+  console.log('\n🎨 UI RENDERING SIMULATION:');
   console.log('==========================================');
   
   // Simulate the exact getShiftsByType logic from ModernMonthlySchedule.tsx
@@ -190,8 +189,7 @@ async function debugFrontendFiltering() {
   console.log(`   Night: ${shiftsByType.night.length} shifts`);
 
   // CRITICAL: Test the slice(0, 2) rendering logic
-  console.log('
-🔍 UI RENDERING TEST (slice(0, 2) per type):');
+  console.log('\n🔍 UI RENDERING TEST (slice(0, 2) per type):');
   
   Object.entries(shiftsByType).forEach(([shiftType, shiftsOfType]) => {
     if (shiftsOfType.length === 0) {
@@ -219,26 +217,22 @@ async function debugFrontendFiltering() {
                       Math.min(2, shiftsByType.night.length);
   
   console.log('
-🏁 RENDERING SUMMARY:');
+  console.log('\n🏁 RENDERING SUMMARY:');
   console.log(`   📊 Total shifts: ${totalShifts}`);
   console.log(`   👁️  Visible in UI: ${totalVisible}`);
   console.log(`   🚫 Hidden by UI: ${totalShifts - totalVisible}`);
   
   if (totalShifts !== totalVisible) {
-    console.log('
-🚨 UI RENDERING BUG FOUND!');
+    console.log('\n🚨 UI RENDERING BUG FOUND!');
     console.log('   The slice(0, 2) logic in ModernMonthlySchedule.tsx');
     console.log('   is limiting display to 2 shifts per type.');
     console.log('   This explains why some shifts don't appear in the UI!');
   } else {
-    console.log('
-✨ No UI rendering issues detected');
+    console.log('\n✨ No UI rendering issues detected');
   }
 }
 
-checkAugust1Shifts().catch(console.error);');
-  }
-}
+checkAugust1Shifts().catch(console.error);
 
 async function checkAugust1Shifts() {
   console.log('🔍 Checking shifts for August 1, 2025...\n');

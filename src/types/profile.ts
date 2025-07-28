@@ -82,6 +82,7 @@ export const convertDatabaseProfile = (dbProfile: DatabaseProfile): Profile => {
     id: dbProfile.id,
     first_name: dbProfile.first_name,
     last_name: dbProfile.last_name,
+    phone: dbProfile.phone || '', // Add phone field with default value
     role: dbProfile.role || 'Unknown',
     department: dbProfile.department || 'Unknown',
     experience_level: dbProfile.experience_level || 1,

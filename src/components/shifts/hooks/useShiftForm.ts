@@ -91,11 +91,12 @@ export const useShiftForm = ({
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving shift:', error);
+      const errorMessage = error instanceof Error ? error.message : "Kunde inte spara arbetspass";
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte spara arbetspass",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -120,11 +121,12 @@ export const useShiftForm = ({
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting shift:', error);
+      const errorMessage = error instanceof Error ? error.message : "Kunde inte ta bort arbetspass";
       toast({
         title: "Fel",
-        description: error.message || "Kunde inte ta bort arbetspass",
+        description: errorMessage,
         variant: "destructive",
       });
     }

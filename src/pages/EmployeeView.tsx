@@ -22,52 +22,34 @@ import { Badge } from "@/components/ui/badge";
 
 const EmployeeView = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  // Get current user to default to their own profile
-  React.useEffect(() => {
-    const getCurrentUser = async () => {
-      // Since we don't have email matching, get the first employee as fallback
-      const { data: employees, error } = await supabase
-        .from('employees')
-        .select('id')
-        .limit(1);
-          
-      if (employees && employees.length > 0 && !error) {
-        console.log('👤 Using first employee as current user:', employees[0].id);
-        setCurrentUserId(employees[0].id);
-        // Auto-select current user if no employee is selected
-        if (!selectedEmployeeId) {
-          setSelectedEmployeeId(employees[0].id);
-        }
-      } else {
-        console.log('👤 No employee records found');
-      }
-    };
-    
-    getCurrentUser();
-  }, [selectedEmployeeId]);
 
   // Fetch all employees for the selector (managers can view anyone's schedule)
   const { data: employees, isLoading: loadingEmployees } = useQuery({
     queryKey: ['all-employees'],
     queryFn: async () => {
-      console.log('🔍 Fetching all employees...');
+      console.log('🔍 EmployeeView: Fetching all employees...');
       const { data, error } = await supabase
         .from('employees')
         .select('id, first_name, last_name, role, department, experience_level')
         .order('first_name');
 
       if (error) {
-        console.error('❌ Error fetching employees:', error);
+        console.error('❌ EmployeeView: Error fetching employees:', error);
         throw error;
       }
       
-      console.log('✅ Fetched employees:', data?.length || 0);
-      console.log('Employee data:', data);
+      console.log(`✅ EmployeeView: Fetched ${data?.length || 0} employees`);
+      
+      // Log employee names for debugging
+      if (data && data.length > 0) {
+        const names = data.slice(0, 3).map(emp => `${emp.first_name} ${emp.last_name}`).join(', ');
+        console.log(`👥 EmployeeView: First employees: ${names}${data.length > 3 ? '...' : ''}`);
+      }
       
       return data as (Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role' | 'department' | 'experience_level'>)[];
-    }
+    },
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // React Query v5 uses gcTime instead of cacheTime
   });
 
   // Fetch selected employee's profile

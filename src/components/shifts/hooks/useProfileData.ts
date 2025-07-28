@@ -8,6 +8,7 @@ export const useProfileData = () => {
   const { data: profiles = [], isLoading, error } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
+      console.log('🔍 useProfileData: Fetching employees from database...');
       const { data, error } = await supabase
         .from('employees')
         .select('*');
@@ -18,13 +19,19 @@ export const useProfileData = () => {
       }
 
       const convertedProfiles = (data as DatabaseProfile[] || []).map(convertDatabaseProfile);
-      // Only log when data is actually fetched, not on every render
+      console.log(`✅ useProfileData: Loaded ${convertedProfiles.length} employee profiles`);
+      
+      // Log first few names for debugging
       if (convertedProfiles.length > 0) {
-        console.log(`✅ Loaded ${convertedProfiles.length} employee profiles`);
+        const names = convertedProfiles.slice(0, 3).map(p => `${p.first_name} ${p.last_name}`).join(', ');
+        console.log(`👥 useProfileData: First employees: ${names}${convertedProfiles.length > 3 ? '...' : ''}`);
       }
+      
       return convertedProfiles;
     },
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // React Query v5 uses gcTime instead of cacheTime
   });
 
   return { profiles, isLoading, error };

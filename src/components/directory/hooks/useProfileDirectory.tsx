@@ -114,8 +114,22 @@ export function useProfileDirectory() {
         description: `${profileToDelete.first_name} ${profileToDelete.last_name} har tagits bort`,
       });
       
+      // Force complete cache refresh
+      console.log('🔄 Forcing complete cache refresh after deleting employee...');
+      
+      // Remove old cached data completely
+      await queryClient.removeQueries({ queryKey: ['profiles'] });
+      await queryClient.removeQueries({ queryKey: ['all-employees'] });
+      
+      // Invalidate all employee-related caches
       await queryClient.invalidateQueries({ queryKey: ['profiles'] });
       await queryClient.invalidateQueries({ queryKey: ['all-employees'] });
+      
+      // Force immediate refetch of both queries
+      await queryClient.refetchQueries({ queryKey: ['profiles'] });
+      await queryClient.refetchQueries({ queryKey: ['all-employees'] });
+      
+      console.log('✅ Cache refresh completed - employee should be removed from all views');
       
       setIsDeleteDialogOpen(false);
       setProfileToDelete(null);
