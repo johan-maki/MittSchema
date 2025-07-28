@@ -41,8 +41,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('🌍 Environment:', {
           hostname: window.location.hostname,
           isDev: import.meta.env.DEV,
-          mode: import.meta.env.MODE
+          mode: import.meta.env.MODE,
+          devCondition: import.meta.env.DEV,
+          localhostCondition: window.location.hostname === 'localhost',
+          vercelCondition: window.location.hostname === 'mitt-schema.vercel.app',
+          overallCondition: import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === 'mitt-schema.vercel.app'
         });
+        
+        // 🔧 FORCE DEBUG: Always log when this code path is reached
+        console.log('✅ AUTHENTICATION FIX ACTIVE: Creating mock user session');
         
         const mockUser = {
           id: 'dev-user-123',
