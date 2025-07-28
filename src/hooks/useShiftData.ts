@@ -70,15 +70,9 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
       
       console.log(`Retrieved ${shifts?.length || 0} shifts from Supabase`);
       
-      // 🔍 CRITICAL DEBUG: Check if we're filtering correctly for target month
+      // Quick validation for month boundary issues (debug only)
       if (currentView === 'month' && shifts && shifts.length > 0) {
         const targetMonth = currentDate.getMonth() + 1; // 1-indexed month
-        const actualMonthShifts = shifts.filter(shift => {
-          const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
-          return shiftMonth === targetMonth;
-        });
-      // Quick analysis for debugging only when there are issues
-      if (shifts && shifts.length > 0) {
         const actualMonthShifts = shifts.filter(shift => {
           const shiftMonth = shift.start_time ? parseInt(shift.start_time.split('-')[1]) : null;
           return shiftMonth === targetMonth;
