@@ -133,8 +133,31 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   });
   
   const totalRequiredShifts = daysInMonth * 3; // Assuming 3 shifts per day (morning, afternoon, night)
-  const totalGeneratedShifts = shiftsInTargetMonth.length;
-  const coveragePercentage = Math.round((totalGeneratedShifts / totalRequiredShifts) * 100);
+  const totalAssignedShifts = shiftsInTargetMonth.length; // Total number of shift assignments
+  
+  // Count unique shift slots (not number of employees assigned)
+  // Group by date and shift type to get unique pass slots
+  const uniqueShiftSlots = new Set();
+  shiftsInTargetMonth.forEach(shift => {
+    const shiftDate = parseISO(shift.start_time);
+    const dateStr = format(shiftDate, 'yyyy-MM-dd');
+    const hour = shiftDate.getHours();
+    
+    // Determine shift type based on hour
+    let shiftType;
+    if (hour >= 6 && hour < 14) {
+      shiftType = 'morning';
+    } else if (hour >= 14 && hour < 22) {
+      shiftType = 'afternoon';
+    } else {
+      shiftType = 'night';
+    }
+    
+    uniqueShiftSlots.add(`${dateStr}-${shiftType}`);
+  });
+  
+  const totalCoveredShifts = uniqueShiftSlots.size;
+  const coveragePercentage = Math.round((totalCoveredShifts / totalRequiredShifts) * 100);
   
   console.log('🔍 Coverage calculation debug:', {
     startDate: startDate.toISOString().split('T')[0],
@@ -142,8 +165,11 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
     daysInMonth,
     totalShifts: shifts.length,
     shiftsInTargetMonth: shiftsInTargetMonth.length,
+    totalAssignedShifts,
     totalRequiredShifts,
+    totalCoveredShifts,
     coveragePercentage,
+    uniqueShiftSlotsArray: Array.from(uniqueShiftSlots).slice(0, 5), // Show first 5 for debugging
     firstFewShifts: shifts.slice(0, 3).map(s => ({
       start_time: s.start_time,
       date: parseISO(s.start_time).toISOString().split('T')[0]
@@ -237,7 +263,7 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                 <div>
                   <h3 className="font-semibold text-lg">Täckningsgrad: {coveragePercentage}%</h3>
                   <p className="text-sm opacity-75">
-                    {totalGeneratedShifts} av {totalRequiredShifts} pass täckta
+                    {totalCoveredShifts} av {totalRequiredShifts} pass täckta
                   </p>
                 </div>
               </div>
@@ -273,7 +299,7 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                 <Calendar className="h-5 w-5 text-blue-600" />
                 <span className="text-sm font-medium text-blue-800">Totalt Pass</span>
               </div>
-              <p className="text-2xl font-bold text-blue-900 mt-1">{totalGeneratedShifts}</p>
+              <p className="text-2xl font-bold text-blue-900 mt-1">{totalAssignedShifts}</p>
             </div>
             
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -453,12 +479,7 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
                             />
                           </div>
                           <div className="flex flex-col">
-                            <span className={`text-sm font-medium ${
-                              summary.workloadPercentage > 120 ? 'text-red-700' : 
-                              summary.workloadPercentage > 100 ? 'text-orange-700' : 
-                              summary.workloadPercentage > 80 ? 'text-green-700' : 
-                              'text-gray-700'
-                            }`}>
+                            <span className="text-sm font-medium text-gray-900">
                               {summary.workloadPercentage}%
                             </span>
                             <span className="text-xs text-gray-500">
