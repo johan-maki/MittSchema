@@ -42,28 +42,37 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
   const [isEditShiftDialogOpen, setIsEditShiftDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const getShiftsForDay = (day: Date) => {
-    return shifts.filter(shift => {
-      const shiftDate = parseISO(shift.start_time);
-      const isSame = isSameDay(shiftDate, day);
+  const getShiftsForDay = (day: Date): Array<Shift & { profiles: Pick<Profile, 'first_name' | 'last_name' | 'experience_level'> }> => {
+    const dayShifts = shifts.filter((shift) => {
+      // Use the date from start_time but compare only the date part to avoid timezone issues
+      const shiftDate = new Date(shift.start_time);
+      const dayYear = day.getFullYear();
+      const dayMonth = day.getMonth();
+      const dayDate = day.getDate();
       
-      // 🔍 DEBUG: Log August 1st shift matching for debugging Erik's missing night shift
-      if (format(day, 'yyyy-MM-dd') === '2025-08-01') {
-        console.log(`🔍 August 1st shift matching:`, {
+      const shiftYear = shiftDate.getFullYear();
+      const shiftMonth = shiftDate.getMonth();
+      const shiftDateNum = shiftDate.getDate();
+      
+      const isMatch = (dayYear === shiftYear && dayMonth === shiftMonth && dayDate === shiftDateNum);
+      
+      // Debug logging for August 1st specifically
+      if (day.getDate() === 1 && day.getMonth() === 7) { // August 1st (month is 0-indexed)
+        console.log('🔍 August 1st shift matching (FIXED):', {
           shift_type: shift.shift_type,
           employee_name: shift.profiles?.first_name,
           start_time: shift.start_time,
-          parsed_shift_date: format(shiftDate, 'yyyy-MM-dd HH:mm:ss'),
-          target_day: format(day, 'yyyy-MM-dd'),
-          is_same_day: isSame
+          shift_date_components: `${shiftYear}-${shiftMonth + 1}-${shiftDateNum}`,
+          target_date_components: `${dayYear}-${dayMonth + 1}-${dayDate}`,
+          is_same_day: isMatch
         });
       }
       
-      return isSame;
+      return isMatch;
     });
-  };
-
-  const getShiftsByType = (dayShifts: Shift[]) => {
+    
+    return dayShifts;
+  };  const getShiftsByType = (dayShifts: Shift[]) => {
     return {
       day: dayShifts.filter(s => s.shift_type === 'day'),
       evening: dayShifts.filter(s => s.shift_type === 'evening'),
