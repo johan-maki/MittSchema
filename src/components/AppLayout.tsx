@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, UserCircle2, HelpCircle, MapPin, Sun, Moon, Sparkles } from 'lucide-react';
+import { Calendar, UserCircle2, HelpCircle, MapPin, Sun, Moon, Sparkles, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
