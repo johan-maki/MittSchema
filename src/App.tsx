@@ -15,6 +15,7 @@ import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import ScheduleSettings from "./pages/ScheduleSettings";
+import CustomerDirectory from "./pages/CustomerDirectory";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -111,6 +112,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Help />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/customers"
+                element={
+                  <ProtectedRoute>
+                    <CustomerDirectory />
                   </ProtectedRoute>
                 }
               />
