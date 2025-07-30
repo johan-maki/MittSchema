@@ -371,8 +371,24 @@ class RouteOptimizerService:
                 
                 result = {
                     "success": True,
+                    "total_distance": round(total_distance, 2),  # For backward compatibility
                     "totalDistance": round(total_distance, 2),
+                    "total_time": round(total_time, 1),  # For backward compatibility
                     "totalTime": round(total_time, 1),
+                    "objective_value": model.objVal,
+                    "optimization_time": model.runtime,
+                    "route_order": [
+                        {
+                            "id": customer.id,
+                            "name": customer.name,
+                            "address": customer.address,
+                            "latitude": customer.latitude,
+                            "longitude": customer.longitude,
+                            "service_time": customer.service_time,
+                            "priority": customer.priority
+                        }
+                        for customer in route
+                    ],
                     "customers": [
                         {
                             "id": customer.id,
