@@ -113,6 +113,20 @@ const Help = () => {
                   <li>Ställa in krav på erfarenhet och minsta antal anställda per pass.</li>
                 </ul>
               </div>
+
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <Navigation2 className="h-5 w-5" />
+                  Slingplanering
+                </h3>
+                <ul className="list-disc pl-5 text-gray-600 space-y-1">
+                  <li>Optimera besöksordning för hemtjänst med AI-driven ruttplanering.</li>
+                  <li>Lägg till kunder med adresser, servicetider och prioriteter.</li>
+                  <li>Optimera slingor för kortast körsträcka eller tid.</li>
+                  <li>Exportera detaljerade rutt-instruktioner.</li>
+                  <li>Använd demo-kunder för att testa funktionaliteten.</li>
+                </ul>
+              </div>
             </div>
           </section>
 

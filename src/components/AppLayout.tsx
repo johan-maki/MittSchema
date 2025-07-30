@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Menu, UserCircle2, HelpCircle, Moon, Sun } from "lucide-react";
+import { Calendar, UserCircle2, HelpCircle, MapPin, Sun, Moon } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -60,6 +60,13 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       >
         <UserCircle2 className="w-4 h-4" />
         Anställdas vy
+      </Link>
+      <Link 
+        to="/route-planning" 
+        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1 dark:text-white dark:hover:bg-gray-800"
+      >
+        <MapPin className="w-4 h-4" />
+        Slingplanering
       </Link>
       <Link 
         to="/help" 

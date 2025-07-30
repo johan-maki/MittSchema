@@ -4,6 +4,7 @@ import uvicorn
 from config import PORT, logger
 from middleware import setup_cors
 from routes.schedule_routes import router as schedule_router
+from controllers.route_controller import router as route_router
 from utils import get_supabase_client
 
 app = FastAPI(
@@ -17,6 +18,7 @@ setup_cors(app)
 
 # Include routers
 app.include_router(schedule_router)
+app.include_router(route_router)
 
 @app.get("/")
 def home():

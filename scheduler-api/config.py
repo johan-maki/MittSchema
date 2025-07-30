@@ -12,11 +12,15 @@ logger = logging.getLogger("scheduler-api")
 # Load environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "AIzaSyA2MzeziWPYVyzwSLstnDySmqqm6oxz6FA")  # Default provided
 PORT = int(os.getenv("PORT", 8080))  # Default to 8080 if not set
 
 # Validate environment variables
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Missing Supabase credentials. Check environment variables.")
+
+if not GOOGLE_MAPS_API_KEY:
+    logger.warning("⚠️ No Google Maps API key found. Route optimization will use basic distance calculations.")
 
 # Core scheduling constants for Gurobi optimizer
 GUROBI_CONSTRAINTS = {
