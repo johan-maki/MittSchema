@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MapPin, Plus, Trash2, Play, Download, Clock, Route, MapIcon, Navigation, Users } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
 
 interface Customer {
   id: string;
@@ -331,12 +332,19 @@ const RouteOptimization: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Adress
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={newCustomer.address || ''}
-                  onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(value) => setNewCustomer({...newCustomer, address: value})}
+                  onAddressSelect={(address, latitude, longitude) => {
+                    setNewCustomer({
+                      ...newCustomer, 
+                      address,
+                      latitude,
+                      longitude
+                    });
+                  }}
                   placeholder="Kundadress"
+                  className="focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 

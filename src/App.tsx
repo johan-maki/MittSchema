@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { GoogleMapsLoader } from "./components/GoogleMapsLoader";
 import { Toaster } from "./components/ui/toaster";
 import { seedSupabaseData } from "./utils/seedData";
 import Schedule from "./pages/Schedule";
@@ -56,6 +57,11 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <GoogleMapsLoader 
+            apiKey="AIzaSyA2MzeziWPYVyzwSLstnDySmqqm6oxz6FA"
+            onLoad={() => console.log('✅ Google Maps API loaded successfully')}
+            onError={(error) => console.error('❌ Google Maps API failed to load:', error)}
+          />
           <Router>
             <Routes>
               <Route path="/" element={<Index />} />
