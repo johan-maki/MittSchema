@@ -124,17 +124,20 @@ class RouteOptimizerService:
                         logger.info("✅ Successfully created distance matrix using Google Maps real driving distances")
                         return distance_matrix
                     else:
-                        logger.warning("❌ Invalid distance matrix data from Google Maps, falling back to Haversine")
+                        logger.error("❌ Invalid distance matrix data from Google Maps")
+                        raise ValueError("Google Maps API returned invalid distance matrix data")
                 else:
-                    logger.warning("❌ Failed to get distance matrix from Google Maps, falling back to Haversine")
+                    logger.error("❌ Failed to get distance matrix from Google Maps")
+                    raise ValueError("Google Maps API call failed")
                     
             except Exception as e:
-                logger.error(f"❌ Error using Google Maps Distance Matrix API: {str(e)}, falling back to Haversine")
+                logger.error(f"❌ Error using Google Maps Distance Matrix API: {str(e)}")
+                raise ValueError(f"Google Maps integration not working: {str(e)}")
         else:
-            logger.info("ℹ️ No Google Maps API key provided, using Haversine distance calculation")
+            logger.error("ℹ️ No Google Maps API key provided")
+            raise ValueError("Google Maps API key is required for route optimization")
         
-        # Fallback to Haversine formula
-        return self.create_distance_matrix(customers, depot_lat, depot_lng)
+        # No fallback - Google Maps is required
         
     def optimize_route(
         self, 
@@ -227,21 +230,53 @@ class RouteOptimizerService:
             for i in range(1, n + 1):  # Exclude depot
                 u[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=1, ub=n, name=f'u_{i}')
                 
-            # Objective function
+            # Enhanced objective function with weighted components
+            base_cost = quicksum(
+                x[i, j] * distance_matrix[i][j]
+                for i in range(n + 1) for j in range(n + 1) if i != j
+            )
+            
+            # Priority penalties (soft constraint approach)
+            priority_penalties = 0
+            priority_weights = {'high': 0, 'medium': 10, 'low': 20}  # Higher penalty for lower priority
+            for i, customer in enumerate(customer_objects):
+                # Penalty for visiting lower priority customers
+                for j in range(n + 1):
+                    if j != i + 1:  # +1 because depot is 0
+                        penalty = priority_weights.get(customer.priority, 10)
+                        priority_penalties += x[i + 1, j] * penalty
+            
+            # Time window violation penalties (if implemented)
+            time_window_violations = 0
+            # TODO: Add time window soft constraint penalties when time windows are implemented
+            
+            # Weighted objective function with explicit coefficients
+            obj_expr = (
+                1.0 * base_cost +              # Primary: minimize distance (weight: 1.0)
+                0.5 * priority_penalties +     # Secondary: priority penalties (weight: 0.5)  
+                2.0 * time_window_violations   # Tertiary: time window violations (weight: 2.0)
+            )
+            
             if optimization_criteria == "minimize_time":
-                # Time = distance / speed + service_time
-                obj_expr = quicksum(
+                # For time optimization, replace base_cost with time calculation
+                time_cost = quicksum(
                     x[i, j] * (distance_matrix[i][j] / vehicle_speed_kmh * 60 + 
                               (customer_objects[j-1].service_time if j > 0 else 0))
                     for i in range(n + 1) for j in range(n + 1) if i != j
                 )
-            else:  # minimize_distance
-                obj_expr = quicksum(
-                    x[i, j] * distance_matrix[i][j]
-                    for i in range(n + 1) for j in range(n + 1) if i != j
+                obj_expr = (
+                    1.0 * time_cost +              # Primary: minimize time (weight: 1.0)
+                    0.3 * priority_penalties +     # Secondary: priority penalties (weight: 0.3)
+                    1.5 * time_window_violations   # Tertiary: time window violations (weight: 1.5)
                 )
                 
             model.setObjective(obj_expr, GRB.MINIMIZE)
+            
+            # Log objective function weights
+            if optimization_criteria == "minimize_time":
+                logger.info("🎯 Multi-objective route optimization (TIME): Base time (1.0x), Priority penalties (0.3x), Time window violations (1.5x)")
+            else:
+                logger.info("🎯 Multi-objective route optimization (DISTANCE): Base distance (1.0x), Priority penalties (0.5x), Time window violations (2.0x)")
             
             # Constraints
             
