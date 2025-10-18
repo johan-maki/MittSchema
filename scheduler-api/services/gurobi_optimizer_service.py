@@ -772,6 +772,84 @@ class GurobiScheduleOptimizer:
         if hard_blocked_count > 0:
             logger.info(f"✓ Added {hard_blocked_count} hard blocked time slot constraints")
         
+        # 7. MEDIUM BLOCKED TIME SLOTS (PENALTY-BASED)
+        # These are strong preferences - employee prefers not to work but CAN if needed
+        # Implemented as penalty terms in objective function rather than hard constraints
+        # Max 3 slots per employee (enforced on frontend)
+        medium_blocked_count = 0
+        self.medium_penalty_vars = {}  # Store penalty variables for objective function
+        
+        for pref in valid_preferences:
+            emp_id = pref.employee_id
+            
+            # Check if employee has medium blocked slots
+            if hasattr(pref, 'medium_blocked_slots') and pref.medium_blocked_slots:
+                logger.info(f"Employee {emp_id} has {len(pref.medium_blocked_slots)} medium blocked time slots")
+                
+                for slot in pref.medium_blocked_slots:
+                    try:
+                        # Parse the date string (format: "YYYY-MM-DD")
+                        from datetime import datetime
+                        slot_date = datetime.strptime(slot.date, '%Y-%m-%d').date()
+                        
+                        # Find the index of this date in our scheduling period
+                        day_index = None
+                        for d, date in enumerate(self.dates):
+                            if date.date() == slot_date:
+                                day_index = d
+                                break
+                        
+                        if day_index is None:
+                            logger.warning(f"Medium blocked date {slot.date} for employee {emp_id} is outside scheduling period - skipping")
+                            continue
+                        
+                        # Create penalty variables for specified shift types
+                        for shift_type in slot.shift_types:
+                            if shift_type == 'all_day':
+                                # Create penalty for ALL shifts on this day
+                                logger.info(f"MEDIUM BLOCK: Employee {emp_id} prefers to avoid ALL shifts on {slot.date}")
+                                for shift in self.shift_types:
+                                    # Create penalty variable (1 if shift is assigned, 0 otherwise)
+                                    penalty_var = self.model.addVar(
+                                        vtype=GRB.BINARY,
+                                        name=f"medium_penalty_{emp_id}_{day_index}_{shift}"
+                                    )
+                                    # Link penalty to shift assignment: penalty >= shift
+                                    # If shift is assigned (1), penalty must be 1
+                                    # If shift is not assigned (0), penalty can be 0 (optimizer will choose 0 to minimize cost)
+                                    self.model.addConstr(
+                                        penalty_var >= self.shifts[(emp_id, day_index, shift)],
+                                        name=f"medium_penalty_link_{emp_id}_{day_index}_{shift}"
+                                    )
+                                    # Store penalty variable for objective function
+                                    self.medium_penalty_vars[(emp_id, day_index, shift)] = penalty_var
+                                    medium_blocked_count += 1
+                            elif shift_type in self.shift_types:
+                                # Create penalty for specific shift type
+                                logger.info(f"MEDIUM BLOCK: Employee {emp_id} prefers to avoid {shift_type} shift on {slot.date}")
+                                penalty_var = self.model.addVar(
+                                    vtype=GRB.BINARY,
+                                    name=f"medium_penalty_{emp_id}_{day_index}_{shift_type}"
+                                )
+                                self.model.addConstr(
+                                    penalty_var >= self.shifts[(emp_id, day_index, shift_type)],
+                                    name=f"medium_penalty_link_{emp_id}_{day_index}_{shift_type}"
+                                )
+                                self.medium_penalty_vars[(emp_id, day_index, shift_type)] = penalty_var
+                                medium_blocked_count += 1
+                            else:
+                                logger.warning(f"Unknown shift type '{shift_type}' in medium blocked slot for employee {emp_id} - skipping")
+                    
+                    except ValueError as e:
+                        logger.error(f"Invalid date format in medium blocked slot for employee {emp_id}: {slot.date} - {e}")
+                        continue
+                    except Exception as e:
+                        logger.error(f"Error processing medium blocked slot for employee {emp_id}: {e}")
+                        continue
+        
+        if medium_blocked_count > 0:
+            logger.info(f"✓ Created {medium_blocked_count} medium blocked penalty variables (will be added to objective)")
+        
         logger.info("Employee preference constraints added successfully")
         
         # Summary logging
@@ -906,16 +984,25 @@ class GurobiScheduleOptimizer:
                         # Add penalty for each shift assignment on non-preferred days
                         non_preferred_day_penalty += self.shifts[(emp_id, d, shift)]
         
+        # Seventh objective: Minimize violations of medium blocked slots
+        # These are strong preferences - employee strongly prefers not to work but CAN if needed
+        # Weight (30) is higher than soft preferences (8-12) but lower than hard constraints (impossible)
+        medium_blocked_penalty = 0
+        if hasattr(self, 'medium_penalty_vars') and self.medium_penalty_vars:
+            medium_blocked_penalty = gp.quicksum(self.medium_penalty_vars.values())
+        
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
+        # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
         # - Weekend fairness is high priority (weight: 20) - increased for better fairness
-        # - Shift type fairness is important (weight: 8)
         # - Preferred days matter (weight: 12) - high weight for day preferences
+        # - Shift type fairness is important (weight: 8)
         # - Preferred shifts matter (weight: 8) - increased weight for better preference respect
         self.model.setObjective(
             100 * total_coverage 
             - 50 * total_unfairness 
+            - 30 * medium_blocked_penalty
             - 20 * weekend_unfairness 
             - 8 * shift_type_unfairness 
             - 12 * non_preferred_day_penalty
@@ -923,7 +1010,7 @@ class GurobiScheduleOptimizer:
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x), Preferred shifts (8x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Medium blocks (30x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x), Preferred shifts (8x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
