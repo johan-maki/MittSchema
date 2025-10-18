@@ -365,16 +365,16 @@ export const generateScheduleForNextMonth = async (
     if (strictlyExcludedShifts.length > 0 || strictlyPreferredShifts.length > 0) {
       // Only log constraint conflicts, not normal preferences
     }
-
-    return gurobiPreference;
     
-    // Special debugging for Erik
-    if (gurobiPreference.employee_id === '225e078a-bdb9-4d3e-9274-6c3b5432b4be') {
-      console.log('🚨 ERIK ERIKSSON CONSTRAINTS TO GUROBI:', {
+    // Special debugging for specific employees with strict constraints
+    if (gurobiPreference.available_days_strict || gurobiPreference.preferred_shifts_strict) {
+      console.log(`� STRICT CONSTRAINTS for ${profile?.first_name} ${profile?.last_name}:`, {
         available_days: gurobiPreference.available_days,
         available_days_strict: gurobiPreference.available_days_strict,
-        day_constraints: workPrefs.day_constraints,
-        message: 'Erik should NOT get Saturday/Sunday shifts if available_days_strict=true and available_days excludes weekends'
+        excluded_days: gurobiPreference.excluded_days,
+        preferred_shifts: gurobiPreference.preferred_shifts,
+        preferred_shifts_strict: gurobiPreference.preferred_shifts_strict,
+        excluded_shifts: gurobiPreference.excluded_shifts,
       });
     }
     
