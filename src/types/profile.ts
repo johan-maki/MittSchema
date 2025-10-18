@@ -48,6 +48,12 @@ export type ShiftConstraint = {
   strict: boolean; // true = hard constraint, false = soft constraint
 };
 
+// Hard blocked time slot - employee absolutely cannot work this specific time
+export type HardBlockedSlot = {
+  date: string; // ISO date string (YYYY-MM-DD)
+  shift_types: ('day' | 'evening' | 'night' | 'all_day')[]; // Which shifts on this date are blocked
+};
+
 export interface WorkPreferences {
   work_percentage: number; // 0-100, represents percentage of full-time (5% increments)
   // Granular constraints per day
@@ -66,6 +72,8 @@ export interface WorkPreferences {
     evening: ShiftConstraint;
     night: ShiftConstraint;
   };
+  // Hard blocked time slots (max 3 slots) - NEW!
+  hard_blocked_slots?: HardBlockedSlot[];
   // Legacy fields for backward compatibility - will be derived from granular constraints
   preferred_shifts?: ("day" | "evening" | "night")[];
   available_days?: string[];
@@ -117,6 +125,7 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
       evening: { preferred: true, strict: false },
       night: { preferred: true, strict: false },
     },
+    hard_blocked_slots: [],
   };
 
   if (!json || typeof json !== 'object' || Array.isArray(json)) {
@@ -173,6 +182,9 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
       })(),
       day_constraints: convertedDayConstraints as WorkPreferences['day_constraints'],
       shift_constraints: jsonObj.shift_constraints as WorkPreferences['shift_constraints'] || defaultPreferences.shift_constraints,
+      hard_blocked_slots: Array.isArray(jsonObj.hard_blocked_slots) 
+        ? (jsonObj.hard_blocked_slots as HardBlockedSlot[])
+        : [],
     };
   }
   
@@ -221,6 +233,9 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
       evening: { preferred: legacyPreferredShifts.includes('evening'), strict: legacyShiftsStrict },
       night: { preferred: legacyPreferredShifts.includes('night'), strict: legacyShiftsStrict },
     },
+    hard_blocked_slots: Array.isArray(jsonObj.hard_blocked_slots) 
+      ? (jsonObj.hard_blocked_slots as HardBlockedSlot[])
+      : [],
   };
   
   return converted;

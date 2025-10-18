@@ -18,7 +18,9 @@ import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 import { convertWorkPreferences } from "@/types/profile";
 import { WorkPreferencesService } from "@/services/workPreferencesService";
 import type { Json } from "@/integrations/supabase/types";
-import { Save, Clock, Calendar, Briefcase } from "lucide-react";
+import { Save, Clock, Calendar, Briefcase, Ban } from "lucide-react";
+import { HardBlockedSlotsDialog } from "./HardBlockedSlotsDialog";
+import { Badge } from "@/components/ui/badge";
 
 interface WorkPreferencesProps {
   employeeId: string;
@@ -40,12 +42,14 @@ const defaultPreferences: WorkPreferencesType = {
     evening: { preferred: true, strict: false },
     night: { preferred: true, strict: false },
   },
+  hard_blocked_slots: [],
 };
 
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
+  const [hardBlockedDialogOpen, setHardBlockedDialogOpen] = useState(false);
   
   const [preferences, setPreferences] = useState<WorkPreferencesType>(() => ({
     ...defaultPreferences,
@@ -211,63 +215,67 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         }
       `}</style>
       <div className="space-y-8">
-      {/* Önskade arbetspass */}
+      {/* Önskade arbetspass - MJUKA KRAV */}
       <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-blue-500/10 rounded-lg">
             <Briefcase className="h-5 w-5 text-blue-600" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800">Önskade arbetspass</h3>
         </div>
+        <p className="text-sm text-slate-600 mb-6 ml-11">
+          Dessa är <span className="font-semibold text-blue-600">mjuka preferenser</span> som schemaläggningen försöker respektera när det är möjligt.
+        </p>
         <div className="grid gap-4">
           {shifts.map((shift) => (
-            <div key={shift.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center space-x-4">
-                <Switch
-                  id={`shift-${shift.id}`}
-                  checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].preferred}
-                  onCheckedChange={(checked) => {
-                    setPreferences(prev => ({
-                      ...prev,
-                      shift_constraints: {
-                        ...prev.shift_constraints,
-                        [shift.id]: {
-                          ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
-                          preferred: checked
-                        }
+            <div key={shift.id} className="flex items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <Switch
+                id={`shift-${shift.id}`}
+                checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].preferred}
+                onCheckedChange={(checked) => {
+                  setPreferences(prev => ({
+                    ...prev,
+                    shift_constraints: {
+                      ...prev.shift_constraints,
+                      [shift.id]: {
+                        ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
+                        preferred: checked,
+                        strict: false // Always false for soft preferences
                       }
-                    }));
-                  }}
-                />
-                <Label htmlFor={`shift-${shift.id}`} className="font-medium text-slate-700 cursor-pointer">
-                  {shift.label}
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id={`shift-${shift.id}-strict`}
-                  checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].strict}
-                  onChange={(e) => {
-                    setPreferences(prev => ({
-                      ...prev,
-                      shift_constraints: {
-                        ...prev.shift_constraints,
-                        [shift.id]: {
-                          ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
-                          strict: e.target.checked
-                        }
-                      }
-                    }));
-                  }}
-                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                />
-                <Label htmlFor={`shift-${shift.id}-strict`} className="text-sm font-medium text-slate-600 cursor-pointer">
-                  Hårt krav
-                </Label>
-              </div>
+                    }
+                  }));
+                }}
+              />
+              <Label htmlFor={`shift-${shift.id}`} className="ml-4 font-medium text-slate-700 cursor-pointer">
+                {shift.label}
+              </Label>
             </div>
           ))}
+        </div>
+
+        {/* Hard Blocked Slots Button */}
+        <div className="mt-6 pt-6 border-t border-slate-200">
+          <Button
+            onClick={() => setHardBlockedDialogOpen(true)}
+            variant="outline"
+            className="w-full border-2 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700 font-medium py-6 relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Ban className="h-5 w-5 mr-2 relative z-10" />
+            <span className="relative z-10">Ange arbetstillfällen jag ej kan jobba</span>
+            {preferences.hard_blocked_slots && preferences.hard_blocked_slots.length > 0 && (
+              <Badge className="ml-3 bg-red-600 text-white relative z-10">
+                {preferences.hard_blocked_slots.length}/3
+              </Badge>
+            )}
+          </Button>
+          {preferences.hard_blocked_slots && preferences.hard_blocked_slots.length > 0 && (
+            <p className="text-sm text-center text-slate-600 mt-2">
+              {preferences.hard_blocked_slots.length === 3 
+                ? '✓ Maximalt antal blockerade arbetstillfällen' 
+                : `${3 - preferences.hard_blocked_slots.length} arbetstillfällen kvar att blockera`}
+            </p>
+          )}
         </div>
       </Card>
 
@@ -337,61 +345,40 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         </div>
       </Card>
 
-      {/* Tillgängliga dagar */}
+      {/* Tillgängliga dagar - MJUKA KRAV */}
       <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-green-500/10 rounded-lg">
             <Calendar className="h-5 w-5 text-green-600" />
           </div>
           <h3 className="text-xl font-semibold text-slate-800">Tillgängliga dagar</h3>
         </div>
+        <p className="text-sm text-slate-600 mb-6 ml-11">
+          Dessa är <span className="font-semibold text-green-600">mjuka preferenser</span> som schemaläggningen försöker respektera när det är möjligt.
+        </p>
         <div className="grid gap-4">
           {weekdays.map((day) => (
-            <div key={day.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="flex items-center space-x-4">
-                <Switch
-                  id={`day-${day.id}`}
-                  checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].available}
-                  onCheckedChange={(checked) => {
-                    setPreferences(prev => ({
-                      ...prev,
-                      day_constraints: {
-                        ...prev.day_constraints,
-                        [day.id]: {
-                          ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
-                          available: checked
-                        }
+            <div key={day.id} className="flex items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+              <Switch
+                id={`day-${day.id}`}
+                checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].available}
+                onCheckedChange={(checked) => {
+                  setPreferences(prev => ({
+                    ...prev,
+                    day_constraints: {
+                      ...prev.day_constraints,
+                      [day.id]: {
+                        ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
+                        available: checked,
+                        strict: false // Always false for soft preferences
                       }
-                    }));
-                  }}
-                />
-                <Label htmlFor={`day-${day.id}`} className="font-medium text-slate-700 cursor-pointer">
-                  {day.label}
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id={`day-${day.id}-strict`}
-                  checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].strict}
-                  onChange={(e) => {
-                    setPreferences(prev => ({
-                      ...prev,
-                      day_constraints: {
-                        ...prev.day_constraints,
-                        [day.id]: {
-                          ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
-                          strict: e.target.checked
-                        }
-                      }
-                    }));
-                  }}
-                  className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
-                />
-                <Label htmlFor={`day-${day.id}-strict`} className="text-sm font-medium text-slate-600 cursor-pointer">
-                  Hårt krav
-                </Label>
-              </div>
+                    }
+                  }));
+                }}
+              />
+              <Label htmlFor={`day-${day.id}`} className="ml-4 font-medium text-slate-700 cursor-pointer">
+                {day.label}
+              </Label>
             </div>
           ))}
         </div>
@@ -417,6 +404,19 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
           )}
         </Button>
       </div>
+
+      {/* Hard Blocked Slots Dialog */}
+      <HardBlockedSlotsDialog
+        open={hardBlockedDialogOpen}
+        onOpenChange={setHardBlockedDialogOpen}
+        blockedSlots={preferences.hard_blocked_slots || []}
+        onSave={(slots) => {
+          setPreferences(prev => ({
+            ...prev,
+            hard_blocked_slots: slots
+          }));
+        }}
+      />
       </div>
     </>
   );
