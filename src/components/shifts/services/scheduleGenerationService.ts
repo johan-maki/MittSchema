@@ -328,8 +328,10 @@ export const generateScheduleForNextMonth = async (
       !strictlyUnavailableDays.includes(day)
     );
     
-    // For preferred shifts, exclude only the strictly excluded ones
-    const effectivePreferredShifts = preferredShifts.filter(shift => 
+    // For preferred shifts, include both regular preferred AND strictly preferred shifts
+    // Then exclude only the strictly excluded ones
+    const allPreferredShifts = [...new Set([...preferredShifts, ...strictlyPreferredShifts])];
+    const effectivePreferredShifts = allPreferredShifts.filter(shift => 
       !strictlyExcludedShifts.includes(shift)
     );
     
