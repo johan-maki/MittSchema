@@ -354,12 +354,19 @@ export const generateScheduleForNextMonth = async (
       role: profile?.role || 'Unknown',
       experience_level: profile?.experience_level || 1,
       // Include work_percentage for Gurobi server capacity calculations
-      work_percentage: workPrefs.work_percentage || 100
+      work_percentage: workPrefs.work_percentage || 100,
+      // Hard blocked time slots: specific date+shift combinations that CANNOT be scheduled
+      hard_blocked_slots: workPrefs.hard_blocked_slots || []
     };
     
     // Log work_percentage calculations for debugging
     if (workPrefs.work_percentage && workPrefs.work_percentage !== 100) {
       console.log(`🔍 Work percentage for ${profile?.first_name} ${profile?.last_name}: ${workPrefs.work_percentage}% → max ${gurobiPreference.max_shifts_per_week} shifts/week`);
+    }
+    
+    // Log hard blocked slots when present
+    if (workPrefs.hard_blocked_slots && workPrefs.hard_blocked_slots.length > 0) {
+      console.log(`🚫 Hard blocked slots for ${profile?.first_name} ${profile?.last_name}:`, workPrefs.hard_blocked_slots);
     }
     
     // Reduced Gurobi format logging

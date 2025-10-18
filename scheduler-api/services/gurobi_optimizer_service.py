@@ -534,6 +534,9 @@ class GurobiScheduleOptimizer:
         if len(valid_preferences) != len(self.employee_preferences):
             logger.warning(f"Filtered {len(self.employee_preferences)} preferences down to {len(valid_preferences)} valid ones")
         
+        # Initialize counters for summary
+        hard_blocked_count = 0
+        
         # Create a mapping from employee_id to preferences for quick lookup
         pref_map = {pref.employee_id: pref for pref in valid_preferences}
         
@@ -708,6 +711,67 @@ class GurobiScheduleOptimizer:
             else:
                 logger.debug(f"Employee {emp_id} uses default max 5 shifts per week")
         
+        # 6. HARD BLOCKED TIME SLOTS (NEW!)
+        # These are specific date+shift combinations that employee absolutely cannot work
+        # Max 3 slots per employee, enforced as HARD constraints
+        hard_blocked_count = 0
+        for pref in valid_preferences:
+            emp_id = pref.employee_id
+            
+            # Check if employee has hard blocked slots
+            if hasattr(pref, 'hard_blocked_slots') and pref.hard_blocked_slots:
+                logger.info(f"Employee {emp_id} has {len(pref.hard_blocked_slots)} hard blocked time slots")
+                
+                for slot in pref.hard_blocked_slots:
+                    try:
+                        # Parse the date string (format: "YYYY-MM-DD")
+                        from datetime import datetime
+                        slot_date = datetime.strptime(slot.date, '%Y-%m-%d').date()
+                        
+                        # Find the index of this date in our scheduling period
+                        # dates is a list of date objects
+                        day_index = None
+                        for d, date in enumerate(self.dates):
+                            if date.date() == slot_date:
+                                day_index = d
+                                break
+                        
+                        if day_index is None:
+                            logger.warning(f"Hard blocked date {slot.date} for employee {emp_id} is outside scheduling period - skipping")
+                            continue
+                        
+                        # Block the specified shift types for this date
+                        for shift_type in slot.shift_types:
+                            if shift_type == 'all_day':
+                                # Block ALL shifts for this day (day, evening, night)
+                                logger.info(f"HARD BLOCK: Employee {emp_id} blocked for ALL shifts on {slot.date}")
+                                for shift in self.shift_types:
+                                    self.model.addConstr(
+                                        self.shifts[(emp_id, day_index, shift)] == 0,
+                                        name=f"hard_blocked_all_{emp_id}_{day_index}_{shift}"
+                                    )
+                                    hard_blocked_count += 1
+                            elif shift_type in self.shift_types:
+                                # Block specific shift type
+                                logger.info(f"HARD BLOCK: Employee {emp_id} blocked for {shift_type} shift on {slot.date}")
+                                self.model.addConstr(
+                                    self.shifts[(emp_id, day_index, shift_type)] == 0,
+                                    name=f"hard_blocked_{emp_id}_{day_index}_{shift_type}"
+                                )
+                                hard_blocked_count += 1
+                            else:
+                                logger.warning(f"Unknown shift type '{shift_type}' in hard blocked slot for employee {emp_id} - skipping")
+                    
+                    except ValueError as e:
+                        logger.error(f"Invalid date format in hard blocked slot for employee {emp_id}: {slot.date} - {e}")
+                        continue
+                    except Exception as e:
+                        logger.error(f"Error processing hard blocked slot for employee {emp_id}: {e}")
+                        continue
+        
+        if hard_blocked_count > 0:
+            logger.info(f"✓ Added {hard_blocked_count} hard blocked time slot constraints")
+        
         logger.info("Employee preference constraints added successfully")
         
         # Summary logging
@@ -715,12 +779,16 @@ class GurobiScheduleOptimizer:
         employees_with_preferences = len(self.employee_preferences)
         employees_with_custom_weekly = len(self.employees_with_custom_weekly_limits)
         employees_with_shift_prefs = len(self.employee_shift_preferences)
+        employees_with_hard_blocks = sum(1 for pref in valid_preferences 
+                                         if hasattr(pref, 'hard_blocked_slots') and pref.hard_blocked_slots)
         
         logger.info(f"Employee preference summary:")
         logger.info(f"  Total employees: {total_employees}")
         logger.info(f"  Employees with preferences: {employees_with_preferences}")
         logger.info(f"  Employees with custom weekly limits: {employees_with_custom_weekly}")
         logger.info(f"  Employees with shift preferences: {employees_with_shift_prefs}")
+        logger.info(f"  Employees with hard blocked slots: {employees_with_hard_blocks}")
+        logger.info(f"  Total hard blocked constraints: {hard_blocked_count}")
         
         # Log any employees without preferences
         employees_without_prefs = [emp['id'] for emp in self.employees 

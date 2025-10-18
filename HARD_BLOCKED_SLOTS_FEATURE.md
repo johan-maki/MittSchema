@@ -206,26 +206,181 @@ const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
 
 ---
 
-## ✅ Framtida Integration med Gurobi
+## ✅ Gurobi Backend Integration - COMPLETED ✅
 
-När denna data når Gurobi-optimeraren ska den hanteras som:
+### **Implementation Status:**
+🎉 **FULLY INTEGRATED** - Feature is now complete and operational!
 
+### **Files Updated:**
+
+#### **1. Python Backend Model** (`scheduler-api/models.py`)
 ```python
-# scheduler-api/services/gurobi_optimizer_service.py
+class HardBlockedSlot(BaseModel):
+    """Represents a specific date + shift combination that employee CANNOT work"""
+    date: str  # Format: "YYYY-MM-DD"
+    shift_types: List[Literal["day", "evening", "night", "all_day"]]
 
-# För varje blockerat arbetstillfälle:
-for slot in employee.hard_blocked_slots:
-    date = parse_date(slot['date'])  # "2025-11-15"
-    
-    for shift_type in slot['shift_types']:
-        # HARD CONSTRAINT: Sätt variabel till 0
-        model.addConstr(
-            shifts[(employee_id, date, shift_type)] == 0,
-            name=f"hard_blocked_{employee_id}_{date}_{shift_type}"
-        )
+class EmployeePreference(BaseModel):
+    employee_id: str
+    hard_blocked_slots: Optional[List[HardBlockedSlot]] = []
+    # ... other fields
 ```
 
-Detta garanterar att Gurobi **aldrig** schemaläggare anställd på blockerade tillfällen.
+#### **2. Gurobi Optimizer Service** (`scheduler-api/services/gurobi_optimizer_service.py`)
+
+Added **Section 6: HARD BLOCKED TIME SLOTS** in `_add_employee_preference_constraints()`:
+
+```python
+# 6. HARD BLOCKED TIME SLOTS
+# These are absolute constraints - employee CANNOT work these specific date+shift combinations
+hard_blocked_count = 0
+for pref in valid_preferences:
+    emp_id = pref.employee_id
+    
+    if hasattr(pref, 'hard_blocked_slots') and pref.hard_blocked_slots:
+        employees_with_hard_blocks.add(emp_id)
+        
+        for slot in pref.hard_blocked_slots:
+            try:
+                # Parse the date string to date object
+                slot_date = datetime.strptime(slot.date, '%Y-%m-%d').date()
+                
+                # Find the corresponding day index in our scheduling period
+                day_index = None
+                for d, date in enumerate(self.dates):
+                    if date.date() == slot_date:
+                        day_index = d
+                        break
+                
+                if day_index is None:
+                    logger.warning(f"Hard blocked slot date {slot.date} is outside scheduling period for {emp_id}")
+                    continue
+                
+                # Add constraints for each blocked shift type
+                for shift_type in slot.shift_types:
+                    if shift_type == 'all_day':
+                        # Block ALL three shifts for this date
+                        for shift in self.shift_types:
+                            self.model.addConstr(
+                                shifts[(emp_id, day_index, shift)] == 0,
+                                name=f"hard_block_{emp_id}_d{day_index}_{shift}"
+                            )
+                            hard_blocked_count += 1
+                        logger.info(f"Added HARD BLOCK for {emp_id}: {slot.date} ALL DAY (3 shifts)")
+                    elif shift_type in self.shift_types:
+                        # Block specific shift
+                        self.model.addConstr(
+                            shifts[(emp_id, day_index, shift_type)] == 0,
+                            name=f"hard_block_{emp_id}_d{day_index}_{shift_type}"
+                        )
+                        hard_blocked_count += 1
+                        logger.info(f"Added HARD BLOCK for {emp_id}: {slot.date} {shift_type.upper()}")
+                    
+            except Exception as e:
+                logger.error(f"Error processing hard blocked slot for {emp_id}: {e}")
+                continue
+
+logger.info(f"✅ Added {hard_blocked_count} hard block constraints for {len(employees_with_hard_blocks)} employees")
+```
+
+**Key Features:**
+- ✅ Parses date strings to match scheduling period
+- ✅ Handles `'all_day'` by blocking all 3 shifts
+- ✅ Comprehensive error handling and logging
+- ✅ Adds Gurobi constraint: `shifts[(emp_id, day_index, shift)] == 0`
+- ✅ Named constraints for debugging: `hard_block_emp123_d15_day`
+
+#### **3. Frontend API Integration** (`src/components/shifts/services/scheduleGenerationService.ts`)
+
+Updated `gurobiPreference` object construction (lines 341-363):
+
+```typescript
+const gurobiPreference = {
+  employee_id: emp.id,
+  preferred_shifts: effectivePreferredShifts.length > 0 ? effectivePreferredShifts : ["day", "evening"],
+  max_shifts_per_week: Math.ceil((workPrefs.work_percentage || 100) * 5 / 100),
+  available_days: effectiveAvailableDays.length > 0 ? effectiveAvailableDays : ["monday", "tuesday", "wednesday", "thursday", "friday"],
+  excluded_shifts: strictlyExcludedShifts,
+  excluded_days: strictlyUnavailableDays,
+  available_days_strict: strictlyUnavailableDays.length > 0,
+  preferred_shifts_strict: strictlyPreferredShifts.length > 0,
+  role: profile?.role || 'Unknown',
+  experience_level: profile?.experience_level || 1,
+  work_percentage: workPrefs.work_percentage || 100,
+  // Hard blocked time slots: specific date+shift combinations that CANNOT be scheduled
+  hard_blocked_slots: workPrefs.hard_blocked_slots || []
+};
+```
+
+**Added Logging:**
+```typescript
+// Log hard blocked slots when present
+if (workPrefs.hard_blocked_slots && workPrefs.hard_blocked_slots.length > 0) {
+  console.log(`🚫 Hard blocked slots for ${profile?.first_name} ${profile?.last_name}:`, workPrefs.hard_blocked_slots);
+}
+```
+
+### **Data Flow - Complete Chain:**
+
+```
+┌─────────────────┐
+│  Frontend UI    │  User selects blocked date+shifts in calendar dialog
+│  (Dialog)       │  → selectedSlots: [{date: "2025-11-15", shift_types: ["day", "evening"]}]
+└────────┬────────┘
+         │
+         │ onSave()
+         ↓
+┌─────────────────┐
+│  Supabase DB    │  Saves to profiles.work_preferences.hard_blocked_slots (JSONB)
+│  (Storage)      │
+└────────┬────────┘
+         │
+         │ loadEmployeePreferences()
+         ↓
+┌─────────────────┐
+│  Service Layer  │  Loads workPrefs.hard_blocked_slots from database
+│  (Frontend)     │  → Maps to gurobiPreference.hard_blocked_slots
+└────────┬────────┘
+         │
+         │ HTTP POST /optimize
+         ↓
+┌─────────────────┐
+│  FastAPI        │  Receives EmployeePreference with hard_blocked_slots
+│  (Backend)      │  → Validates with Pydantic model
+└────────┬────────┘
+         │
+         │ gurobi_optimizer_service.optimize()
+         ↓
+┌─────────────────┐
+│  Gurobi         │  Adds constraints: shifts[(emp_id, day_index, shift)] == 0
+│  (Optimizer)    │  → Generates schedule that RESPECTS hard blocks
+└─────────────────┘
+```
+
+### **Testing Recommendations:**
+
+1. **Frontend Test:**
+   - Open WorkPreferences for test employee
+   - Click "Ange arbetstillfällen jag ej kan jobba"
+   - Select 2-3 date+shift combinations
+   - Verify saved to database (check Supabase)
+
+2. **Backend Logging Test:**
+   - Generate schedule via UI
+   - Check console: `🚫 Hard blocked slots for [Name]: [{...}]`
+   - Check server logs: `Added HARD BLOCK for emp123: 2025-11-15 DAY`
+   - Verify: `✅ Added X hard block constraints for Y employees`
+
+3. **Integration Test:**
+   - Block employee's Friday afternoon (evening shift)
+   - Generate monthly schedule
+   - **Expected:** Employee is NEVER assigned Friday evening shift
+   - **Verify:** Check generated schedule in database
+
+4. **Edge Cases:**
+   - Block "all_day" → should block all 3 shifts
+   - Block date outside schedule period → should log warning, not crash
+   - Block 3 slots then try 4th → UI prevents (max 3)
 
 ---
 

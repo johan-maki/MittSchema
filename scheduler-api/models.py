@@ -2,6 +2,11 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
+class HardBlockedSlot(BaseModel):
+    """Hard blocked time slot - employee absolutely cannot work this specific time"""
+    date: str = Field(description="ISO date string (YYYY-MM-DD)")
+    shift_types: List[str] = Field(description="Which shifts on this date are blocked: 'day', 'evening', 'night', or 'all_day'")
+
 class EmployeePreference(BaseModel):
     """Employee work preference model"""
     employee_id: str
@@ -14,6 +19,8 @@ class EmployeePreference(BaseModel):
     # New fields for hard vs soft constraints
     available_days_strict: bool = Field(default=False, description="If True, available_days becomes a hard constraint (must be followed)")
     preferred_shifts_strict: bool = Field(default=False, description="If True, preferred_shifts becomes a hard constraint")
+    # Hard blocked specific time slots (NEW!)
+    hard_blocked_slots: Optional[List[HardBlockedSlot]] = Field(default=None, description="Specific date+shift combinations that are absolutely blocked (max 3)")
     # Additional fields for metadata
     role: Optional[str] = Field(default=None, description="Employee role (e.g., 'Sjuksköterska', 'Läkare')")
     experience_level: Optional[int] = Field(default=1, description="Employee experience points (1-5)")
