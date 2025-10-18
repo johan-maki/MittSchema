@@ -6,6 +6,8 @@ import type { Shift, ShiftType } from "@/types/shift";
 import { v4 as uuidv4 } from 'uuid';
 import { convertWorkPreferences } from "@/types/profile";
 import { validateScheduleConstraints, formatViolationMessage } from '@/utils/scheduleValidation';
+import { dbLogger, scheduleLogger } from '@/utils/logger';
+import { DATABASE_CONFIG, SCHEDULE_DEFAULTS } from '@/config/constants';
 
 // Type definitions for schedule generation
 interface ScheduleSettings {
@@ -48,30 +50,31 @@ interface GurobiShift {
 export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> => {
   try {
     if (!shifts || shifts.length === 0) {
-      console.log("No shifts to save");
+      dbLogger.info("No shifts to save");
       return false;
     }
     
-    console.log(`Saving ${shifts.length} shifts to database`);
+    dbLogger.info(`Saving ${shifts.length} shifts to database`);
     
-    // Quick validation - only show critical issues
-    const dateIssues = shifts.filter(shift => {
-      const shiftDate = shift.date || shift.start_time?.split('T')[0];
-      if (shiftDate) {
-        const month = parseInt(shiftDate.split('-')[1]);
-        const today = new Date();
-        const expectedMonth = (today.getMonth() + 2) > 12 ? (today.getMonth() + 2) - 12 : today.getMonth() + 2;
-        return month !== expectedMonth;
+    // Quick validation - only in development to avoid performance hit
+    if (import.meta.env.DEV) {
+      const dateIssues = shifts.filter(shift => {
+        const shiftDate = shift.date || shift.start_time?.split('T')[0];
+        if (shiftDate) {
+          const month = parseInt(shiftDate.split('-')[1]);
+          const today = new Date();
+          const expectedMonth = (today.getMonth() + 2) > 12 ? (today.getMonth() + 2) - 12 : today.getMonth() + 2;
+          return month !== expectedMonth;
+        }
+        return false;
+      });
+      
+      if (dateIssues.length > 0) {
+        dbLogger.warn(`Found ${dateIssues.length} shifts with wrong month - this may cause display issues`);
       }
-      return false;
-    });
-    
-    if (dateIssues.length > 0) {
-      console.warn(`🚨 Found ${dateIssues.length} shifts with wrong month - this may cause display issues`);
     }
     
     // Process shifts in batches to avoid database timeouts
-    const BATCH_SIZE = 10;
     const shiftsToInsert = shifts.map(shift => ({
       id: shift.id || uuidv4(),
       date: shift.date,
@@ -84,24 +87,24 @@ export const saveScheduleToSupabase = async (shifts: Shift[]): Promise<boolean> 
     }));
     
     // Insert shifts in batches with minimal logging
-    for (let i = 0; i < shiftsToInsert.length; i += BATCH_SIZE) {
-      const batch = shiftsToInsert.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < shiftsToInsert.length; i += DATABASE_CONFIG.BATCH_SIZE) {
+      const batch = shiftsToInsert.slice(i, i + DATABASE_CONFIG.BATCH_SIZE);
       
       const { error: insertError } = await supabase
         .from('shifts')
         .insert(batch);
         
       if (insertError) {
-        console.error("Error inserting batch:", insertError);
+        dbLogger.error("Error inserting batch:", insertError);
         throw new Error(`Could not save batch: ${insertError.message}`);
       }
     }
     
-    console.log(`✅ Successfully saved ${shiftsToInsert.length} shifts to database`);
+    dbLogger.info(`Successfully saved ${shiftsToInsert.length} shifts to database`);
     
     return true;
   } catch (error) {
-    console.error("Error saving shifts to Supabase:", error);
+    dbLogger.error("Error saving shifts to Supabase:", error);
     return false;
   }
 };
