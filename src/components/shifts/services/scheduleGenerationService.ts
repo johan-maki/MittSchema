@@ -451,86 +451,39 @@ export const generateScheduleForNextMonth = async (
     // Handle connection errors differently from staffing errors
     if (isConnectionError) {
       console.error('🌐 CONNECTION ERROR: Render backend är inte tillgänglig');
-      throw new Error(`Anslutningsproblem till schemaläggnings-servern. Detta kan bero på att servern startar upp (cold start) eller är överbelastad. Försök igen om 30-60 sekunder.`);
+      throw new Error(`Anslutningsproblem till Gurobi-optimeringsservern. Servern är inte tillgänglig just nu. Detta kan bero på att servern startar upp (cold start) eller är nere. Inget schema kan genereras utan Gurobi. Försök igen om 30-60 sekunder eller kontakta administratören.`);
     }
     
     if (isStaffingError) {
-      console.warn('⚠️ INSUFFICIENT STAFFING DETECTED - Attempting partial schedule generation...');
-      onProgress?.('⚠️ Otillräcklig bemanning - genererar partiellt schema...', 75);
-      
       // Extract staffing info from error message for better user feedback
       const staffingMatch = errorMessage.match(/need (\d+) shifts but only (\d+) possible/);
       if (staffingMatch) {
         const [, needed, possible] = staffingMatch;
         const coveragePercent = Math.round((parseInt(possible) / parseInt(needed)) * 100);
         console.log(`🔢 STAFFING ANALYSIS: Behöver ${needed} pass, kan bara fylla ${possible} (${coveragePercent}% täckning)`);
+        throw new Error(`Otillräcklig bemanning: Kan bara täcka ${coveragePercent}% av behovet (${possible}/${needed} pass). För ett komplett schema behövs fler anställda eller flexiblare arbetstider/preferenser.`);
       }
-      
-      try {
-        // Second attempt: Try with relaxed constraints to get partial coverage
-        // Reduce minimum staff requirements to allow partial scheduling
-        const relaxedMinStaff = Math.max(1, Math.floor(gurobiConfig.minStaffPerShift * 0.5));
-        const relaxedMinExperience = Math.max(1, Math.floor(gurobiConfig.minExperiencePerShift * 0.5));
-        
-        console.log(`🔧 RELAXED CONSTRAINTS: Försöker med minStaff=${relaxedMinStaff}, minExp=${relaxedMinExperience}`);
-        
-        response = await schedulerApi.generateSchedule(
-          gurobiStartISO,
-          gurobiEndISO,
-          settings?.department || 'Akutmottagning',
-          relaxedMinStaff, // Relaxed minimum staff
-          relaxedMinExperience, // Relaxed experience requirement
-          gurobiConfig.includeWeekends,
-          timestamp || Date.now(),
-          employeePreferences,
-          3, // retries
-          true // allowPartialCoverage = true for relaxed mode
-        );
-        
-        console.log('✅ PARTIAL SCHEDULE SUCCESS: Generated schedule with relaxed constraints');
-        
-      } catch (relaxedError) {
-        // If even relaxed constraints fail, provide a meaningful error message
-        const relaxedErrorMessage = relaxedError instanceof Error ? relaxedError.message : String(relaxedError);
-        
-        // Check for connection errors in relaxed attempt too (but exclude staffing errors)
-        const isRelaxedConnectionError = (relaxedErrorMessage.includes('AbortError') || 
-                                        relaxedErrorMessage.includes('signal is aborted') ||
-                                        relaxedErrorMessage.includes('request timed out') ||
-                                        relaxedErrorMessage.includes('timeout') ||
-                                        relaxedErrorMessage.includes('ECONNREFUSED') ||
-                                        relaxedErrorMessage.includes('fetch failed')) && 
-                                        // Don't treat staffing errors wrapped in 500 errors as connection errors
-                                        !(relaxedErrorMessage.includes('Not enough employees') || 
-                                          relaxedErrorMessage.includes('need ') || 
-                                          relaxedErrorMessage.includes('but only'));
-        
-        if (isRelaxedConnectionError) {
-          console.error('🌐 CONNECTION ERROR i relaxed attempt: Render backend är inte tillgänglig');
-          throw new Error(`Anslutningsproblem till schemaläggnings-servern. Detta kan bero på att servern startar upp (cold start) eller är överbelastad. Försök igen om 30-60 sekunder.`);
-        }
-        
-        if (relaxedErrorMessage.includes('Not enough employees')) {
-          // Extract numbers from error for user-friendly message
-          const match = relaxedErrorMessage.match(/need (\d+) shifts but only (\d+) possible with (\d+) employees/);
-          if (match) {
-            const [, needed, possible, employees] = match;
-            const coveragePercent = Math.round((parseInt(possible) / parseInt(needed)) * 100);
-            throw new Error(`Otillräcklig bemanning för schemaläggning: ${employees} anställda kan bara täcka ${coveragePercent}% av behovet (${possible}/${needed} pass). För ett komplett schema behövs fler anställda eller flexiblare arbetstider.`);
-          }
-        }
-        
-        throw new Error(`Schemaläggning misslyckades trots relaxed constraints: ${relaxedErrorMessage}`);
-      }
-    } else {
-      // Re-throw non-staffing errors as-is
-      throw error;
+      throw new Error(`Otillräcklig bemanning för att generera ett schema. Behöver fler anställda eller flexiblare arbetstider/preferenser.`);
     }
+    
+    // Re-throw all other errors as-is - no fallback allowed
+    throw error;
   }
   
   onProgress?.('📊 Analyserar optimeringsresultat och kvalitetskontroll...', 75);
   
   console.log('🎉 Gurobi optimization response:', response);
+  
+  // STRICT VALIDATION: Ensure response is from Gurobi optimizer
+  if (!response.optimizer || response.optimizer.toLowerCase() !== 'gurobi') {
+    console.error('❌ INVALID OPTIMIZER: Response is not from Gurobi!', {
+      optimizer: response.optimizer,
+      message: response.message
+    });
+    throw new Error(`Schema genererades inte av Gurobi-optimeraren (fick: ${response.optimizer || 'okänd'}). Endast Gurobi-optimerade scheman tillåts. Kontrollera att Render-servern kör korrekt.`);
+  }
+  
+  console.log('✅ VALIDATED: Schema är genererat av Gurobi optimizer');
   
   // Enhanced validation for partial schedules
   if (response.schedule && response.schedule.length > 0) {
