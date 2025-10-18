@@ -18,7 +18,7 @@ import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 import { convertWorkPreferences } from "@/types/profile";
 import { WorkPreferencesService } from "@/services/workPreferencesService";
 import type { Json } from "@/integrations/supabase/types";
-import { Save, Clock, Calendar, Briefcase, Ban } from "lucide-react";
+import { Save, Clock, Calendar, Briefcase, Ban, AlertTriangle } from "lucide-react";
 import { HardBlockedSlotsDialog } from "./HardBlockedSlotsDialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -43,6 +43,7 @@ const defaultPreferences: WorkPreferencesType = {
     night: { preferred: true, strict: false },
   },
   hard_blocked_slots: [],
+  medium_blocked_slots: [], // NEW: Medium priority blocks
 };
 
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
@@ -50,6 +51,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [hardBlockedDialogOpen, setHardBlockedDialogOpen] = useState(false);
+  const [mediumBlockedDialogOpen, setMediumBlockedDialogOpen] = useState(false); // NEW
   
   const [preferences, setPreferences] = useState<WorkPreferencesType>(() => ({
     ...defaultPreferences,
@@ -215,67 +217,84 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         }
       `}</style>
       <div className="space-y-8">
-      {/* Önskade arbetspass - MJUKA KRAV */}
+      {/* Önskade arbetspass och tillgänglighet - MJUKA KRAV */}
       <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-blue-500/10 rounded-lg">
             <Briefcase className="h-5 w-5 text-blue-600" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-800">Önskade arbetspass</h3>
+          <h3 className="text-2xl font-bold text-slate-800">Önskade arbetspass</h3>
         </div>
-        <p className="text-sm text-slate-600 mb-6 ml-11">
+        <p className="text-sm text-slate-600 mb-8 ml-11">
           Dessa är <span className="font-semibold text-blue-600">mjuka preferenser</span> som schemaläggningen försöker respektera när det är möjligt.
         </p>
-        <div className="grid gap-4">
-          {shifts.map((shift) => (
-            <div key={shift.id} className="flex items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <Switch
-                id={`shift-${shift.id}`}
-                checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].preferred}
-                onCheckedChange={(checked) => {
-                  setPreferences(prev => ({
-                    ...prev,
-                    shift_constraints: {
-                      ...prev.shift_constraints,
-                      [shift.id]: {
-                        ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
-                        preferred: checked,
-                        strict: false // Always false for soft preferences
+        
+        {/* Passtyper */}
+        <div className="mb-8">
+          <h4 className="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-blue-500" />
+            Passtyper
+          </h4>
+          <div className="grid gap-3">
+            {shifts.map((shift) => (
+              <div key={shift.id} className="flex items-center p-3 bg-white rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                <Switch
+                  id={`shift-${shift.id}`}
+                  checked={preferences.shift_constraints[shift.id as keyof typeof preferences.shift_constraints].preferred}
+                  onCheckedChange={(checked) => {
+                    setPreferences(prev => ({
+                      ...prev,
+                      shift_constraints: {
+                        ...prev.shift_constraints,
+                        [shift.id]: {
+                          ...prev.shift_constraints[shift.id as keyof typeof prev.shift_constraints],
+                          preferred: checked,
+                          strict: false // Always false for soft preferences
+                        }
                       }
-                    }
-                  }));
-                }}
-              />
-              <Label htmlFor={`shift-${shift.id}`} className="ml-4 font-medium text-slate-700 cursor-pointer">
-                {shift.label}
-              </Label>
-            </div>
-          ))}
+                    }));
+                  }}
+                />
+                <Label htmlFor={`shift-${shift.id}`} className="ml-3 font-medium text-slate-700 cursor-pointer text-sm">
+                  {shift.label}
+                </Label>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Hard Blocked Slots Button */}
-        <div className="mt-6 pt-6 border-t border-slate-200">
-          <Button
-            onClick={() => setHardBlockedDialogOpen(true)}
-            variant="outline"
-            className="w-full border-2 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700 font-medium py-6 relative overflow-hidden group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Ban className="h-5 w-5 mr-2 relative z-10" />
-            <span className="relative z-10">Ange arbetstillfällen jag ej kan jobba</span>
-            {preferences.hard_blocked_slots && preferences.hard_blocked_slots.length > 0 && (
-              <Badge className="ml-3 bg-red-600 text-white relative z-10">
-                {preferences.hard_blocked_slots.length}/3
-              </Badge>
-            )}
-          </Button>
-          {preferences.hard_blocked_slots && preferences.hard_blocked_slots.length > 0 && (
-            <p className="text-sm text-center text-slate-600 mt-2">
-              {preferences.hard_blocked_slots.length === 3 
-                ? '✓ Maximalt antal blockerade arbetstillfällen' 
-                : `${3 - preferences.hard_blocked_slots.length} arbetstillfällen kvar att blockera`}
-            </p>
-          )}
+        {/* Tillgängliga dagar */}
+        <div>
+          <h4 className="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-green-500" />
+            Tillgängliga dagar
+          </h4>
+          <div className="grid gap-3">
+            {weekdays.map((day) => (
+              <div key={day.id} className="flex items-center p-3 bg-white rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                <Switch
+                  id={`day-${day.id}`}
+                  checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].available}
+                  onCheckedChange={(checked) => {
+                    setPreferences(prev => ({
+                      ...prev,
+                      day_constraints: {
+                        ...prev.day_constraints,
+                        [day.id]: {
+                          ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
+                          available: checked,
+                          strict: false // Always false for soft preferences
+                        }
+                      }
+                    }));
+                  }}
+                />
+                <Label htmlFor={`day-${day.id}`} className="ml-3 font-medium text-slate-700 cursor-pointer text-sm">
+                  {day.label}
+                </Label>
+              </div>
+            ))}
+          </div>
         </div>
       </Card>
 
@@ -345,43 +364,74 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         </div>
       </Card>
 
-      {/* Tillgängliga dagar - MJUKA KRAV */}
-      <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30">
+      {/* Blockerade arbetstillfällen - HÅRDA KRAV */}
+      <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-red-50/30">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-green-500/10 rounded-lg">
-            <Calendar className="h-5 w-5 text-green-600" />
+          <div className="p-2 bg-red-500/10 rounded-lg">
+            <Ban className="h-5 w-5 text-red-600" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-800">Tillgängliga dagar</h3>
+          <h3 className="text-xl font-semibold text-slate-800">Arbetstillfällen jag ej kan jobba</h3>
         </div>
         <p className="text-sm text-slate-600 mb-6 ml-11">
-          Dessa är <span className="font-semibold text-green-600">mjuka preferenser</span> som schemaläggningen försöker respektera när det är möjligt.
+          Dessa är <span className="font-semibold text-red-600">hårda krav</span> som schemaläggningen <span className="font-bold">måste</span> respektera.
         </p>
-        <div className="grid gap-4">
-          {weekdays.map((day) => (
-            <div key={day.id} className="flex items-center p-4 bg-white rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <Switch
-                id={`day-${day.id}`}
-                checked={preferences.day_constraints[day.id as keyof typeof preferences.day_constraints].available}
-                onCheckedChange={(checked) => {
-                  setPreferences(prev => ({
-                    ...prev,
-                    day_constraints: {
-                      ...prev.day_constraints,
-                      [day.id]: {
-                        ...prev.day_constraints[day.id as keyof typeof prev.day_constraints],
-                        available: checked,
-                        strict: false // Always false for soft preferences
-                      }
-                    }
-                  }));
-                }}
-              />
-              <Label htmlFor={`day-${day.id}`} className="ml-4 font-medium text-slate-700 cursor-pointer">
-                {day.label}
-              </Label>
-            </div>
-          ))}
+        
+        <Button
+          onClick={() => setHardBlockedDialogOpen(true)}
+          variant="outline"
+          className="w-full border-2 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700 font-medium py-6 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-red-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Ban className="h-5 w-5 mr-2 relative z-10" />
+          <span className="relative z-10">Ange blockerade arbetstillfällen</span>
+          {preferences.hard_blocked_slots && preferences.hard_blocked_slots.length > 0 && (
+            <Badge className="ml-3 bg-red-600 text-white relative z-10">
+              {preferences.hard_blocked_slots.length}/3
+            </Badge>
+          )}
+        </Button>
+        {preferences.hard_blocked_slots && preferences.hard_blocked_slots.length > 0 && (
+          <p className="text-sm text-center text-slate-600 mt-3">
+            {preferences.hard_blocked_slots.length === 3 
+              ? '✓ Maximalt antal blockerade arbetstillfällen' 
+              : `${3 - preferences.hard_blocked_slots.length} arbetstillfällen kvar att blockera`}
+          </p>
+        )}
+      </Card>
+
+      {/* Arbetstillfällen att avstå från - MEDEL-HÅRDA KRAV */}
+      <Card className="p-8 shadow-lg border-0 bg-gradient-to-br from-white to-amber-50/30">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-amber-500/10 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-slate-800">Arbetstillfällen jag helst avstår</h3>
         </div>
+        <p className="text-sm text-slate-600 mb-6 ml-11">
+          Dessa är <span className="font-semibold text-amber-600">starkare preferenser</span> än önskade pass, men mjukare än absoluta krav. Schemaläggningen försöker undvika dessa.
+        </p>
+        
+        <Button
+          onClick={() => setMediumBlockedDialogOpen(true)}
+          variant="outline"
+          className="w-full border-2 border-amber-200 hover:border-amber-300 hover:bg-amber-50 text-amber-700 font-medium py-6 relative overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <AlertTriangle className="h-5 w-5 mr-2 relative z-10" />
+          <span className="relative z-10">Ange arbetstillfällen att helst avstå</span>
+          {preferences.medium_blocked_slots && preferences.medium_blocked_slots.length > 0 && (
+            <Badge className="ml-3 bg-amber-600 text-white relative z-10">
+              {preferences.medium_blocked_slots.length}/3
+            </Badge>
+          )}
+        </Button>
+        {preferences.medium_blocked_slots && preferences.medium_blocked_slots.length > 0 && (
+          <p className="text-sm text-center text-slate-600 mt-3">
+            {preferences.medium_blocked_slots.length === 3 
+              ? '✓ Maximalt antal föredragna undvikanden' 
+              : `${3 - preferences.medium_blocked_slots.length} undvikanden kvar att ange`}
+          </p>
+        )}
       </Card>
 
       {/* Spara knapp */}
@@ -416,6 +466,20 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
             hard_blocked_slots: slots
           }));
         }}
+      />
+      
+      {/* Medium Blocked Slots Dialog (Yellow - Prefer to avoid) */}
+      <HardBlockedSlotsDialog
+        open={mediumBlockedDialogOpen}
+        onOpenChange={setMediumBlockedDialogOpen}
+        blockedSlots={preferences.medium_blocked_slots || []}
+        onSave={(slots) => {
+          setPreferences(prev => ({
+            ...prev,
+            medium_blocked_slots: slots
+          }));
+        }}
+        variant="medium" // NEW: Will create this variant to use yellow colors
       />
       </div>
     </>

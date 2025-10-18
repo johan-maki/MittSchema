@@ -54,6 +54,13 @@ export type HardBlockedSlot = {
   shift_types: ('day' | 'evening' | 'night' | 'all_day')[]; // Which shifts on this date are blocked
 };
 
+// Medium blocked time slot - employee prefers not to work but can if needed
+// Stronger than soft preferences but weaker than hard constraints
+export type MediumBlockedSlot = {
+  date: string; // ISO date string (YYYY-MM-DD)
+  shift_types: ('day' | 'evening' | 'night' | 'all_day')[]; // Which shifts on this date are avoided if possible
+};
+
 export interface WorkPreferences {
   work_percentage: number; // 0-100, represents percentage of full-time (5% increments)
   // Granular constraints per day
@@ -72,8 +79,10 @@ export interface WorkPreferences {
     evening: ShiftConstraint;
     night: ShiftConstraint;
   };
-  // Hard blocked time slots (max 3 slots) - NEW!
+  // Hard blocked time slots (max 3 slots) - ABSOLUTE: Cannot work
   hard_blocked_slots?: HardBlockedSlot[];
+  // Medium blocked time slots (max 3 slots) - PREFERENCE: Avoid if possible
+  medium_blocked_slots?: MediumBlockedSlot[];
   // Legacy fields for backward compatibility - will be derived from granular constraints
   preferred_shifts?: ("day" | "evening" | "night")[];
   available_days?: string[];

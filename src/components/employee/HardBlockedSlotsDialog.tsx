@@ -8,16 +8,17 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, X, AlertCircle, CheckCircle2 } from "lucide-react";
-import type { HardBlockedSlot } from "@/types/profile";
+import { Calendar, X, AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+import type { HardBlockedSlot, MediumBlockedSlot } from "@/types/profile";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 import { sv } from "date-fns/locale";
 
 interface HardBlockedSlotsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  blockedSlots: HardBlockedSlot[];
-  onSave: (slots: HardBlockedSlot[]) => void;
+  blockedSlots: HardBlockedSlot[] | MediumBlockedSlot[];
+  onSave: (slots: HardBlockedSlot[] | MediumBlockedSlot[]) => void;
+  variant?: 'hard' | 'medium'; // NEW: Controls color theme
 }
 
 const SHIFT_TYPES = [
@@ -34,8 +35,34 @@ export const HardBlockedSlotsDialog = ({
   onOpenChange,
   blockedSlots,
   onSave,
+  variant = 'hard', // Default to hard (red theme)
 }: HardBlockedSlotsDialogProps) => {
-  const [selectedSlots, setSelectedSlots] = useState<HardBlockedSlot[]>(blockedSlots);
+  // Color themes based on variant
+  const colors = variant === 'hard' ? {
+    primary: 'red',
+    icon: <Calendar className="h-6 w-6 text-red-600" />,
+    title: 'Arbetstillfällen jag ej kan jobba',
+    description: 'Markera specifika dagar och pass som du absolut inte kan arbeta. Detta är hårda krav som schemaläggningen måste respektera.',
+    badgeBg: 'bg-red-600',
+    borderColor: 'border-red-300',
+    bgColor: 'bg-red-50',
+    hoverBg: 'hover:bg-red-100',
+    textColor: 'text-red-600',
+    buttonBg: 'bg-red-600 hover:bg-red-700',
+  } : {
+    primary: 'amber',
+    icon: <AlertTriangle className="h-6 w-6 text-amber-600" />,
+    title: 'Arbetstillfällen jag helst avstår',
+    description: 'Markera specifika dagar och pass som du helst vill undvika. Schemaläggningen försöker undvika dessa men kan schemalägga vid behov.',
+    badgeBg: 'bg-amber-600',
+    borderColor: 'border-amber-300',
+    bgColor: 'bg-amber-50',
+    hoverBg: 'hover:bg-amber-100',
+    textColor: 'text-amber-600',
+    buttonBg: 'bg-amber-600 hover:bg-amber-700',
+  };
+  
+  const [selectedSlots, setSelectedSlots] = useState<typeof blockedSlots>(blockedSlots);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
 
@@ -126,219 +153,220 @@ export const HardBlockedSlotsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <AlertCircle className="h-6 w-6 text-red-500" />
-            Arbetstillfällen jag ej kan jobba
+          <DialogTitle className="text-2xl flex items-center gap-2">
+            {colors.icon}
+            {colors.title}
           </DialogTitle>
-          <DialogDescription className="text-base">
-            Markera specifika dagar och pass som du absolut inte kan arbeta. Detta är hårda krav som schemaläggningen måste respektera.
+          <DialogDescription>
+            {colors.description}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Status Bar */}
-        <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`text-3xl font-bold ${remainingSlots > 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                {remainingSlots}/{MAX_BLOCKED_SLOTS}
+        <div className="space-y-4">
+          {/* Status Bar */}
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg p-3 border-2 border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className={`text-3xl font-bold ${remainingSlots === 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                    {remainingSlots}/{MAX_BLOCKED_SLOTS}
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    {remainingSlots === 0 ? 'Ta bort ett för att lägga till nytt' : 'Arbetstillfällen kvar att blockera'}
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="font-semibold text-slate-800">
-                  {remainingSlots > 0 ? 'Arbetstillfällen kvar att blockera' : 'Maximalt antal blockerade'}
+              {selectedSlots.length > 0 && (
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-medium text-sm">{selectedSlots.length} blockerade</span>
                 </div>
-                <div className="text-sm text-slate-600">
-                  {remainingSlots === 0 && 'Ta bort ett arbetstillfälle för att lägga till ett nytt'}
-                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Selected Blocked Slots - Compact Version */}
+          {selectedSlots.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-slate-700 text-sm">Dina blockerade arbetstillfällen:</h3>
+              <div className="grid gap-1.5">
+                {selectedSlots.map((slot, idx) => {
+                  const slotDate = new Date(slot.date + 'T12:00:00');
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="text-center min-w-[50px]">
+                          <div className="text-lg font-bold text-red-600">
+                            {format(slotDate, 'd', { locale: sv })}
+                          </div>
+                          <div className="text-[10px] text-red-600 uppercase font-medium">
+                            {format(slotDate, 'MMM', { locale: sv })}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-800 text-sm">
+                            {format(slotDate, 'EEE d MMM', { locale: sv })}
+                          </div>
+                          <div className="flex gap-1 mt-0.5">
+                            {slot.shift_types.map(type => {
+                              const shiftInfo = SHIFT_TYPES.find(s => s.id === type);
+                              return (
+                                <Badge key={type} className={`${shiftInfo?.color} text-white text-[10px] px-1.5 py-0`}>
+                                  {shiftInfo?.shortLabel}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveSlot(slot)}
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            {selectedSlots.length > 0 && (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">{selectedSlots.length} blockerade</span>
-              </div>
-            )}
-          </div>
-        </div>
+          )}
 
-        {/* Selected Blocked Slots */}
-        {selectedSlots.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-slate-700">Dina blockerade arbetstillfällen:</h3>
-            <div className="grid gap-2">
-              {selectedSlots.map((slot, idx) => {
-                const slotDate = new Date(slot.date + 'T12:00:00');
+          {/* Compact Calendar */}
+          <div>
+            <h3 className="font-semibold text-slate-700 mb-2 flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4" />
+              {format(nextMonth, 'MMMM yyyy', { locale: sv })}
+            </h3>
+
+            {/* Weekday headers - compact */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map(day => (
+                <div key={day} className="text-center text-xs font-medium text-slate-600 py-1">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar days - much more compact */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Padding for first week */}
+              {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
+                <div key={`padding-${i}`} />
+              ))}
+              
+              {/* Days - smaller boxes */}
+              {daysInMonth.map(date => {
+                const blockedCount = getBlockedShiftsCount(date);
+                const isSelected = selectedDate && isSameDay(date, selectedDate);
+                const hasBlocks = blockedCount > 0;
+                const isPast = date < today;
+
                 return (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 bg-red-50 border-2 border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                  <button
+                    key={date.toISOString()}
+                    onClick={() => !isPast && remainingSlots > 0 && handleDateClick(date)}
+                    disabled={isPast || (remainingSlots === 0 && !hasBlocks)}
+                    className={`
+                      relative h-10 p-1 rounded-md border transition-all
+                      ${isPast ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
+                        isSelected ? 'border-blue-500 bg-blue-50 shadow-md border-2' :
+                        hasBlocks ? 'border-red-300 bg-red-50 hover:bg-red-100' :
+                        remainingSlots > 0 ? 'border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer' :
+                        'border-slate-200 bg-slate-50 cursor-not-allowed'}
+                    `}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="text-center min-w-[60px]">
-                        <div className="text-2xl font-bold text-red-600">
-                          {format(slotDate, 'd', { locale: sv })}
-                        </div>
-                        <div className="text-xs text-red-600 uppercase font-medium">
-                          {format(slotDate, 'MMM', { locale: sv })}
-                        </div>
+                    <div className="text-center">
+                      <div className={`text-sm font-semibold ${isSelected ? 'text-blue-700' : hasBlocks ? 'text-red-600' : 'text-slate-800'}`}>
+                        {format(date, 'd')}
                       </div>
-                      <div>
-                        <div className="font-semibold text-slate-800">
-                          {format(slotDate, 'EEEE', { locale: sv })}
+                      {hasBlocks && (
+                        <div className="flex justify-center gap-0.5 mt-0.5">
+                          {Array.from({ length: blockedCount }).map((_, i) => (
+                            <div key={i} className="w-1 h-1 rounded-full bg-red-500" />
+                          ))}
                         </div>
-                        <div className="flex gap-1 mt-1">
-                          {slot.shift_types.map(type => {
-                            const shiftInfo = SHIFT_TYPES.find(s => s.id === type);
-                            return (
-                              <Badge key={type} className={`${shiftInfo?.color} text-white text-xs`}>
-                                {shiftInfo?.shortLabel}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveSlot(slot)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-100"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
-        )}
 
-        {/* Calendar */}
-        <div>
-          <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            {format(nextMonth, 'MMMM yyyy', { locale: sv })}
-          </h3>
-
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            {['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'].map(day => (
-              <div key={day} className="text-center text-sm font-medium text-slate-600 py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar days */}
-          <div className="grid grid-cols-7 gap-2">
-            {/* Padding for first week */}
-            {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, i) => (
-              <div key={`padding-${i}`} />
-            ))}
-            
-            {/* Days */}
-            {daysInMonth.map(date => {
-              const blockedCount = getBlockedShiftsCount(date);
-              const isSelected = selectedDate && isSameDay(date, selectedDate);
-              const hasBlocks = blockedCount > 0;
-              const isPast = date < today;
-
-              return (
-                <button
-                  key={date.toISOString()}
-                  onClick={() => !isPast && remainingSlots > 0 && handleDateClick(date)}
-                  disabled={isPast || (remainingSlots === 0 && !hasBlocks)}
-                  className={`
-                    relative aspect-square p-2 rounded-lg border-2 transition-all
-                    ${isPast ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
-                      isSelected ? 'border-blue-500 bg-blue-50 shadow-md' :
-                      hasBlocks ? 'border-red-300 bg-red-50 hover:bg-red-100' :
-                      remainingSlots > 0 ? 'border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer' :
-                      'border-slate-200 bg-slate-50 cursor-not-allowed'}
-                  `}
+          {/* Shift Selection - Compact */}
+          {selectedDate && (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-blue-900 text-sm">
+                  Välj pass för {format(selectedDate, 'd MMMM', { locale: sv })}
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDate(null);
+                    setSelectedShifts(new Set());
+                  }}
+                  className="h-6 w-6 p-0"
                 >
-                  <div className="text-center">
-                    <div className={`font-semibold ${isSelected ? 'text-blue-700' : hasBlocks ? 'text-red-600' : 'text-slate-800'}`}>
-                      {format(date, 'd')}
-                    </div>
-                    {hasBlocks && (
-                      <div className="flex justify-center gap-0.5 mt-1">
-                        {Array.from({ length: blockedCount }).map((_, i) => (
-                          <div key={i} className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
 
-        {/* Shift Selection */}
-        {selectedDate && (
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-blue-900">
-                Välj pass för {format(selectedDate, 'd MMMM', { locale: sv })}
-              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {SHIFT_TYPES.map(shift => (
+                  <button
+                    key={shift.id}
+                    onClick={() => handleShiftToggle(shift.id)}
+                    className={`
+                      p-2 rounded-lg border-2 transition-all text-left
+                      ${selectedShifts.has(shift.id)
+                        ? `${shift.color} text-white border-transparent shadow-md`
+                        : 'bg-white border-slate-200 hover:border-blue-300 text-slate-700'}
+                    `}
+                  >
+                    <div className="font-semibold text-sm">{shift.shortLabel}</div>
+                    <div className="text-[10px] opacity-90">{shift.label.split('(')[1]?.replace(')', '')}</div>
+                  </button>
+                ))}
+              </div>
+
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedDate(null);
-                  setSelectedShifts(new Set());
-                }}
+                onClick={handleConfirmBlock}
+                disabled={selectedShifts.size === 0}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white h-8 text-sm"
               >
-                <X className="h-4 w-4" />
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                Bekräfta blockering
               </Button>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-2">
-              {SHIFT_TYPES.map(shift => (
-                <button
-                  key={shift.id}
-                  onClick={() => handleShiftToggle(shift.id)}
-                  className={`
-                    p-3 rounded-lg border-2 transition-all text-left
-                    ${selectedShifts.has(shift.id)
-                      ? `${shift.color} text-white border-transparent shadow-md`
-                      : 'bg-white border-slate-200 hover:border-blue-300 text-slate-700'}
-                  `}
-                >
-                  <div className="font-semibold">{shift.shortLabel}</div>
-                  <div className="text-xs opacity-90">{shift.label.split('(')[1]?.replace(')', '')}</div>
-                </button>
-              ))}
-            </div>
-
+          {/* Action buttons - compact */}
+          <div className="flex justify-between pt-2 border-t">
             <Button
-              onClick={handleConfirmBlock}
-              disabled={selectedShifts.size === 0}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="h-9 text-sm"
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Bekräfta blockering
+              Avbryt
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-green-600 hover:bg-green-700 text-white h-9 text-sm"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+              Spara blockeringar
             </Button>
           </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex justify-between pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Avbryt
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Spara blockeringar
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
