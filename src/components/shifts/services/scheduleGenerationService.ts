@@ -356,7 +356,9 @@ export const generateScheduleForNextMonth = async (
       // Include work_percentage for Gurobi server capacity calculations
       work_percentage: workPrefs.work_percentage || 100,
       // Hard blocked time slots: specific date+shift combinations that CANNOT be scheduled
-      hard_blocked_slots: workPrefs.hard_blocked_slots || []
+      hard_blocked_slots: workPrefs.hard_blocked_slots || [],
+      // Medium blocked time slots: specific date+shift combinations to AVOID if possible
+      medium_blocked_slots: workPrefs.medium_blocked_slots || []
     };
     
     // Log work_percentage calculations for debugging
@@ -367,6 +369,11 @@ export const generateScheduleForNextMonth = async (
     // Log hard blocked slots when present
     if (workPrefs.hard_blocked_slots && workPrefs.hard_blocked_slots.length > 0) {
       console.log(`🚫 Hard blocked slots for ${profile?.first_name} ${profile?.last_name}:`, workPrefs.hard_blocked_slots);
+    }
+    
+    // Log medium blocked slots when present
+    if (workPrefs.medium_blocked_slots && workPrefs.medium_blocked_slots.length > 0) {
+      console.log(`⚠️ Medium blocked slots for ${profile?.first_name} ${profile?.last_name}:`, workPrefs.medium_blocked_slots);
     }
     
     // Reduced Gurobi format logging
