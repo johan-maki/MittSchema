@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, UserCircle2, HelpCircle, MapPin, Sun, Moon, Sparkles, Menu } from 'lucide-react';
+import { Calendar, UserCircle2, HelpCircle, MapPin, Sun, Moon, Sparkles, Menu, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -44,48 +44,50 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <>
       <Link 
         to="/schedule" 
-        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md dark:text-white dark:hover:bg-gray-800"
+        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
       >
+        <Calendar className="w-4 h-4 group-hover:scale-110 transition-transform" />
         Schema
       </Link>
       <Link 
         to="/directory" 
-        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md dark:text-white dark:hover:bg-gray-800"
+        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
       >
+        <Users className="w-4 h-4 group-hover:scale-110 transition-transform" />
         Personalkatalog
       </Link>
       <Link 
         to="/employee" 
-        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1 dark:text-white dark:hover:bg-gray-800"
+        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
       >
-        <UserCircle2 className="w-4 h-4" />
+        <UserCircle2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
         Anställdas vy
       </Link>
       <Link 
         to="/route-planning" 
-        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1 dark:text-white dark:hover:bg-gray-800"
+        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
       >
-        <MapPin className="w-4 h-4" />
+        <MapPin className="w-4 h-4 group-hover:scale-110 transition-transform" />
         Slingplanering
       </Link>
       <Link 
         to="/help" 
-        className="px-3 py-2 text-sm font-medium text-[#333333] hover:bg-[#F1F1F1] rounded-md flex items-center gap-1 dark:text-white dark:hover:bg-gray-800"
+        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
       >
-        <HelpCircle className="w-4 h-4" />
+        <HelpCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
         Hjälp
       </Link>
     </>
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FB] dark:bg-gray-900 transition-colors duration-200">
-      <header className="border-b bg-white dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-indigo-50/20 dark:bg-gray-900 transition-colors duration-200">
+      <header className="border-b bg-white/80 backdrop-blur-md dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
         <div className="flex h-14 items-center px-4 gap-4">
-          <Link to="/" className="flex items-center gap-2 font-semibold text-xl sm:text-2xl">
-            <Sparkles className="w-5 h-5 text-indigo-600" />
+          <Link to="/" className="flex items-center gap-2 font-semibold text-xl sm:text-2xl group">
+            <Sparkles className="w-5 h-5 text-indigo-600 group-hover:rotate-12 transition-transform" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Vårdschema</span>
-            <span className="text-sm text-gray-500 font-normal ml-2">• Karolinska</span>
+            <span className="text-xs sm:text-sm text-gray-500 font-normal ml-2">• Karolinska</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -96,10 +98,10 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
           {/* Mobile Navigation */}
           <Sheet>
             <SheetTrigger className="md:hidden ml-auto">
-              <Menu className="h-6 w-6 dark:text-white" />
+              <Menu className="h-6 w-6 dark:text-white hover:text-indigo-600 transition-colors" />
             </SheetTrigger>
-            <SheetContent side="left" className="w-[200px] dark:bg-gray-800 dark:text-white">
-              <div className="flex flex-col gap-2 pt-4">
+            <SheetContent side="left" className="w-[240px] dark:bg-gray-800 dark:text-white">
+              <div className="flex flex-col gap-2 pt-6">
                 <NavLinks />
               </div>
             </SheetContent>
@@ -110,18 +112,18 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             variant="ghost"
             size="icon"
             onClick={toggleDarkMode}
-            className="mr-2"
+            className="h-9 w-9 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all"
           >
             {isDark ? (
-              <Sun className="h-5 w-5 text-yellow-500 transition-all" />
+              <Sun className="h-5 w-5 text-yellow-500 transition-all hover:rotate-180" />
             ) : (
-              <Moon className="h-5 w-5 text-slate-700 transition-all" />
+              <Moon className="h-5 w-5 text-slate-700 transition-all hover:-rotate-12" />
             )}
           </Button>
 
           <button
             onClick={handleSignOut}
-            className="text-sm text-gray-600 hover:text-gray-900 hidden md:block dark:text-gray-300 dark:hover:text-white"
+            className="text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-lg transition-all hidden md:block dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-700"
           >
             Logga ut
           </button>

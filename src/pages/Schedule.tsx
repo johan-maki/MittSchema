@@ -126,44 +126,41 @@ const Schedule = () => {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-sage-50 to-lavender-50">
-        {/* Unified header for all views */}
-        <header className="p-4 bg-white/30 backdrop-blur-sm border-b sticky top-0 z-20">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CalendarHeader
-              currentDate={currentDate}
-              onDateChange={setCurrentDate}
-              currentView={currentView}
-              onViewChange={setCurrentView}
-            />
-            <ScheduleActions
-              currentView={currentView}
-              currentDate={currentDate}
-              onDateChange={setCurrentDate}
-              shifts={shiftsWithProfiles}
-              isCreateDialogOpen={isCreateDialogOpen}
-              setIsCreateDialogOpen={setIsCreateDialogOpen}
-            />
+      <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+        {/* Enhanced unified header with better visual hierarchy */}
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-20 shadow-sm">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+              <CalendarHeader
+                currentDate={currentDate}
+                onDateChange={setCurrentDate}
+                currentView={currentView}
+                onViewChange={setCurrentView}
+              />
+              <ScheduleActions
+                currentView={currentView}
+                currentDate={currentDate}
+                onDateChange={setCurrentDate}
+                shifts={shiftsWithProfiles}
+                isCreateDialogOpen={isCreateDialogOpen}
+                setIsCreateDialogOpen={setIsCreateDialogOpen}
+              />
+            </div>
           </div>
         </header>
 
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`flex-1 overflow-hidden ${currentView === 'week' ? 'p-4' : 'p-2 sm:p-4'}`}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 overflow-hidden"
           >
-            {currentView === 'week' ? (
-              <div className="h-full max-w-7xl mx-auto">
-                {renderView()}
-              </div>
-            ) : (
-              <div className="h-full bg-white border border-gray-200 rounded-md shadow-sm">
-                {renderView()}
-              </div>
-            )}
+            <div className="h-full max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
+              {renderView()}
+            </div>
           </motion.div>
         </AnimatePresence>
 

@@ -96,8 +96,8 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
     return day >= monthStart && day <= monthEnd;
   };
 
-  const chunks = (array: any[], size: number) => {
-    const result = [];
+  const chunks = <T,>(array: T[], size: number): T[][] => {
+    const result: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
       result.push(array.slice(i, i + size));
     }
@@ -108,7 +108,7 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
   const totalCost = shifts.reduce((sum, shift) => {
     if (shift.profiles) {
       const hours = 8; // All shifts are 8 hours
-      const hourlyRate = (shift.profiles as any).hourly_rate || 1000; // Default 1000 SEK
+      const hourlyRate = 1000; // Default 1000 SEK (removed dynamic rate for now)
       return sum + (hours * hourlyRate);
     }
     return sum;
@@ -117,45 +117,50 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
   const weeks = chunks(calendarDays, 7);
 
   return (
-    <div className="space-y-6 p-4 bg-gradient-to-br from-purple-50/30 to-blue-50/30 max-h-[calc(100vh-150px)] overflow-y-auto">
-      {/* Enhanced Month Header */}
-      <div className="text-center bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-purple-100 sticky top-0 z-10">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent mb-2">
-          {format(date, 'MMMM yyyy', { locale: sv })}
-        </h1>
-        <p className="text-lg text-gray-600 mb-3">Översikt för hela månaden</p>
-        <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
-          <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-purple-200">
-            <Calendar className="h-4 w-4 text-purple-600" />
-            <span className="font-medium">{shifts.length} pass denna månad</span>
-          </Badge>
-          <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-blue-200">
-            <Users className="h-4 w-4 text-blue-600" />
-            <span className="font-medium">
-              {new Set(shifts.filter(s => s.profiles).map(s => s.profiles.first_name + s.profiles.last_name)).size} medarbetare
-            </span>
-          </Badge>
-          <Badge variant="outline" className="flex items-center space-x-2 bg-white/80 border-orange-200">
-            <DollarSign className="h-4 w-4 text-orange-600" />
-            <span className="font-medium">{totalCost.toLocaleString('sv-SE')} SEK</span>
-          </Badge>
+    <div className="h-full flex flex-col bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* Streamlined Month Header */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white px-6 py-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+              {format(date, 'MMMM yyyy', { locale: sv })}
+            </h1>
+            <p className="text-indigo-100 text-sm">Översikt för hela månaden</p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 transition-colors">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="font-medium text-sm">{shifts.length} pass</span>
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 transition-colors">
+              <Users className="h-3.5 w-3.5" />
+              <span className="font-medium text-sm">
+                {new Set(shifts.filter(s => s.profiles).map(s => s.profiles.first_name + s.profiles.last_name)).size} medarbetare
+              </span>
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 transition-colors">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span className="font-medium text-sm">{totalCost.toLocaleString('sv-SE')} SEK</span>
+            </Badge>
+          </div>
         </div>
       </div>
 
-      {/* Enhanced Calendar Grid */}
-      <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-0">
-          {/* Enhanced Weekday Headers */}
-          <div className="grid grid-cols-7 bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+      {/* Streamlined Calendar Grid */}
+      <div className="flex-1 overflow-auto">
+        <div className="min-w-full">
+          {/* Weekday Headers */}
+          <div className="grid grid-cols-7 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 sticky top-0 z-10">
             {['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'].map((day, index) => (
-              <div key={day} className={`p-4 text-center font-semibold border-r border-white/20 last:border-r-0 ${index >= 5 ? 'bg-black/10' : ''}`}>
-                <div className="hidden sm:block">{day}</div>
-                <div className="sm:hidden">{day.slice(0, 3)}</div>
+              <div key={day} className={`py-3 px-2 text-center font-semibold text-sm border-r border-gray-200 last:border-r-0 ${index >= 5 ? 'bg-slate-100' : 'bg-white'}`}>
+                <div className="hidden sm:block text-gray-700">{day}</div>
+                <div className="sm:hidden text-gray-700">{day.slice(0, 3)}</div>
               </div>
             ))}
           </div>
 
-          {/* Enhanced Calendar Days */}
+          {/* Calendar Days */}
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="grid grid-cols-7 border-b last:border-b-0">
               {week.map((day) => {
@@ -168,28 +173,28 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`min-h-[120px] p-2 border-r last:border-r-0 cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-lg ${
+                    className={`min-h-[110px] p-2 border-r last:border-r-0 cursor-pointer transition-all duration-150 ${
                       !isCurrentMonthDay 
-                        ? 'bg-gray-50 text-gray-400' 
+                        ? 'bg-slate-50 text-slate-400' 
                         : isTodayDate 
-                        ? 'bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 shadow-md' 
+                        ? 'bg-indigo-50 border-2 border-indigo-400 -m-px' 
                         : isWeekendDay 
-                        ? 'bg-gradient-to-br from-purple-25 to-pink-25 hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50' 
-                        : 'bg-white hover:bg-gray-50'
+                        ? 'bg-slate-50 hover:bg-slate-100' 
+                        : 'bg-white hover:bg-slate-50'
                     }`}
                     onClick={() => handleDayClick(day)}
                   >
-                    {/* Enhanced Day Number */}
-                    <div className="flex items-center justify-between mb-3">
+                    {/* Refined Day Number */}
+                    <div className="flex items-center justify-between mb-2">
                       <span
-                        className={`text-sm font-bold ${
+                        className={`text-xs font-semibold ${
                           isTodayDate
-                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-sm'
+                            ? 'bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center'
                             : !isCurrentMonthDay
-                            ? 'text-gray-400'
+                            ? 'text-slate-400'
                             : isWeekendDay
-                            ? 'text-purple-600 bg-purple-100 w-7 h-7 rounded-full flex items-center justify-center'
-                            : 'text-gray-900 bg-gray-100 w-7 h-7 rounded-full flex items-center justify-center'
+                            ? 'text-slate-600 bg-slate-200 w-6 h-6 rounded-full flex items-center justify-center'
+                            : 'text-slate-700'
                         }`}
                       >
                         {format(day, 'd')}
@@ -198,31 +203,33 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                       {dayShifts.length > 0 && (
                         <Badge 
                           variant="secondary" 
-                          className={`text-xs font-bold ${
-                            dayShifts.length > 3 
-                              ? 'bg-red-100 text-red-700' 
-                              : 'bg-green-100 text-green-700'
+                          className={`text-[10px] h-5 px-1.5 font-semibold ${
+                            dayShifts.length >= 4 
+                              ? 'bg-red-100 text-red-700 border-red-200' 
+                              : dayShifts.length >= 2
+                              ? 'bg-amber-100 text-amber-700 border-amber-200'
+                              : 'bg-emerald-100 text-emerald-700 border-emerald-200'
                           }`}
                         >
-                          {dayShifts.length} pass
+                          {dayShifts.length}
                         </Badge>
                       )}
                     </div>
 
-                    {/* Enhanced Shifts Display */}
-                    <div className="space-y-2">
+                    {/* Compact Shifts Display */}
+                    <div className="space-y-1">
                       {Object.entries(shiftsByType).map(([shiftType, shiftsOfType]) => {
                         if (shiftsOfType.length === 0) return null;
                         
                         const Icon = shiftTypeIcons[shiftType as keyof typeof shiftTypeIcons];
                         const colors = {
-                          day: 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200',
-                          evening: 'bg-gradient-to-r from-rose-100 to-pink-100 text-rose-800 border border-rose-200', 
-                          night: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200'
+                          day: 'bg-amber-50 text-amber-800 border-amber-200',
+                          evening: 'bg-rose-50 text-rose-800 border-rose-200', 
+                          night: 'bg-blue-50 text-blue-800 border-blue-200'
                         };
 
                         return (
-                          <div key={shiftType} className="space-y-1">
+                          <div key={shiftType} className="space-y-0.5">
                             {shiftsOfType.slice(0, 2).map((shift) => (
                               <div
                                 key={shift.id}
@@ -230,50 +237,43 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                                   e.stopPropagation();
                                   handleShiftClick(shift);
                                 }}
-                                className={`group flex items-center space-x-2 p-2 rounded-lg text-xs font-medium ${colors[shiftType as keyof typeof colors]} hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 relative ${
+                                className={`group flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] font-medium border ${colors[shiftType as keyof typeof colors]} hover:shadow-sm transition-all cursor-pointer ${
                                   shift.is_published 
-                                    ? 'ring-1 ring-green-200' 
-                                    : 'border border-dashed border-amber-300 bg-opacity-70'
+                                    ? 'opacity-100' 
+                                    : 'opacity-75 border-dashed'
                                 }`}
                               >
-                                {/* Publication status indicator */}
                                 {shift.is_published && (
-                                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white" />
+                                  <div className="w-1 h-1 bg-emerald-500 rounded-full flex-shrink-0" />
                                 )}
                                 
-                                <div className="flex-shrink-0">
-                                  <Icon className="h-3 w-3" />
-                                </div>
-                                <Avatar className="h-5 w-5 ring-1 ring-white">
-                                  <AvatarFallback className={`text-xs bg-white/80 font-bold ${!shift.is_published ? 'opacity-80' : ''}`}>
+                                <Icon className="h-2.5 w-2.5 flex-shrink-0" />
+                                <Avatar className="h-4 w-4 flex-shrink-0">
+                                  <AvatarFallback className="text-[9px] bg-white/80 font-bold">
                                     {getEmployeeInitials(shift)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className={`truncate font-medium ${!shift.is_published ? 'text-amber-700' : ''}`}>
-                                  {shift.profiles ? 
-                                    `${shift.profiles.first_name}` : 
-                                    'Okänd'
-                                  }
-                                  {!shift.is_published && <span className="ml-1 text-xs opacity-75">(utkast)</span>}
+                                <span className="truncate flex-1">
+                                  {shift.profiles ? shift.profiles.first_name : 'Okänd'}
                                 </span>
                               </div>
                             ))}
                             {shiftsOfType.length > 2 && (
-                              <div className={`text-xs p-2 rounded-lg font-bold text-center ${colors[shiftType as keyof typeof colors]} opacity-75`}>
-                                +{shiftsOfType.length - 2} till
+                              <div className={`text-[10px] px-1.5 py-0.5 rounded text-center font-semibold ${colors[shiftType as keyof typeof colors]} opacity-60`}>
+                                +{shiftsOfType.length - 2}
                               </div>
                             )}
                           </div>
                         );
                       })}
                       
-                      {/* Enhanced Add shift button for empty days */}
+                      {/* Refined Add shift button */}
                       {dayShifts.length === 0 && isCurrentMonthDay && (
-                        <div className="flex items-center justify-center h-full min-h-[60px]">
+                        <div className="flex items-center justify-center h-full min-h-[50px]">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full text-xs text-gray-400 hover:text-purple-600 hover:bg-purple-50 border-2 border-dashed border-gray-200 hover:border-purple-300 rounded-lg transition-all duration-200"
+                            className="w-full h-8 text-[11px] text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-dashed border-slate-200 hover:border-indigo-300 rounded transition-all"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDayClick(day);
@@ -290,8 +290,8 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
               })}
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Add Shift Dialog */}
       <Dialog open={isAddShiftDialogOpen} onOpenChange={setIsAddShiftDialogOpen}>

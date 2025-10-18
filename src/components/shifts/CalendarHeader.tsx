@@ -42,12 +42,13 @@ export const CalendarHeader = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-background">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+      {/* Navigation Controls */}
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-purple-50 hover:bg-purple-100 border-purple-100"
+          className="h-9 w-9 rounded-lg bg-white hover:bg-indigo-50 border-gray-200 hover:border-indigo-300 transition-all"
           onClick={() => {
             if (currentView === 'day') {
               onDateChange(subDays(currentDate, 1));
@@ -58,11 +59,11 @@ export const CalendarHeader = ({
             }
           }}
         >
-          <ChevronLeft className="h-4 w-4 text-purple-700" />
+          <ChevronLeft className="h-4 w-4 text-gray-700" />
         </Button>
 
-        <div className="min-w-[200px] text-center px-4 py-2 bg-purple-50 rounded-lg">
-          <span className="text-lg text-purple-700 font-medium">
+        <div className="min-w-[180px] sm:min-w-[220px] text-center px-3 sm:px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+          <span className="text-sm sm:text-base text-gray-900 font-semibold">
             {getFormattedDate()}
           </span>
         </div>
@@ -70,7 +71,7 @@ export const CalendarHeader = ({
         <Button
           variant="outline"
           size="icon"
-          className="h-10 w-10 rounded-lg bg-purple-50 hover:bg-purple-100 border-purple-100"
+          className="h-9 w-9 rounded-lg bg-white hover:bg-indigo-50 border-gray-200 hover:border-indigo-300 transition-all"
           onClick={() => {
             if (currentView === 'day') {
               onDateChange(addDays(currentDate, 1));
@@ -81,60 +82,65 @@ export const CalendarHeader = ({
             }
           }}
         >
-          <ChevronRight className="h-4 w-4 text-purple-700" />
+          <ChevronRight className="h-4 w-4 text-gray-700" />
         </Button>
 
-        {/* Idag button */}
+        {/* Today button */}
         <Button 
-          variant={isToday(currentDate) ? "outline" : "ghost"} 
+          variant={isToday(currentDate) ? "secondary" : "ghost"} 
           size="sm"
           onClick={() => onDateChange(new Date())} 
-          className={`ml-2 ${isToday(currentDate) ? 'bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700' : 'text-muted-foreground hover:text-purple-700'}`}
+          className={`ml-1 h-9 transition-all ${
+            isToday(currentDate) 
+              ? 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium' 
+              : 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50'
+          }`}
           disabled={isToday(currentDate)}
         >
-          {isToday(currentDate) ? 'Idag' : 'Gå till idag'}
+          <Calendar className="w-3.5 h-3.5 mr-1.5" />
+          Idag
         </Button>
       </div>
 
-      {/* Modern View Toggle Buttons */}
-      <div className="flex items-center bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-1 border border-purple-200 shadow-sm">
+      {/* Modern View Toggle */}
+      <div className="flex items-center bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onViewChange('day')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out ${
+          className={`h-8 px-3 text-xs sm:text-sm font-medium rounded-md transition-all ${
             currentView === 'day'
-              ? 'bg-white text-purple-700 shadow-md border border-purple-200/50 scale-105'
-              : 'text-purple-600 hover:text-purple-700 hover:bg-white/50 hover:scale-102'
+              ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
           }`}
         >
-          <Calendar className="w-4 h-4 mr-2" />
+          <Calendar className="w-3.5 h-3.5 mr-1.5" />
           Dag
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onViewChange('week')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out ${
+          className={`h-8 px-3 text-xs sm:text-sm font-medium rounded-md transition-all ${
             currentView === 'week'
-              ? 'bg-white text-purple-700 shadow-md border border-purple-200/50 scale-105'
-              : 'text-purple-600 hover:text-purple-700 hover:bg-white/50 hover:scale-102'
+              ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
           }`}
         >
-          <ArrowUp className="w-4 h-4 mr-2 rotate-90" />
+          <ArrowUp className="w-3.5 h-3.5 mr-1.5 rotate-90" />
           Vecka
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onViewChange('month')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out ${
+          className={`h-8 px-3 text-xs sm:text-sm font-medium rounded-md transition-all ${
             currentView === 'month'
-              ? 'bg-white text-purple-700 shadow-md border border-purple-200/50 scale-105'
-              : 'text-purple-600 hover:text-purple-700 hover:bg-white/50 hover:scale-102'
+              ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
           }`}
         >
-          <ArrowDown className="w-4 h-4 mr-2" />
+          <ArrowDown className="w-3.5 h-3.5 mr-1.5" />
           Månad
         </Button>
       </div>
