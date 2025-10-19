@@ -93,6 +93,8 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   useEffect(() => {
     if (profile?.work_preferences && !profileLoading) {
       console.log('📥 Setting preferences from database:', profile.work_preferences);
+      console.log('📊 Hard blocked slots from DB:', profile.work_preferences.hard_blocked_slots);
+      console.log('📊 Medium blocked slots from DB:', profile.work_preferences.medium_blocked_slots);
       setPreferences({
         ...defaultPreferences,
         ...profile.work_preferences,
@@ -388,7 +390,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
           <p className="text-sm text-center text-slate-600 mt-3">
             {preferences.hard_blocked_slots.length === 3 
               ? '✓ Maximalt antal blockerade arbetstillfällen' 
-              : `${3 - preferences.hard_blocked_slots.length} arbetstillfällen kvar att blockera`}
+              : `${preferences.hard_blocked_slots.length} blockerade, ${3 - preferences.hard_blocked_slots.length} kvar att lägga till`}
           </p>
         )}
       </Card>
@@ -423,7 +425,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
           <p className="text-sm text-center text-slate-600 mt-3">
             {preferences.medium_blocked_slots.length === 3 
               ? '✓ Maximalt antal föredragna undvikanden' 
-              : `${3 - preferences.medium_blocked_slots.length} undvikanden kvar att ange`}
+              : `${preferences.medium_blocked_slots.length} undvikanden, ${3 - preferences.medium_blocked_slots.length} kvar att lägga till`}
           </p>
         )}
       </Card>
@@ -455,10 +457,16 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         onOpenChange={setHardBlockedDialogOpen}
         blockedSlots={preferences.hard_blocked_slots || []}
         onSave={(slots) => {
+          console.log('💾 Updating hard_blocked_slots in local state:', slots);
           setPreferences(prev => ({
             ...prev,
             hard_blocked_slots: slots
           }));
+          toast({
+            title: "Blockeringar uppdaterade",
+            description: "Kom ihåg att klicka 'Spara inställningar' för att spara till databasen",
+            duration: 5000,
+          });
         }}
       />
       
@@ -468,10 +476,16 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         onOpenChange={setMediumBlockedDialogOpen}
         blockedSlots={preferences.medium_blocked_slots || []}
         onSave={(slots) => {
+          console.log('💾 Updating medium_blocked_slots in local state:', slots);
           setPreferences(prev => ({
             ...prev,
             medium_blocked_slots: slots
           }));
+          toast({
+            title: "Undvikanden uppdaterade",
+            description: "Kom ihåg att klicka 'Spara inställningar' för att spara till databasen",
+            duration: 5000,
+          });
         }}
         variant="medium" // NEW: Will create this variant to use yellow colors
       />

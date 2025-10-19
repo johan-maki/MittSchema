@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +66,17 @@ export const HardBlockedSlotsDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
 
+  // Sync selectedSlots with blockedSlots prop when dialog opens or blockedSlots changes
+  useEffect(() => {
+    if (open) {
+      console.log(`🔄 Dialog opened (variant: ${variant}), syncing blocked slots:`, blockedSlots);
+      setSelectedSlots(blockedSlots);
+      // Reset selection state when dialog opens
+      setSelectedDate(null);
+      setSelectedShifts(new Set());
+    }
+  }, [open, blockedSlots, variant]);
+
   // Get next month for scheduling
   const today = new Date();
   const nextMonth = addMonths(today, 1);
@@ -121,6 +132,8 @@ export const HardBlockedSlotsDialog = ({
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const shiftsArray = Array.from(selectedShifts) as ('day' | 'evening' | 'night' | 'all_day')[];
 
+    console.log(`➕ Adding blocked slot (variant: ${variant}): ${dateStr}, shifts:`, shiftsArray);
+
     // Remove existing blocks for this date
     const filteredSlots = selectedSlots.filter(slot => slot.date !== dateStr);
 
@@ -131,6 +144,9 @@ export const HardBlockedSlotsDialog = ({
         shift_types: shiftsArray,
       };
       setSelectedSlots([...filteredSlots, newSlot]);
+      console.log(`✅ Slot added. Total slots now: ${filteredSlots.length + 1}`);
+    } else {
+      console.warn(`⚠️ Cannot add more slots, limit reached: ${MAX_BLOCKED_SLOTS}`);
     }
 
     // Reset selection
@@ -139,10 +155,13 @@ export const HardBlockedSlotsDialog = ({
   };
 
   const handleRemoveSlot = (slot: HardBlockedSlot) => {
+    console.log(`🗑️ Removing blocked slot (variant: ${variant}):`, slot);
     setSelectedSlots(selectedSlots.filter(s => s.date !== slot.date));
   };
 
   const handleSave = () => {
+    console.log(`💾 Saving blocked slots (variant: ${variant}):`, selectedSlots);
+    console.log(`📊 Total slots being saved: ${selectedSlots.length}`);
     onSave(selectedSlots);
     onOpenChange(false);
   };
