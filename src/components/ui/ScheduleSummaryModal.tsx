@@ -7,6 +7,7 @@ import type { StaffingIssue } from '@/components/shifts/utils/staffingUtils';
 import { format, parseISO, getDaysInMonth } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { EmployeePreferencesModal } from '@/components/directory/EmployeePreferencesModal';
+import { PartialCoverageWarning } from '@/components/shifts/PartialCoverageWarning';
 
 interface EmployeeSummary {
   id: string;
@@ -34,6 +35,24 @@ interface ScheduleSummaryModalProps {
   startDate: Date;
   endDate: Date;
   staffingIssues?: StaffingIssue[];
+  coverageStats?: {
+    total_shifts: number;
+    filled_shifts: number;
+    coverage_percentage: number;
+    uncovered_count?: number;
+    uncovered_shifts?: Array<{
+      date: string;
+      day_name: string;
+      shift_type: string;
+      shift_label: string;
+      reasons: string[];
+    }>;
+    shift_type_coverage?: {
+      day: { filled: number; total: number; percentage: number };
+      evening: { filled: number; total: number; percentage: number };
+      night: { filled: number; total: number; percentage: number };
+    };
+  };
 }
 
 export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
@@ -46,7 +65,8 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   employees,
   startDate,
   endDate,
-  staffingIssues = []
+  staffingIssues = [],
+  coverageStats
 }) => {
   const [showCoverageDetails, setShowCoverageDetails] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
@@ -259,6 +279,11 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1">
+          {/* Partial Coverage Warning */}
+          {coverageStats && coverageStats.coverage_percentage < 100 && (
+            <PartialCoverageWarning coverageStats={coverageStats} />
+          )}
+          
           {/* Coverage Alert */}
           <div className={`mb-6 p-4 rounded-lg border ${getCoverageColor(coveragePercentage)}`}>
             <div className="flex items-center justify-between">

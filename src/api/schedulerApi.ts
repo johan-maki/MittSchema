@@ -51,6 +51,19 @@ interface GurobiScheduleResponse {
     total_shifts: number;
     filled_shifts: number;
     coverage_percentage: number;
+    uncovered_count?: number;
+    uncovered_shifts?: Array<{
+      date: string;
+      day_name: string;
+      shift_type: string;
+      shift_label: string;
+      reasons: string[];
+    }>;
+    shift_type_coverage?: {
+      day: { filled: number; total: number; percentage: number };
+      evening: { filled: number; total: number; percentage: number };
+      night: { filled: number; total: number; percentage: number };
+    };
   };
   employee_stats: Record<string, {
     name: string;

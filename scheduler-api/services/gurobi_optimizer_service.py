@@ -1092,9 +1092,88 @@ class GurobiScheduleOptimizer:
                 (coverage_stats["filled_shifts"] / coverage_stats["total_shifts"]) * 100, 1
             )
         
+        # Analyze uncovered shifts - detailed breakdown
+        uncovered_shifts = []
+        shift_type_coverage = {"day": {"filled": 0, "total": 0}, "evening": {"filled": 0, "total": 0}, "night": {"filled": 0, "total": 0}}
+        
+        for d in range(len(self.dates)):
+            date = self.dates[d]
+            for shift in self.shift_types:
+                shift_type_coverage[shift]["total"] += 1
+                is_filled = False
+                
+                for emp in self.employees:
+                    if self.shifts[(emp['id'], d, shift)].x > 0.5:
+                        is_filled = True
+                        shift_type_coverage[shift]["filled"] += 1
+                        break
+                
+                if not is_filled:
+                    # Analyze why this shift couldn't be filled
+                    reasons = []
+                    available_employees = 0
+                    
+                    for emp in self.employees:
+                        emp_id = emp['id']
+                        # Check if employee could theoretically work this shift
+                        emp_pref = next((p for p in self.employee_preferences if p.employee_id == emp_id), None)
+                        
+                        if emp_pref:
+                            # Check hard blocks
+                            if hasattr(emp_pref, 'hard_blocked_slots') and emp_pref.hard_blocked_slots:
+                                for block in emp_pref.hard_blocked_slots:
+                                    if block.get('date') == date.strftime('%Y-%m-%d') and block.get('shift_type') == shift:
+                                        reasons.append(f"{emp.get('first_name', '')} hårt blockerad")
+                                        break
+                            
+                            # Check excluded shifts
+                            if hasattr(emp_pref, 'excluded_shifts') and emp_pref.excluded_shifts:
+                                if shift in emp_pref.excluded_shifts:
+                                    reasons.append(f"{emp.get('first_name', '')} exkluderad från {shift}pass")
+                                    continue
+                            
+                            # Check excluded days
+                            day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                            day_name = day_names[date.weekday()]
+                            if hasattr(emp_pref, 'excluded_days') and emp_pref.excluded_days:
+                                if day_name in emp_pref.excluded_days:
+                                    reasons.append(f"{emp.get('first_name', '')} exkluderad från {day_name}")
+                                    continue
+                        
+                        available_employees += 1
+                    
+                    if available_employees == 0:
+                        if not reasons:
+                            reasons.append("Ingen tillgänglig personal (alla blockerade/exkluderade)")
+                    else:
+                        reasons.append(f"Otillräcklig kapacitet ({available_employees} tillgängliga men alla upptagna)")
+                    
+                    uncovered_shifts.append({
+                        "date": date.strftime('%Y-%m-%d'),
+                        "day_name": ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"][date.weekday()],
+                        "shift_type": shift,
+                        "shift_label": {"day": "Dagpass", "evening": "Kvällspass", "night": "Nattpass"}[shift],
+                        "reasons": reasons[:3]  # Top 3 reasons
+                    })
+        
+        # Add detailed coverage analysis
+        coverage_stats["uncovered_shifts"] = uncovered_shifts
+        coverage_stats["uncovered_count"] = len(uncovered_shifts)
+        coverage_stats["shift_type_coverage"] = {
+            k: {
+                "filled": v["filled"],
+                "total": v["total"],
+                "percentage": round((v["filled"] / v["total"] * 100), 1) if v["total"] > 0 else 0
+            }
+            for k, v in shift_type_coverage.items()
+        }
+        
         # Log results
         logger.info(f"Schedule generated with {coverage_stats['coverage_percentage']}% coverage")
         logger.info(f"Filled {coverage_stats['filled_shifts']} out of {coverage_stats['total_shifts']} shifts")
+        logger.info(f"Uncovered shifts: {coverage_stats['uncovered_count']}")
+        for shift_type, data in coverage_stats["shift_type_coverage"].items():
+            logger.info(f"  {shift_type}: {data['percentage']}% ({data['filled']}/{data['total']})")
         
         # Calculate shift type fairness statistics
         shift_type_stats = {}

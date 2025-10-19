@@ -23,6 +23,24 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     startDate: Date;
     endDate: Date;
     staffingIssues: { date: string; shiftType: string; current: number; required: number }[];
+    coverage_stats?: {
+      total_shifts: number;
+      filled_shifts: number;
+      coverage_percentage: number;
+      uncovered_count?: number;
+      uncovered_shifts?: Array<{
+        date: string;
+        day_name: string;
+        shift_type: string;
+        shift_label: string;
+        reasons: string[];
+      }>;
+      shift_type_coverage?: {
+        day: { filled: number; total: number; percentage: number };
+        evening: { filled: number; total: number; percentage: number };
+        night: { filled: number; total: number; percentage: number };
+      };
+    };
   } | null>(null);
   const queryClient = useQueryClient();
   
@@ -255,7 +273,9 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         shifts: generatedSchedule.schedule,
         startDate: summaryStartDate,
         endDate: summaryEndDate,
-        staffingIssues: generatedSchedule.staffingIssues || []
+        staffingIssues: generatedSchedule.staffingIssues || [],
+        // @ts-expect-error - coverage_stats contains extended info from backend
+        coverage_stats: generatedSchedule.coverage_stats
       });
       setShowSummary(true);
       

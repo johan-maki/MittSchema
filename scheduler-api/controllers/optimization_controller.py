@@ -57,6 +57,7 @@ async def handle_optimization_request(request: ScheduleRequest):
         logger.info(f"Using random seed: {random_seed}")
         
         # Call the scheduler service to optimize the schedule
+        # Always allow partial coverage to get best possible schedule even with insufficient staff
         result = optimize_schedule(
             employees=employees, 
             start_date=start_date, 
@@ -67,7 +68,7 @@ async def handle_optimization_request(request: ScheduleRequest):
             min_staff_per_shift=request.min_staff_per_shift or 1,
             min_experience_per_shift=request.min_experience_per_shift or 1,
             include_weekends=request.include_weekends if request.include_weekends is not None else True,
-            allow_partial_coverage=request.allow_partial_coverage or False,
+            allow_partial_coverage=True,  # Always True: generate best possible schedule regardless of coverage %
             employee_preferences=request.employee_preferences
         )
         

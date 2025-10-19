@@ -108,6 +108,7 @@ export const ScheduleActions = ({
           startDate={summaryData.startDate}
           endDate={summaryData.endDate}
           staffingIssues={summaryData.staffingIssues || []}
+          coverageStats={summaryData.coverage_stats}
           onAccept={acceptSchedule}
           onRegenerate={() => {
             // Stäng modal och generera om
