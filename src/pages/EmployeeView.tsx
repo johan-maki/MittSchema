@@ -99,41 +99,45 @@ const EmployeeView = () => {
 
   const getExperienceBadge = (level: number) => {
     const levels = {
-      1: { label: 'Nybörjare', color: 'bg-blue-100 text-blue-800' },
-      2: { label: 'Erfaren', color: 'bg-green-100 text-green-800' },
-      3: { label: 'Välerfaren', color: 'bg-yellow-100 text-yellow-800' },
-      4: { label: 'Senior', color: 'bg-purple-100 text-purple-800' },
-      5: { label: 'Expert', color: 'bg-red-100 text-red-800' }
+      1: { label: 'Nybörjare', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+      2: { label: 'Erfaren', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      3: { label: 'Välerfaren', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+      4: { label: 'Senior', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+      5: { label: 'Expert', color: 'bg-rose-50 text-rose-700 border-rose-200' }
     };
     const config = levels[level as keyof typeof levels] || levels[1];
-    return <Badge className={config.color}>{config.label}</Badge>;
+    return <Badge variant="outline" className={config.color}>{config.label}</Badge>;
   };
 
   return (
     <AppLayout>
-      <div className="min-h-[calc(100vh-56px)] bg-gradient-to-br from-sage-50 to-lavender-50 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
-          <Card>
-            <CardHeader>
+      <div className="min-h-[calc(100vh-56px)] bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Modern Header with Gradient Card */}
+          <Card className="bg-white/80 backdrop-blur-md border-slate-200/50 shadow-sm">
+            <CardHeader className="pb-6">
               <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                    <User className="h-6 w-6 text-white" />
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
+                    <User className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-2xl">
+                    <CardTitle className="text-2xl sm:text-3xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                       {profile ? `${profile.first_name} ${profile.last_name}` : 'Välkommen'}
                       {currentUserId === selectedEmployeeId && (
-                        <Badge variant="outline" className="ml-3 text-xs bg-green-50 text-green-700 border-green-200">
+                        <Badge variant="outline" className="ml-3 text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
                           Det här är du
                         </Badge>
                       )}
                     </CardTitle>
                     {profile && (
-                      <div className="flex items-center gap-3 mt-2">
-                        <Badge variant="outline">{profile.role}</Badge>
-                        <Badge variant="outline">{profile.department}</Badge>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                          {profile.role}
+                        </Badge>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          {profile.department}
+                        </Badge>
                         {profile.experience_level && getExperienceBadge(profile.experience_level)}
                       </div>
                     )}
@@ -141,12 +145,14 @@ const EmployeeView = () => {
                 </div>
 
                 <div className="flex items-center gap-3 w-full lg:w-auto">
-                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <div className="p-2 bg-indigo-50 rounded-lg">
+                    <Users className="h-5 w-5 text-indigo-600" />
+                  </div>
                   <Select
                     value={selectedEmployeeId || ""}
                     onValueChange={setSelectedEmployeeId}
                   >
-                    <SelectTrigger className="w-full lg:w-[280px]">
+                    <SelectTrigger className="w-full lg:w-[320px] bg-white/80 backdrop-blur-sm">
                       <SelectValue placeholder="Välj anställd" />
                     </SelectTrigger>
                     <SelectContent>
@@ -199,12 +205,18 @@ const EmployeeView = () => {
           {selectedEmployeeId ? (
             <div className="space-y-6">
               <Tabs defaultValue="schedule" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2">
-                  <TabsTrigger value="schedule" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2 bg-white/80 backdrop-blur-sm border border-slate-200/50">
+                  <TabsTrigger 
+                    value="schedule" 
+                    className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                  >
                     <Calendar className="h-4 w-4" />
                     Mitt schema
                   </TabsTrigger>
-                  <TabsTrigger value="preferences" className="flex items-center gap-2">
+                  <TabsTrigger 
+                    value="preferences" 
+                    className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                  >
                     <User className="h-4 w-4" />
                     Inställningar
                   </TabsTrigger>
@@ -220,11 +232,13 @@ const EmployeeView = () => {
               </Tabs>
             </div>
           ) : (
-            <Card className="p-12">
+            <Card className="p-12 bg-white/80 backdrop-blur-sm border-slate-200/50">
               <div className="text-center">
-                <Globe className="mx-auto mb-6" />
-                <h3 className="text-xl font-medium mb-2">Välj en anställd</h3>
-                <p className="text-muted-foreground">
+                <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                  <Globe className="h-8 w-8 text-indigo-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">Välj en anställd</h3>
+                <p className="text-slate-600">
                   Välj en anställd från listan ovan för att visa deras schema och inställningar.
                 </p>
               </div>

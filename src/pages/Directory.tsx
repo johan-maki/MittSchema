@@ -30,36 +30,36 @@ const DirectoryStats = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/50">
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-slate-200/50 hover:shadow-md transition-shadow">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Users className="h-5 w-5 text-blue-600" />
+          <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-sm">
+            <Users className="h-5 w-5 text-white" />
           </div>
           <div>
             <p className="text-sm font-medium text-slate-600">Total Personal</p>
-            <p className="text-2xl font-bold text-slate-900">{totalPersonal}</p>
+            <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{totalPersonal}</p>
           </div>
         </div>
       </div>
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/50">
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-slate-200/50 hover:shadow-md transition-shadow">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-green-100 rounded-lg">
-            <Building2 className="h-5 w-5 text-green-600" />
+          <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-sm">
+            <Building2 className="h-5 w-5 text-white" />
           </div>
           <div>
             <p className="text-sm font-medium text-slate-600">Avdelningar</p>
-            <p className="text-2xl font-bold text-slate-900">{departments}</p>
+            <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">{departments}</p>
           </div>
         </div>
       </div>
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200/50">
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-slate-200/50 hover:shadow-md transition-shadow">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-amber-100 rounded-lg">
-            <Users className="h-5 w-5 text-amber-600" />
+          <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm">
+            <Users className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600">Seniora Medarbetare</p>
-            <p className="text-2xl font-bold text-slate-900">{seniorStaff}</p>
+            <p className="text-sm font-medium text-slate-600">Senior Personal</p>
+            <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{seniorStaff}</p>
           </div>
         </div>
       </div>
@@ -72,22 +72,26 @@ const Directory = () => {
     <QueryClientProvider client={queryClient}>
       <DirectoryProvider>
         <AppLayout>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              {/* Modern Header with Better Visual Hierarchy */}
+              {/* Modern Header with Gradient and Better Visual Hierarchy */}
               <div className="mb-8">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
-                    <Users className="h-6 w-6 text-white" />
+                <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-slate-200/50">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl shadow-lg">
+                      <Users className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        Personalkatalog
+                      </h1>
+                      <p className="text-slate-600 mt-1">Hantera och övervaka vårdpersonalen</p>
+                    </div>
                   </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Personalkatalog</h1>
-                    <p className="text-slate-600 mt-1">Hantera och övervaka vårdpersonalen</p>
-                  </div>
+                  
+                  {/* Stats Cards */}
+                  <DirectoryStats />
                 </div>
-                
-                {/* Stats Cards */}
-                <DirectoryStats />
               </div>
               
               {/* Controls with Better Spacing */}
@@ -96,7 +100,7 @@ const Directory = () => {
               </div>
               
               {/* Table Container with Modern Styling */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200/50 overflow-hidden">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200/50 overflow-hidden">
                 <DirectoryTable />
               </div>
             </div>
