@@ -159,8 +159,15 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
                         {formatConstraintDescription(constraint)}
                       </p>
                       {constraint.confidence === 'low' && (
-                        <p className="text-xs text-red-600">
-                          ⚠️ Kontrollera att namn, datum och skifttyp är korrekt
+                        <p className="text-xs text-red-600 flex items-start gap-1">
+                          <span>⚠️</span>
+                          <span>{constraint.reason || 'Kontrollera att namn, datum och skifttyp är korrekt'}</span>
+                        </p>
+                      )}
+                      {constraint.confidence === 'medium' && constraint.reason && (
+                        <p className="text-xs text-yellow-600 flex items-start gap-1">
+                          <span>ℹ️</span>
+                          <span>{constraint.reason}</span>
                         </p>
                       )}
                     </div>
