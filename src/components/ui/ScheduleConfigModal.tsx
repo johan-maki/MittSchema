@@ -249,7 +249,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
             </label>
           </div>
 
-          {/* Optimize for Cost */}
+          {/* Consider Cost */}
           <div className="flex items-center justify-between p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
             <div className="flex items-center space-x-4">
               <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,7 +257,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
               </svg>
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
-                  <div className="text-lg font-semibold text-gray-700">Optimera för kostnad</div>
+                  <div className="text-lg font-semibold text-gray-700">Ta hänsyn till kostnad</div>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -265,31 +265,33 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <p className="text-sm">
-                          <strong>💰 Prioritera kostnadseffektivitet vid schemaläggning</strong>
+                          <strong>💰 Inkludera personalkostnad i optimering</strong>
                           <br /><br />
                           <strong>När aktiverat:</strong>
                           <br />
-                          • Anställda med lägre timkostnad prioriteras
+                          • Timkostnad används som vågskål vid lika bra lösningar
                           <br />
-                          • Skapar ett mer kostnadseffektivt schema
+                          • Prioriterar lägre totalkostnad när möjligt
                           <br />
-                          • Rättvisa och täckning är fortfarande viktiga
+                          • Täckning och rättvisa är fortfarande viktigast
                           <br /><br />
                           <strong>När inaktiverat:</strong>
                           <br />
                           • Kostnad ignoreras helt
                           <br />
-                          • Fokus enbart på rättvisa fördelning
+                          • Fokus på att ge varje anställd sin avtalade procent
                           <br />
-                          • Alla anställda behandlas lika oavsett lön
+                          • Heltidsanställda får heltidjobb (100%), deltid får deltidsjobb
+                          <br />
+                          • Alla behandlas lika oavsett timkostnad
                           <br /><br />
-                          <em>Rekommendation: Aktivera om budget är begränsad, annars inaktiverad för max rättvisa.</em>
+                          <em>Rekommendation: Aktivera endast om budget är begränsad. Annars inaktiverad för att respektera anställningsavtal.</em>
                         </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="text-sm text-gray-500">Prioritera personal med lägre timkostnad</div>
+                <div className="text-sm text-gray-500">Inkludera timkostnad vid schemaläggning</div>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -378,7 +380,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
                 </div>
               </div>
               <div className="bg-white p-3 rounded-lg">
-                <div className="text-gray-500">Kostnadsoptimering</div>
+                <div className="text-gray-500">Ta hänsyn till kostnad</div>
                 <div className="text-xl font-bold text-amber-600">
                   {config.optimizeForCost ? 'På' : 'Av'}
                 </div>

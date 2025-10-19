@@ -1067,7 +1067,41 @@ class GurobiScheduleOptimizer:
         if hasattr(self, 'medium_penalty_vars') and self.medium_penalty_vars:
             medium_blocked_penalty = gp.quicksum(self.medium_penalty_vars.values())
         
-        # Eighth objective: Minimize total staffing cost (optional)
+        # Eighth objective: Minimize deviation from work_percentage targets (when cost optimization is OFF)
+        # This encourages giving each employee shifts matching their work_percentage exactly
+        # For example: 100% employee gets full schedule, 50% employee gets half, etc.
+        work_percentage_deviation = 0
+        if not self.optimize_for_cost:
+            # Only optimize for work_percentage targets when NOT optimizing for cost
+            # This ensures employees get their contracted hours when economics isn't a concern
+            total_weeks = len(self.dates) / 7.0
+            
+            for emp in self.employees:
+                work_percentage = emp.get('work_percentage', 100)
+                
+                # Calculate target shifts for this employee based on their work_percentage
+                target_shifts_exact = (work_percentage / 100.0) * total_weeks * 5  # 5 shifts per week
+                target_shifts = target_shifts_exact  # Use exact value for better precision
+                
+                # Calculate actual shifts assigned to this employee
+                actual_shifts = gp.quicksum(
+                    self.shifts[(emp['id'], d, shift)]
+                    for d in range(len(self.dates))
+                    for shift in self.shift_types
+                )
+                
+                # Create absolute value of deviation using auxiliary variable
+                deviation_var = self.model.addVar(vtype=GRB.CONTINUOUS, name=f"work_pct_dev_{emp['id']}")
+                self.model.addConstr(deviation_var >= actual_shifts - target_shifts)
+                self.model.addConstr(deviation_var >= target_shifts - actual_shifts)
+                
+                work_percentage_deviation += deviation_var
+            
+            logger.info("📊 Work percentage optimization ENABLED - will try to match each employee's contracted percentage")
+        else:
+            logger.info("📊 Work percentage optimization DISABLED - cost takes priority")
+        
+        # Ninth objective: Minimize total staffing cost (optional)
         # Only included when optimize_for_cost is enabled
         # This encourages using employees with lower hourly rates when possible
         total_cost = 0
@@ -1080,17 +1114,18 @@ class GurobiScheduleOptimizer:
             )
             logger.info("💰 Cost optimization ENABLED - will prioritize employees with lower hourly rates")
         else:
-            logger.info("💼 Cost optimization DISABLED - focusing on fairness and coverage only")
+            logger.info("� Cost optimization DISABLED - all employees treated equally regardless of hourly rate")
         
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
+        # - Work percentage target matching (weight: 40) - when cost OFF, try to hit each employee's contracted percentage
         # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
         # - Preferred shifts are very important (weight: 18) - respect shift preferences
         # - Weekend fairness is high priority (weight: 15) - increased for better fairness
         # - Preferred days matter (weight: 12) - high weight for day preferences
         # - Shift type fairness is important (weight: 8)
-        # - Cost is moderate priority (weight: 5) - when enabled, prefer lower-cost employees but don't sacrifice fairness
+        # - Cost is minor priority (weight: 0.001) - when enabled, prefer lower-cost employees as tie-breaker only
         
         objective_terms = [
             100 * total_coverage,
@@ -1101,6 +1136,12 @@ class GurobiScheduleOptimizer:
             -8 * shift_type_unfairness,
             -12 * non_preferred_day_penalty
         ]
+        
+        # Add work_percentage deviation penalty when cost optimization is OFF
+        if not self.optimize_for_cost:
+            # High weight (40) to strongly encourage matching contracted work percentages
+            # This ensures 100% employees get full schedules, 50% get half, etc.
+            objective_terms.append(-40 * work_percentage_deviation)
         
         # Add cost term only if cost optimization is enabled
         if self.optimize_for_cost:
@@ -1113,8 +1154,10 @@ class GurobiScheduleOptimizer:
             GRB.MAXIMIZE
         )
         
-        cost_status = "WITH cost optimization (0.001x)" if self.optimize_for_cost else "WITHOUT cost optimization"
-        logger.info(f"Enhanced objective function set {cost_status}: Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (18x), Weekend fairness (15x), Shift type fairness (8x), Preferred days (12x)")
+        if self.optimize_for_cost:
+            logger.info(f"✅ Objective function set WITH cost consideration (0.001x): Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (18x), Weekend fairness (15x), Shift type (8x), Preferred days (12x), Cost (0.001x)")
+        else:
+            logger.info(f"✅ Objective function set WITHOUT cost consideration: Coverage (100x), Total fairness (50x), Work % targets (40x), Medium blocks (30x), Preferred shifts (18x), Weekend fairness (15x), Shift type (8x), Preferred days (12x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
