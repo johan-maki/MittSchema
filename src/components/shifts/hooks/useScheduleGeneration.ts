@@ -52,6 +52,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const generateSchedule = async (
     config?: {
       minStaffPerShift?: number;
+      maxStaffPerShift?: number | null;
       minExperiencePerShift?: number;
       includeWeekends?: boolean;
       optimizeForCost?: boolean;
@@ -171,12 +172,14 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       // Pass the actual config from user directly instead of transforming it
       const scheduleConfig = config ? {
         minStaffPerShift: config.minStaffPerShift || 1,
+        maxStaffPerShift: config.maxStaffPerShift !== undefined ? config.maxStaffPerShift : 2, // Allow extra staffing by default
         minExperiencePerShift: config.minExperiencePerShift || 1,
         includeWeekends: config.includeWeekends ?? true,
         optimizeForCost: config.optimizeForCost ?? false,
         department: 'Akutmottagning'
       } : {
         minStaffPerShift: 1, // Default to 1 staff per shift
+        maxStaffPerShift: 2, // Default: allow min + 1 for flexibility
         minExperiencePerShift: 1,
         includeWeekends: true,
         optimizeForCost: false,
