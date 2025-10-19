@@ -962,13 +962,34 @@ class GurobiScheduleOptimizer:
         """
         logger.info("Setting enhanced objective function with shift type fairness...")
         
-        # Primary objective: Maximize total assigned shifts (coverage)
-        total_coverage = gp.quicksum(
-            self.shifts[(emp['id'], d, shift)]
-            for emp in self.employees
-            for d in range(len(self.dates))
-            for shift in self.shift_types
-        )
+        # Primary objective: Maximize coverage (ensure all required shifts are filled)
+        # Coverage should measure "how well are minimum staffing requirements met"
+        # NOT "how many total assignments exist" (which encourages overstaffing)
+        
+        # For each shift slot, create a binary variable indicating if minimum is met
+        coverage_met_vars = {}
+        for d in range(len(self.dates)):
+            for shift in self.shift_types:
+                coverage_met_vars[(d, shift)] = self.model.addVar(
+                    vtype=GRB.BINARY, 
+                    name=f"coverage_met_d{d}_{shift}"
+                )
+                
+                # Calculate total staff assigned to this shift
+                total_staff = gp.quicksum(
+                    self.shifts[(emp['id'], d, shift)]
+                    for emp in self.employees
+                )
+                
+                # coverage_met = 1 if total_staff >= min_staff_per_shift, else 0
+                # Using indicator constraint: coverage_met == 1 => total_staff >= min_staff_per_shift
+                self.model.addConstr(
+                    (coverage_met_vars[(d, shift)] == 1) >> 
+                    (total_staff >= self.min_staff_per_shift)
+                )
+        
+        # Maximize the number of shifts where minimum staffing is met
+        total_coverage = gp.quicksum(coverage_met_vars.values())
         
         # Secondary objective: Minimize unfairness in total shift distribution
         emp_total_shifts = []
@@ -1118,8 +1139,8 @@ class GurobiScheduleOptimizer:
         
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
-        # - Work percentage target matching (weight: 80) - when cost OFF, STRONGLY try to hit each employee's contracted percentage
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
+        # - Work percentage target matching (weight: 40) - when cost OFF, try to hit each employee's contracted percentage
         # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
         # - Preferred shifts are very important (weight: 18) - respect shift preferences
         # - Weekend fairness is high priority (weight: 15) - increased for better fairness
@@ -1139,11 +1160,9 @@ class GurobiScheduleOptimizer:
         
         # Add work_percentage deviation penalty when cost optimization is OFF
         if not self.optimize_for_cost:
-            # VERY HIGH weight (80) to STRONGLY encourage matching contracted work percentages
-            # This is almost as important as coverage itself!
+            # High weight (40) to strongly encourage matching contracted work percentages
             # This ensures 100% employees get full schedules, 50% get half, etc.
-            # Without this high weight, coverage maximization will overfill schedules
-            objective_terms.append(-80 * work_percentage_deviation)
+            objective_terms.append(-40 * work_percentage_deviation)
         
         # Add cost term only if cost optimization is enabled
         if self.optimize_for_cost:
