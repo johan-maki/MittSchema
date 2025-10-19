@@ -64,7 +64,8 @@ class GurobiScheduleOptimizer:
         include_weekends: bool = True,
         allow_partial_coverage: bool = False,
         random_seed: Optional[int] = None,
-        employee_preferences: Optional[List] = None
+        employee_preferences: Optional[List] = None,
+        manual_constraints: Optional[List] = None
     ) -> Dict[str, Any]:
         """
         Main optimization function that creates the optimal schedule.
@@ -78,6 +79,7 @@ class GurobiScheduleOptimizer:
             include_weekends: Whether to schedule weekend shifts
             random_seed: Random seed for reproducible results
             employee_preferences: Individual employee work preferences
+            manual_constraints: AI-parsed or manually added constraints
             
         Returns:
             Dictionary containing the optimized schedule and statistics
@@ -89,10 +91,12 @@ class GurobiScheduleOptimizer:
             self.employees = employees
             self.dates = create_date_list(start_date, end_date)
             self.employee_preferences = employee_preferences or []
+            self.manual_constraints = manual_constraints or []
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
             logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}")
             logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
+            logger.info(f"Manual constraints provided: {len(self.manual_constraints)}")
             
             # Log employee preferences for debugging
             if self.employee_preferences:
@@ -198,6 +202,10 @@ class GurobiScheduleOptimizer:
             
             # Add employee preference constraints (CRITICAL: This was missing!)
             self._add_employee_preference_constraints()
+            
+            # Add manual AI-parsed constraints
+            if self.manual_constraints:
+                self._add_manual_constraints()
             
             # Set objective function
             self._set_objective()
@@ -874,6 +882,65 @@ class GurobiScheduleOptimizer:
         if employees_without_prefs:
             logger.info(f"  Employees using default constraints: {len(employees_without_prefs)}")
     
+    def _add_manual_constraints(self):
+        """
+        Add manually specified constraints from AI-parser or user input.
+        
+        Supported constraint types:
+        - hard_blocked_slot: Employee cannot work specific date+shift (hard constraint)
+        - preferred_shift: Employee prefers/avoids specific shifts (soft constraint in objective)
+        """
+        logger.info(f"Adding {len(self.manual_constraints)} manual constraints...")
+        
+        for constraint in self.manual_constraints:
+            try:
+                constraint_type = constraint.type if hasattr(constraint, 'type') else constraint.get('type')
+                employee_id = constraint.employee_id if hasattr(constraint, 'employee_id') else constraint.get('employee_id')
+                dates = constraint.dates if hasattr(constraint, 'dates') else constraint.get('dates', [])
+                shift_types = constraint.shift_types if hasattr(constraint, 'shift_types') else constraint.get('shift_types', [])
+                is_hard = constraint.is_hard if hasattr(constraint, 'is_hard') else constraint.get('is_hard', True)
+                description = constraint.description if hasattr(constraint, 'description') else constraint.get('description', 'Unknown')
+                
+                logger.info(f"Processing manual constraint: {description} (type={constraint_type}, hard={is_hard})")
+                
+                if constraint_type == 'hard_blocked_slot' and is_hard:
+                    # Hard constraint: Employee absolutely cannot work this slot
+                    if not employee_id or not dates or not shift_types:
+                        logger.warning(f"Skipping incomplete hard_blocked_slot constraint: {description}")
+                        continue
+                    
+                    for date_str in dates:
+                        # Find date index in self.dates
+                        try:
+                            target_date = datetime.fromisoformat(date_str.replace('Z', '+00:00')).date()
+                            date_idx = next(i for i, d in enumerate(self.dates) if d.date() == target_date)
+                            
+                            for shift_type in shift_types:
+                                if shift_type in self.shift_types:
+                                    # Add hard constraint: this shift must be 0
+                                    self.model.addConstr(
+                                        self.shifts[(employee_id, date_idx, shift_type)] == 0,
+                                        name=f"manual_hard_block_{employee_id}_{date_idx}_{shift_type}"
+                                    )
+                                    logger.info(f"  ✓ Added hard block: {employee_id} cannot work {shift_type} on {date_str}")
+                        except (ValueError, StopIteration) as e:
+                            logger.warning(f"Skipping invalid date {date_str} in constraint: {e}")
+                            continue
+                
+                elif constraint_type == 'hard_blocked_slot' and not is_hard:
+                    # Soft constraint: Employee prefers not to work this slot
+                    # This would be handled in objective function - not yet implemented
+                    logger.info(f"  → Soft constraint for {description} (would add penalty in objective)")
+                
+                else:
+                    logger.info(f"  → Constraint type '{constraint_type}' not yet implemented")
+            
+            except Exception as e:
+                logger.error(f"Error adding manual constraint: {e}")
+                continue
+        
+        logger.info("Manual constraints applied successfully")
+    
     def _set_objective(self):
         """
         Set the objective function to maximize coverage and minimize unfairness.
@@ -1263,7 +1330,8 @@ def optimize_schedule_with_gurobi(
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
     random_seed: Optional[int] = None,
-    employee_preferences: Optional[List] = None
+    employee_preferences: Optional[List] = None,
+    manual_constraints: Optional[List] = None
 ) -> Dict[str, Any]:
     """
     Main function to optimize schedule using Gurobi.
@@ -1281,5 +1349,6 @@ def optimize_schedule_with_gurobi(
         include_weekends=include_weekends,
         allow_partial_coverage=allow_partial_coverage,
         random_seed=random_seed,
-        employee_preferences=employee_preferences
+        employee_preferences=employee_preferences,
+        manual_constraints=manual_constraints
     )

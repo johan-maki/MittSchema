@@ -18,7 +18,8 @@ def optimize_schedule(
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
-    employee_preferences: Optional[List] = None
+    employee_preferences: Optional[List] = None,
+    manual_constraints: Optional[List] = None
 ):
     """
     Core function to optimize the employee schedule using Gurobi.
@@ -40,6 +41,7 @@ def optimize_schedule(
         include_weekends: Whether to schedule weekend shifts
         allow_partial_coverage: Allow partial schedule when not enough staff
         employee_preferences: Individual employee work preferences
+        manual_constraints: AI-parsed or manually added constraints
     
     Returns:
         Optimized schedule dictionary with coverage stats and employee assignments
@@ -70,7 +72,8 @@ def optimize_schedule(
             include_weekends=include_weekends,
             allow_partial_coverage=allow_partial_coverage,
             random_seed=random_seed,
-            employee_preferences=employee_preferences
+            employee_preferences=employee_preferences,
+            manual_constraints=manual_constraints
         )
         
         # Add department info to schedule items

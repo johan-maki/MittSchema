@@ -12,6 +12,16 @@ class MediumBlockedSlot(BaseModel):
     date: str = Field(description="ISO date string (YYYY-MM-DD)")
     shift_types: List[str] = Field(description="Which shifts on this date are avoided if possible: 'day', 'evening', 'night', or 'all_day'")
 
+class ManualConstraint(BaseModel):
+    """AI-parsed or manually-added constraint for schedule optimization"""
+    type: str = Field(description="Constraint type: 'hard_blocked_slot', 'preferred_shift', 'min_experience', 'unknown'")
+    employee_id: Optional[str] = Field(default=None, description="Employee UUID if constraint is for specific employee")
+    dates: Optional[List[str]] = Field(default=None, description="ISO date strings (YYYY-MM-DD) for constraint")
+    shift_types: Optional[List[str]] = Field(default=None, description="Shift types: 'day', 'evening', 'night'")
+    is_hard: bool = Field(default=True, description="True = hard constraint (must follow), False = soft constraint (prefer)")
+    confidence: Optional[str] = Field(default="high", description="Confidence level: 'high', 'medium', 'low'")
+    description: Optional[str] = Field(default=None, description="Human-readable description of constraint")
+
 class EmployeePreference(BaseModel):
     """Employee work preference model"""
     employee_id: str
@@ -43,6 +53,7 @@ class ScheduleRequest(BaseModel):
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
     allow_partial_coverage: Optional[bool] = Field(default=False, description="Allow partial schedule when not enough staff")
     employee_preferences: Optional[List[EmployeePreference]] = Field(default=None, description="Individual employee work preferences")
+    manual_constraints: Optional[List[ManualConstraint]] = Field(default=None, description="AI-parsed or manually added constraints")
 
 class ShiftResponse(BaseModel):
     employee_id: str

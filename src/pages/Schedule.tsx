@@ -5,25 +5,40 @@ import { WeekView } from "@/components/shifts/WeekView";
 import { ManagerScheduleView } from "@/components/shifts/ManagerScheduleView";
 import { ModernMonthlySchedule } from "@/components/shifts/ModernMonthlySchedule";
 import ModernDayView from "@/components/shifts/ModernDayView";
+import { GanttScheduleView } from "@/components/schedule/GanttScheduleView";
+import { ScheduleEditorView } from "@/components/schedule/ScheduleEditorView";
+import { AIConstraintInput } from "@/components/schedule/AIConstraintInput";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShiftData } from "@/hooks/useShiftData";
 import { ScheduleActions } from "@/components/shifts/ScheduleActions";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { convertDatabaseProfile } from "@/types/profile";
 import type { DatabaseProfile } from "@/types/profile";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { Shift } from "@/types/shift";
+import { Button } from "@/components/ui/button";
+import { Calendar, GanttChartSquare, Edit3 } from "lucide-react";
+import type { ParsedConstraint } from "@/utils/constraintParser";
+import { bulkSaveShifts } from "@/utils/shiftBulkOperations";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 
 const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'standard' | 'gantt' | 'editor'>('standard');
+  const [aiConstraints, setAiConstraints] = useState<ParsedConstraint[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [newShiftParams, setNewShiftParams] = useState<{day: Date, role: string} | null>(null);
+
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: shifts = [], isLoading } = useShiftData(currentDate, currentView);
   
@@ -97,6 +112,87 @@ const Schedule = () => {
       );
     }
 
+    // Gantt view - works regardless of day/week/month selection
+    if (scheduleViewMode === 'gantt') {
+      const ganttShifts = typedShifts.map(shift => ({
+        id: shift.id,
+        employee_id: shift.employee_id || '',
+        employee_name: shift.profiles ? `${shift.profiles.first_name} ${shift.profiles.last_name}` : 'Unknown',
+        date: new Date(shift.start_time).toISOString().split('T')[0],
+        shift_type: shift.shift_type as 'day' | 'evening' | 'night',
+        start_time: new Date(shift.start_time).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }),
+        end_time: new Date(shift.end_time).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }),
+      }));
+
+      // Calculate date range based on shifts
+      const dates = ganttShifts.map(s => new Date(s.date));
+      const startDate = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : currentDate;
+      const endDate = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : currentDate;
+
+      return <GanttScheduleView shifts={ganttShifts} startDate={startDate} endDate={endDate} />;
+    }
+
+    // Editor view
+    if (scheduleViewMode === 'editor') {
+      const editorShifts = typedShifts.map(shift => ({
+        id: shift.id,
+        employee_id: shift.employee_id || '',
+        employee_name: shift.profiles ? `${shift.profiles.first_name} ${shift.profiles.last_name}` : 'Unknown',
+        date: new Date(shift.start_time).toISOString().split('T')[0],
+        shift_type: shift.shift_type as 'day' | 'evening' | 'night' | 'off',
+      }));
+
+      // Calculate date range
+      const dates = editorShifts.map(s => new Date(s.date));
+      const startDate = dates.length > 0 ? new Date(Math.min(...dates.map(d => d.getTime()))) : currentDate;
+      const endDate = dates.length > 0 ? new Date(Math.max(...dates.map(d => d.getTime()))) : currentDate;
+
+      return (
+        <ScheduleEditorView 
+          shifts={editorShifts} 
+          employees={employees}
+          profiles={profiles}
+          startDate={startDate}
+          endDate={endDate}
+          onSave={async (modifiedShifts) => {
+            if (!user) {
+              toast({
+                title: "Fel",
+                description: "Du måste vara inloggad för att spara ändringar",
+                variant: "destructive",
+              });
+              return;
+            }
+
+            console.log('Saving modified shifts:', modifiedShifts);
+            
+            const result = await bulkSaveShifts(editorShifts, modifiedShifts, user.id);
+            
+            if (result.success) {
+              toast({
+                title: "Schema sparat",
+                description: "Alla ändringar har sparats",
+              });
+              
+              // Invalidate queries to refresh the schedule
+              queryClient.invalidateQueries({ queryKey: ['shifts'] });
+              queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
+              
+              // Optionally switch back to standard view
+              // setScheduleViewMode('standard');
+            } else {
+              toast({
+                title: "Fel vid sparande",
+                description: result.error || "Kunde inte spara schemat",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+      );
+    }
+
+    // Standard calendar views
     switch (currentView) {
       case 'day':
         return <ModernDayView date={currentDate} shifts={typedShifts} />;
@@ -131,12 +227,44 @@ const Schedule = () => {
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-20 shadow-sm">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
-              <CalendarHeader
-                currentDate={currentDate}
-                onDateChange={setCurrentDate}
-                currentView={currentView}
-                onViewChange={setCurrentView}
-              />
+              <div className="flex items-center gap-4 flex-wrap">
+                <CalendarHeader
+                  currentDate={currentDate}
+                  onDateChange={setCurrentDate}
+                  currentView={currentView}
+                  onViewChange={setCurrentView}
+                />
+                {/* View mode toggle */}
+                <div className="flex gap-1 border rounded-lg p-1 bg-white">
+                  <Button
+                    variant={scheduleViewMode === 'standard' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setScheduleViewMode('standard')}
+                    className="gap-2"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Kalender
+                  </Button>
+                  <Button
+                    variant={scheduleViewMode === 'gantt' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setScheduleViewMode('gantt')}
+                    className="gap-2"
+                  >
+                    <GanttChartSquare className="h-4 w-4" />
+                    Gantt
+                  </Button>
+                  <Button
+                    variant={scheduleViewMode === 'editor' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setScheduleViewMode('editor')}
+                    className="gap-2"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    Redigera
+                  </Button>
+                </div>
+              </div>
               <ScheduleActions
                 currentView={currentView}
                 currentDate={currentDate}
@@ -148,6 +276,24 @@ const Schedule = () => {
             </div>
           </div>
         </header>
+
+        {/* AI Constraint Input Section */}
+        {scheduleViewMode === 'standard' && (
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-4">
+            <AIConstraintInput 
+              employees={profiles.map(p => ({
+                id: p.id,
+                first_name: p.first_name,
+                last_name: p.last_name
+              }))}
+              onConstraintsChange={(constraints) => {
+                setAiConstraints(constraints);
+                console.log('AI Constraints updated:', constraints);
+                // TODO: Pass to scheduler optimization
+              }}
+            />
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div

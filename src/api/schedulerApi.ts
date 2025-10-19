@@ -31,6 +31,15 @@ interface GurobiScheduleRequest {
     experience_level?: number;
     work_percentage?: number; // Add work_percentage for capacity calculations
   }>;
+  manual_constraints?: Array<{
+    type: string;
+    employee_id?: string;
+    dates?: string[];
+    shift_types?: string[];
+    is_hard: boolean;
+    confidence?: string;
+    description?: string;
+  }>;
 }
 
 interface GurobiScheduleResponse {
@@ -118,7 +127,16 @@ export const schedulerApi = {
       available_days: string[];
     }>,
     retries = 3,
-    allowPartialCoverage: boolean = false // NEW: Allow partial schedules when not enough staff
+    allowPartialCoverage: boolean = false, // NEW: Allow partial schedules when not enough staff
+    manualConstraints?: Array<{
+      type: string;
+      employee_id?: string;
+      dates?: string[];
+      shift_types?: string[];
+      is_hard: boolean;
+      confidence?: string;
+      description?: string;
+    }>
   ): Promise<GurobiScheduleResponse> => {
     // Use local Gurobi API from environment config
     const url = `${SCHEDULER_API.BASE_URL}${SCHEDULER_API.ENDPOINTS.OPTIMIZE_SCHEDULE}`;
@@ -153,7 +171,8 @@ export const schedulerApi = {
       balance_workload: true, // Balansera arbetsbördan
       max_hours_per_nurse: 40, // Maximal arbetstid per sjuksköterska
       allow_partial_coverage: allowPartialCoverage, // NEW: Signal backend to allow partial schedules
-      employee_preferences: employeePreferences || [] // Lägg till employee preferences
+      employee_preferences: employeePreferences || [], // Lägg till employee preferences
+      manual_constraints: manualConstraints || [] // AI-parsed or manually added constraints
     };
     
     console.log("🚀 Calling Gurobi scheduler API with:", requestBody);
