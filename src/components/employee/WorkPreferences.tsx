@@ -430,7 +430,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         )}
       </Card>
 
-      {/* Spara knapp */}
+      {/* Spara knapp - för arbetsbelastning och pass-preferenser */}
       <div className="flex justify-end">
         <Button 
           onClick={handleSave} 
@@ -445,7 +445,7 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
           ) : (
             <>
               <Save className="h-4 w-4" />
-              Spara inställningar
+              Spara arbetsbelastning och preferenser
             </>
           )}
         </Button>
@@ -456,17 +456,33 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         open={hardBlockedDialogOpen}
         onOpenChange={setHardBlockedDialogOpen}
         blockedSlots={preferences.hard_blocked_slots || []}
-        onSave={(slots) => {
+        onSave={async (slots) => {
           console.log('💾 Updating hard_blocked_slots in local state:', slots);
-          setPreferences(prev => ({
-            ...prev,
+          
+          // Update local state first for immediate UI feedback
+          const updatedPreferences = {
+            ...preferences,
             hard_blocked_slots: slots
-          }));
-          toast({
-            title: "Blockeringar uppdaterade",
-            description: "Kom ihåg att klicka 'Spara inställningar' för att spara till databasen",
-            duration: 5000,
-          });
+          };
+          setPreferences(updatedPreferences);
+          
+          // Save directly to database
+          try {
+            await WorkPreferencesService.updateWorkPreferences(employeeId, updatedPreferences);
+            await WorkPreferencesService.refreshCache(queryClient, employeeId);
+            
+            toast({
+              title: "Blockeringar sparade",
+              description: "Dina blockerade arbetstillfällen har sparats",
+            });
+          } catch (error) {
+            console.error('❌ Error saving hard blocked slots:', error);
+            toast({
+              title: "Fel vid sparning",
+              description: "Kunde inte spara blockeringarna",
+              variant: "destructive",
+            });
+          }
         }}
       />
       
@@ -475,19 +491,35 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
         open={mediumBlockedDialogOpen}
         onOpenChange={setMediumBlockedDialogOpen}
         blockedSlots={preferences.medium_blocked_slots || []}
-        onSave={(slots) => {
+        onSave={async (slots) => {
           console.log('💾 Updating medium_blocked_slots in local state:', slots);
-          setPreferences(prev => ({
-            ...prev,
+          
+          // Update local state first for immediate UI feedback
+          const updatedPreferences = {
+            ...preferences,
             medium_blocked_slots: slots
-          }));
-          toast({
-            title: "Undvikanden uppdaterade",
-            description: "Kom ihåg att klicka 'Spara inställningar' för att spara till databasen",
-            duration: 5000,
-          });
+          };
+          setPreferences(updatedPreferences);
+          
+          // Save directly to database
+          try {
+            await WorkPreferencesService.updateWorkPreferences(employeeId, updatedPreferences);
+            await WorkPreferencesService.refreshCache(queryClient, employeeId);
+            
+            toast({
+              title: "Undvikanden sparade",
+              description: "Dina föredragna undvikanden har sparats",
+            });
+          } catch (error) {
+            console.error('❌ Error saving medium blocked slots:', error);
+            toast({
+              title: "Fel vid sparning",
+              description: "Kunde inte spara undvikandena",
+              variant: "destructive",
+            });
+          }
         }}
-        variant="medium" // NEW: Will create this variant to use yellow colors
+        variant="medium"
       />
       </div>
     </>
