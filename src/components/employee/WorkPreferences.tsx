@@ -18,7 +18,7 @@ import type { WorkPreferences as WorkPreferencesType } from "@/types/profile";
 import { convertWorkPreferences } from "@/types/profile";
 import { WorkPreferencesService } from "@/services/workPreferencesService";
 import type { Json } from "@/integrations/supabase/types";
-import { Save, Clock, Calendar, Briefcase, Ban, AlertTriangle } from "lucide-react";
+import { Clock, Calendar, Briefcase, Ban, AlertTriangle } from "lucide-react";
 import { HardBlockedSlotsDialog } from "./HardBlockedSlotsDialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -49,9 +49,8 @@ const defaultPreferences: WorkPreferencesType = {
 export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isSaving, setIsSaving] = useState(false);
   const [hardBlockedDialogOpen, setHardBlockedDialogOpen] = useState(false);
-  const [mediumBlockedDialogOpen, setMediumBlockedDialogOpen] = useState(false); // NEW
+  const [mediumBlockedDialogOpen, setMediumBlockedDialogOpen] = useState(false);
   
   const [preferences, setPreferences] = useState<WorkPreferencesType>(() => ({
     ...defaultPreferences,
@@ -102,54 +101,47 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     }
   }, [profile, profileLoading]);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      console.log('🔄 Saving work preferences for employee:', employeeId);
-      console.log('📄 Full preferences object being saved:', JSON.stringify(preferences, null, 2));
-      console.log('📊 Hard blocked slots count:', preferences.hard_blocked_slots?.length || 0);
-      console.log('📊 Medium blocked slots count:', preferences.medium_blocked_slots?.length || 0);
-      
-      // Använd WorkPreferencesService för konsistent uppdatering
-      await WorkPreferencesService.updateWorkPreferences(employeeId, preferences);
-
-      console.log('✅ Successfully saved using WorkPreferencesService');
-
-      toast({
-        title: "Inställningar sparade",
-        description: "Dina arbetsinställningar har uppdaterats",
-      });
-
-      // Använd centraliserad cache refresh för konsistens
-      await WorkPreferencesService.refreshCache(queryClient, employeeId);
-      
-      // Verify the save by re-fetching
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('employees')
-        .select('work_preferences')
-        .eq('id', employeeId)
-        .single();
-        
-      if (verifyError) {
-        console.error('❌ Verification failed:', verifyError);
-      } else {
-        console.log('🔍 Verification - data in database:', JSON.stringify(verifyData.work_preferences, null, 2));
-        const verified = convertWorkPreferences(verifyData.work_preferences);
-        console.log('🔍 Verified hard_blocked_slots:', verified.hard_blocked_slots);
-        console.log('🔍 Verified medium_blocked_slots:', verified.medium_blocked_slots);
-      }
-      
-    } catch (error: unknown) {
-      console.error('❌ Error saving preferences:', error);
-      toast({
-        title: "Ett fel uppstod",
-        description: error instanceof Error ? error.message : "Kunde inte spara inställningarna",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
+  // Auto-save preferences with debounce (wait 1s after last change)
+  useEffect(() => {
+    // Skip if preferences haven't been loaded from DB yet
+    if (!profile?.work_preferences || profileLoading) {
+      return;
     }
-  };
+
+    // Skip if preferences match what's in DB (avoid saving on initial load)
+    const prefsMatch = JSON.stringify(preferences) === JSON.stringify({
+      ...defaultPreferences,
+      ...profile.work_preferences,
+    });
+    if (prefsMatch) {
+      return;
+    }
+
+    console.log('⏱️  Change detected, will auto-save in 1 second...');
+    
+    const timeoutId = setTimeout(async () => {
+      try {
+        console.log('💾 Auto-saving work preferences...');
+        await WorkPreferencesService.updateWorkPreferences(employeeId, preferences);
+        await WorkPreferencesService.refreshCache(queryClient, employeeId);
+        
+        toast({
+          title: "Inställningar sparade",
+          description: "Dina preferenser uppdaterades automatiskt",
+          duration: 2000,
+        });
+      } catch (error) {
+        console.error('❌ Auto-save error:', error);
+        toast({
+          variant: "destructive",
+          title: "Kunde inte spara",
+          description: "Ett fel uppstod vid automatisk sparning",
+        });
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [preferences, profile, profileLoading, employeeId, queryClient, toast]);
 
   const shifts = [
     { id: "day", label: "Dagpass" },
@@ -429,27 +421,6 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
           </p>
         )}
       </Card>
-
-      {/* Spara knapp - för arbetsbelastning och pass-preferenser */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
-        >
-          {isSaving ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Sparar...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              Spara arbetsbelastning och preferenser
-            </>
-          )}
-        </Button>
-      </div>
 
       {/* Hard Blocked Slots Dialog */}
       <HardBlockedSlotsDialog
