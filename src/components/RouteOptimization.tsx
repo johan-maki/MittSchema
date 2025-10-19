@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { MapPin, Plus, Trash2, Play, Download, Clock, Route, MapIcon, Navigation, Users } from 'lucide-react';
-import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete';
+import { AddressAutocompleteFree } from '@/components/ui/AddressAutocompleteFree';
+import { RouteMapFree } from '@/components/RouteMapFree';
+import { SCHEDULER_API } from '@/config/api';
 
 interface Customer {
   id: string;
@@ -14,6 +16,12 @@ interface Customer {
     start: string; // HH:MM format
     end: string;   // HH:MM format
   };
+}
+
+interface StartLocation {
+  address: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface OptimizedRoute {
@@ -31,6 +39,11 @@ const RouteOptimization: React.FC = () => {
     serviceTime: 30,
     priority: 'medium'
   });
+  const [startLocation, setStartLocation] = useState<StartLocation>({
+    address: 'Stockholm, Sverige',
+    latitude: 59.3293,
+    longitude: 18.0686
+  });
   const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
@@ -38,9 +51,10 @@ const RouteOptimization: React.FC = () => {
   const loadDemoCustomers = async () => {
     setIsLoadingDemo(true);
     try {
-      const response = await fetch('http://localhost:8080/api/route/demo-customers');
+      const response = await fetch(`${SCHEDULER_API.BASE_URL}/api/route/demo-customers`);
       if (response.ok) {
         const data = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const demoCustomers = data.customers.map((customer: any) => ({
           id: customer.id,
           name: customer.name,
@@ -72,7 +86,7 @@ const RouteOptimization: React.FC = () => {
 
     try {
       // Geocode the address automatically
-      const geocodeResponse = await fetch('http://localhost:8080/api/route/geocode', {
+      const geocodeResponse = await fetch(`${SCHEDULER_API.BASE_URL}/api/route/geocode`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +170,7 @@ const RouteOptimization: React.FC = () => {
     
     try {
       // Skicka till backend för Gurobi-optimering
-      const response = await fetch('http://localhost:8080/api/route/optimize-route', {
+      const response = await fetch(`${SCHEDULER_API.BASE_URL}/api/route/optimize-route`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +178,7 @@ const RouteOptimization: React.FC = () => {
         body: JSON.stringify({
           customers: customers,
           optimization_criteria: 'minimize_distance',
-          startLocation: startLocation ? [startLocation.latitude, startLocation.longitude] : [59.3293, 18.0686],
+          startLocation: [startLocation.latitude, startLocation.longitude],
           max_route_time: 480,
           vehicle_speed_kmh: 40.0
         }),
@@ -332,7 +346,7 @@ const RouteOptimization: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Adress
                 </label>
-                <AddressAutocomplete
+                <AddressAutocompleteFree
                   value={newCustomer.address || ''}
                   onChange={(value) => setNewCustomer({...newCustomer, address: value})}
                   onAddressSelect={(address, latitude, longitude) => {
@@ -435,57 +449,77 @@ const RouteOptimization: React.FC = () => {
         </div>
 
         {/* Right Panel - Route Visualization */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Navigation className="w-5 h-5" />
-            Optimerad rutt
-          </h2>
-          
-          {optimizedRoute ? (
-            <div className="space-y-4">
-              {/* Route Steps */}
-              <div className="space-y-3">
-                {optimizedRoute.customers.map((customer, index) => (
-                  <div key={customer.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{customer.name}</h3>
-                      <p className="text-sm text-gray-600">{customer.address}</p>
-                      <div className="flex items-center gap-4 mt-1">
-                        <span className="text-xs text-gray-500">
-                          {customer.serviceTime} min
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(customer.priority)}`}>
-                          {customer.priority === 'high' ? 'Hög' : customer.priority === 'medium' ? 'Medium' : 'Låg'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Route Instructions */}
-              {optimizedRoute.routeInstructions && (
-                <div className="mt-6">
-                  <h3 className="font-medium text-gray-900 mb-3">Ruttbeskrivning:</h3>
-                  <div className="space-y-2">
-                    {optimizedRoute.routeInstructions.map((instruction, index) => (
-                      <p key={index} className="text-sm text-gray-700 pl-4 border-l-2 border-blue-200">
-                        {instruction}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Lägg till kunder och klicka på "Optimera slinga" för att se den optimala rutten</p>
+        <div className="space-y-6">
+          {/* Interactive Map */}
+          {customers.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <MapIcon className="w-5 h-5" />
+                Karta
+              </h2>
+              <RouteMapFree
+                customers={customers}
+                startLocation={startLocation}
+                optimizedOrder={optimizedRoute?.customers}
+                totalDistance={optimizedRoute?.totalDistance}
+                totalTime={optimizedRoute?.totalTime}
+              />
             </div>
           )}
+          
+          {/* Route Details */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Navigation className="w-5 h-5" />
+              Optimerad rutt
+            </h2>
+            
+            {optimizedRoute ? (
+              <div className="space-y-4">
+                {/* Route Steps */}
+                <div className="space-y-3">
+                  {optimizedRoute.customers.map((customer, index) => (
+                    <div key={customer.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{customer.name}</h3>
+                        <p className="text-sm text-gray-600">{customer.address}</p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-xs text-gray-500">
+                            {customer.serviceTime} min
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(customer.priority)}`}>
+                            {customer.priority === 'high' ? 'Hög' : customer.priority === 'medium' ? 'Medium' : 'Låg'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Route Instructions */}
+                {optimizedRoute.routeInstructions && (
+                  <div className="mt-6">
+                    <h3 className="font-medium text-gray-900 mb-3">Ruttbeskrivning:</h3>
+                    <div className="space-y-2">
+                      {optimizedRoute.routeInstructions.map((instruction, index) => (
+                        <p key={index} className="text-sm text-gray-700 pl-4 border-l-2 border-blue-200">
+                          {instruction}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Lägg till kunder och klicka på "Optimera slinga" för att se den optimala rutten</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
