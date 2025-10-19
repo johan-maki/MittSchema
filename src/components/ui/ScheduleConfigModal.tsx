@@ -7,6 +7,7 @@ interface ScheduleConfig {
   minStaffPerShift: number;
   minExperiencePerShift: number;
   includeWeekends: boolean;
+  optimizeForCost: boolean;
 }
 
 interface ScheduleConfigModalProps {
@@ -26,6 +27,7 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
     minStaffPerShift: currentConfig.minStaffPerShift || 1,
     minExperiencePerShift: currentConfig.minExperiencePerShift || 1,
     includeWeekends: currentConfig.includeWeekends ?? true,
+    optimizeForCost: currentConfig.optimizeForCost ?? false,
   });
 
   useEffect(() => {
@@ -229,10 +231,64 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
             </label>
           </div>
 
+          {/* Optimize for Cost */}
+          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+            <div className="flex items-center space-x-4">
+              <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <div className="text-lg font-semibold text-gray-700">Optimera för kostnad</div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-gray-400 hover:text-amber-600 transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">
+                          <strong>💰 Prioritera kostnadseffektivitet vid schemaläggning</strong>
+                          <br /><br />
+                          <strong>När aktiverat:</strong>
+                          <br />
+                          • Anställda med lägre timkostnad prioriteras
+                          <br />
+                          • Skapar ett mer kostnadseffektivt schema
+                          <br />
+                          • Rättvisa och täckning är fortfarande viktiga
+                          <br /><br />
+                          <strong>När inaktiverat:</strong>
+                          <br />
+                          • Kostnad ignoreras helt
+                          <br />
+                          • Fokus enbart på rättvisa fördelning
+                          <br />
+                          • Alla anställda behandlas lika oavsett lön
+                          <br /><br />
+                          <em>Rekommendation: Aktivera om budget är begränsad, annars inaktiverad för max rättvisa.</em>
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="text-sm text-gray-500">Prioritera personal med lägre timkostnad</div>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.optimizeForCost}
+                onChange={(e) => handleInputChange('optimizeForCost', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-600"></div>
+            </label>
+          </div>
+
           {/* Current Settings Summary */}
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Sammanfattning</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="bg-white p-3 rounded-lg">
                 <div className="text-gray-500">Personal per pass</div>
                 <div className="text-xl font-bold text-blue-600">{config.minStaffPerShift}</div>
@@ -245,6 +301,12 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
                 <div className="text-gray-500">Helger</div>
                 <div className="text-xl font-bold text-green-600">
                   {config.includeWeekends ? 'Ja' : 'Nej'}
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-lg">
+                <div className="text-gray-500">Kostnadsoptimering</div>
+                <div className="text-xl font-bold text-amber-600">
+                  {config.optimizeForCost ? 'På' : 'Av'}
                 </div>
               </div>
             </div>

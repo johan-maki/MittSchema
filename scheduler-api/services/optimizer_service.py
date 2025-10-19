@@ -18,6 +18,7 @@ def optimize_schedule(
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
+    optimize_for_cost: bool = False,
     employee_preferences: Optional[List] = None,
     manual_constraints: Optional[List] = None
 ):
@@ -28,6 +29,7 @@ def optimize_schedule(
     1. Maximizes shift coverage (minimizes unfilled shifts)
     2. Ensures fair distribution of work
     3. Respects all legal and operational constraints
+    4. Optionally minimizes cost (when optimize_for_cost=True)
     
     Args:
         employees: List of employee dictionaries
@@ -40,6 +42,7 @@ def optimize_schedule(
         min_experience_per_shift: Minimum experience points required per shift
         include_weekends: Whether to schedule weekend shifts
         allow_partial_coverage: Allow partial schedule when not enough staff
+        optimize_for_cost: Optimize for minimum cost (prioritize lower hourly rates)
         employee_preferences: Individual employee work preferences
         manual_constraints: AI-parsed or manually added constraints
     
@@ -71,6 +74,7 @@ def optimize_schedule(
             min_experience_per_shift=min_experience_per_shift,
             include_weekends=include_weekends,
             allow_partial_coverage=allow_partial_coverage,
+            optimize_for_cost=optimize_for_cost,
             random_seed=random_seed,
             employee_preferences=employee_preferences,
             manual_constraints=manual_constraints

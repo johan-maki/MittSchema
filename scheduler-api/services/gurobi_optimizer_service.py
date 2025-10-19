@@ -65,7 +65,8 @@ class GurobiScheduleOptimizer:
         allow_partial_coverage: bool = False,
         random_seed: Optional[int] = None,
         employee_preferences: Optional[List] = None,
-        manual_constraints: Optional[List] = None
+        manual_constraints: Optional[List] = None,
+        optimize_for_cost: bool = False
     ) -> Dict[str, Any]:
         """
         Main optimization function that creates the optimal schedule.
@@ -80,6 +81,7 @@ class GurobiScheduleOptimizer:
             random_seed: Random seed for reproducible results
             employee_preferences: Individual employee work preferences
             manual_constraints: AI-parsed or manually added constraints
+            optimize_for_cost: Whether to optimize for minimum cost (prioritize lower hourly rates)
             
         Returns:
             Dictionary containing the optimized schedule and statistics
@@ -92,9 +94,10 @@ class GurobiScheduleOptimizer:
             self.dates = create_date_list(start_date, end_date)
             self.employee_preferences = employee_preferences or []
             self.manual_constraints = manual_constraints or []
+            self.optimize_for_cost = optimize_for_cost
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
-            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}")
+            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}, optimize_for_cost={optimize_for_cost}")
             logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
             logger.info(f"Manual constraints provided: {len(self.manual_constraints)}")
             
@@ -1058,26 +1061,54 @@ class GurobiScheduleOptimizer:
         if hasattr(self, 'medium_penalty_vars') and self.medium_penalty_vars:
             medium_blocked_penalty = gp.quicksum(self.medium_penalty_vars.values())
         
+        # Eighth objective: Minimize total staffing cost (optional)
+        # Only included when optimize_for_cost is enabled
+        # This encourages using employees with lower hourly rates when possible
+        total_cost = 0
+        if self.optimize_for_cost:
+            total_cost = gp.quicksum(
+                self.shifts[(emp['id'], d, shift)] * emp.get('hourly_rate', 1000.0)
+                for emp in self.employees
+                for d in range(len(self.dates))
+                for shift in self.shift_types
+            )
+            logger.info("💰 Cost optimization ENABLED - will prioritize employees with lower hourly rates")
+        else:
+            logger.info("💼 Cost optimization DISABLED - focusing on fairness and coverage only")
+        
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
         # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
-        # - Preferred shifts are very important (weight: 25) - significantly increased to respect shift preferences
-        # - Weekend fairness is high priority (weight: 20) - increased for better fairness
+        # - Preferred shifts are very important (weight: 18) - respect shift preferences
+        # - Weekend fairness is high priority (weight: 15) - increased for better fairness
         # - Preferred days matter (weight: 12) - high weight for day preferences
         # - Shift type fairness is important (weight: 8)
+        # - Cost is moderate priority (weight: 5) - when enabled, prefer lower-cost employees but don't sacrifice fairness
+        
+        objective_terms = [
+            100 * total_coverage,
+            -50 * total_unfairness,
+            -30 * medium_blocked_penalty,
+            -18 * non_preferred_shift_penalty,
+            -15 * weekend_unfairness,
+            -8 * shift_type_unfairness,
+            -12 * non_preferred_day_penalty
+        ]
+        
+        # Add cost term only if cost optimization is enabled
+        if self.optimize_for_cost:
+            # Weight of 0.001 means: saving 1000 SEK is worth about 1 point of coverage/fairness
+            # This keeps cost as a tie-breaker rather than dominating factor
+            objective_terms.append(-0.001 * total_cost)
+        
         self.model.setObjective(
-            100 * total_coverage 
-            - 50 * total_unfairness 
-            - 30 * medium_blocked_penalty
-            - 18 * non_preferred_shift_penalty
-            - 15 * weekend_unfairness 
-            - 8 * shift_type_unfairness 
-            - 12 * non_preferred_day_penalty,
+            gp.quicksum(objective_terms),
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (25x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x)")
+        cost_status = "WITH cost optimization (0.001x)" if self.optimize_for_cost else "WITHOUT cost optimization"
+        logger.info(f"Enhanced objective function set {cost_status}: Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (18x), Weekend fairness (15x), Shift type fairness (8x), Preferred days (12x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
@@ -1329,6 +1360,7 @@ def optimize_schedule_with_gurobi(
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
+    optimize_for_cost: bool = False,
     random_seed: Optional[int] = None,
     employee_preferences: Optional[List] = None,
     manual_constraints: Optional[List] = None
@@ -1348,6 +1380,7 @@ def optimize_schedule_with_gurobi(
         min_experience_per_shift=min_experience_per_shift,
         include_weekends=include_weekends,
         allow_partial_coverage=allow_partial_coverage,
+        optimize_for_cost=optimize_for_cost,
         random_seed=random_seed,
         employee_preferences=employee_preferences,
         manual_constraints=manual_constraints

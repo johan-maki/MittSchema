@@ -52,6 +52,7 @@ class ScheduleRequest(BaseModel):
     min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience points required per shift")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
     allow_partial_coverage: Optional[bool] = Field(default=False, description="Allow partial schedule when not enough staff")
+    optimize_for_cost: Optional[bool] = Field(default=False, description="Optimize for minimum cost by prioritizing lower hourly rates")
     employee_preferences: Optional[List[EmployeePreference]] = Field(default=None, description="Individual employee work preferences")
     manual_constraints: Optional[List[ManualConstraint]] = Field(default=None, description="AI-parsed or manually added constraints")
 

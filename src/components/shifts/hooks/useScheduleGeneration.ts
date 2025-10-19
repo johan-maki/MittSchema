@@ -54,6 +54,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       minStaffPerShift?: number;
       minExperiencePerShift?: number;
       includeWeekends?: boolean;
+      optimizeForCost?: boolean;
     }
   ) => {
     console.log('🎯 === GENERATE SCHEDULE FUNCTION CALLED ===');
@@ -172,11 +173,13 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         minStaffPerShift: config.minStaffPerShift || 1,
         minExperiencePerShift: config.minExperiencePerShift || 1,
         includeWeekends: config.includeWeekends ?? true,
+        optimizeForCost: config.optimizeForCost ?? false,
         department: 'Akutmottagning'
       } : {
         minStaffPerShift: 1, // Default to 1 staff per shift
         minExperiencePerShift: 1,
         includeWeekends: true,
+        optimizeForCost: false,
         department: 'Akutmottagning'
       };
       

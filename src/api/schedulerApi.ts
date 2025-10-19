@@ -17,6 +17,7 @@ interface GurobiScheduleRequest {
   balance_workload?: boolean;
   max_hours_per_nurse?: number;
   allow_partial_coverage?: boolean; // NEW: Allow partial schedules when not enough staff
+  optimize_for_cost?: boolean; // NEW: Optimize for minimum cost
   employee_preferences?: Array<{
     employee_id: string;
     preferred_shifts: string[];
@@ -128,6 +129,7 @@ export const schedulerApi = {
     }>,
     retries = 3,
     allowPartialCoverage: boolean = false, // NEW: Allow partial schedules when not enough staff
+    optimizeForCost: boolean = false, // NEW: Optimize for minimum cost
     manualConstraints?: Array<{
       type: string;
       employee_id?: string;
@@ -171,6 +173,7 @@ export const schedulerApi = {
       balance_workload: true, // Balansera arbetsbördan
       max_hours_per_nurse: 40, // Maximal arbetstid per sjuksköterska
       allow_partial_coverage: allowPartialCoverage, // NEW: Signal backend to allow partial schedules
+      optimize_for_cost: optimizeForCost, // NEW: Signal backend to optimize for cost
       employee_preferences: employeePreferences || [], // Lägg till employee preferences
       manual_constraints: manualConstraints || [] // AI-parsed or manually added constraints
     };
