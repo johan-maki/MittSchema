@@ -22,6 +22,7 @@ export function DirectoryControls() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerating3, setIsGenerating3] = useState(false);
   const [isGenerating4, setIsGenerating4] = useState(false);
+  const [isGeneratingVaried, setIsGeneratingVaried] = useState(false);
   const [isGenerating10, setIsGenerating10] = useState(false);
   const [isGenerating20, setIsGenerating20] = useState(false);
   const [newProfile, setNewProfile] = useState<InsertProfile>({
@@ -134,16 +135,17 @@ export function DirectoryControls() {
     }
   };
 
-  const handleGenerateTestData = async (count = 6) => {
-    console.log(`🧪 Generating ${count} test employees for development...`);
+  const handleGenerateTestData = async (count = 6, varied = false) => {
+    console.log(`🧪 Generating ${count} test employees${varied ? ' (varied)' : ''} for development...`);
     const setter = count === 3 ? setIsGenerating3 : 
                   count === 4 ? setIsGenerating4 : 
                   count === 10 ? setIsGenerating10 :
                   count === 20 ? setIsGenerating20 :
+                  varied ? setIsGeneratingVaried :
                   setIsGenerating;
     setter(true);
     try {
-      await generateTestData(count);
+      await generateTestData(count, varied);
       
       console.log('🔄 Refreshing cache after testdata generation...');
       await queryClient.removeQueries({ queryKey: ['profiles'] });
@@ -254,11 +256,21 @@ export function DirectoryControls() {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => handleGenerateTestData(6)}
+          onClick={() => handleGenerateTestData(6, false)}
           disabled={isGenerating}
         >
           <Users className="h-4 w-4 mr-2" />
           {isGenerating ? "Genererar..." : "Testdata (6)"}
+        </Button>
+
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleGenerateTestData(6, true)}
+          disabled={isGeneratingVaried}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {isGeneratingVaried ? "Genererar..." : "Testdata (6, varierat)"}
         </Button>
 
         <Button 

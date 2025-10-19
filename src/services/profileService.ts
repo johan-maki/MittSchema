@@ -136,10 +136,12 @@ export const clearDatabase = async (): Promise<void> => {
 
 /**
  * Generate test data with specified number of employees
+ * @param count Number of employees to generate
+ * @param varied If true, generates varied work percentages and shift constraints. If false, all employees can work all shifts at 100%
  */
-export const generateTestData = async (count: number): Promise<Profile[]> => {
+export const generateTestData = async (count: number, varied: boolean = false): Promise<Profile[]> => {
   try {
-    console.log(`Generating ${count} test employees...`);
+    console.log(`Generating ${count} test employees${varied ? ' (varied)' : ''}...`);
     
     // Swedish nurse names (first names)
     const firstNames = [
@@ -169,40 +171,51 @@ export const generateTestData = async (count: number): Promise<Profile[]> => {
     const testEmployees = [];
     
     for (let i = 0; i < count; i++) {
-      // Randomize work percentage: 70% full-time (100%), 20% part-time (75%), 10% part-time (50%)
-      const rand = Math.random();
       let workPercentage: number;
-      if (rand < 0.7) {
-        workPercentage = 100; // 70% full-time
-      } else if (rand < 0.9) {
-        workPercentage = 75; // 20% at 75%
-      } else {
-        workPercentage = 50; // 10% at 50%
-      }
-      
-      // Randomize shift constraints: 70% all shifts, 20% no nights, 10% day only
-      const shiftRand = Math.random();
       let shiftConstraints;
-      if (shiftRand < 0.7) {
-        // 70% can work all shifts
+      
+      if (varied) {
+        // Randomize work percentage: 70% full-time (100%), 20% part-time (75%), 10% part-time (50%)
+        const rand = Math.random();
+        if (rand < 0.7) {
+          workPercentage = 100; // 70% full-time
+        } else if (rand < 0.9) {
+          workPercentage = 75; // 20% at 75%
+        } else {
+          workPercentage = 50; // 10% at 50%
+        }
+        
+        // Randomize shift constraints: 70% all shifts, 20% no nights, 10% day only
+        const shiftRand = Math.random();
+        if (shiftRand < 0.7) {
+          // 70% can work all shifts
+          shiftConstraints = {
+            day: { preferred: true, strict: false },
+            evening: { preferred: true, strict: false },
+            night: { preferred: true, strict: false }
+          };
+        } else if (shiftRand < 0.9) {
+          // 20% cannot work nights
+          shiftConstraints = {
+            day: { preferred: true, strict: false },
+            evening: { preferred: true, strict: false },
+            night: { preferred: false, strict: true }
+          };
+        } else {
+          // 10% day shift only
+          shiftConstraints = {
+            day: { preferred: true, strict: true },
+            evening: { preferred: false, strict: true },
+            night: { preferred: false, strict: true }
+          };
+        }
+      } else {
+        // All employees: 100% work, can work all shifts
+        workPercentage = 100;
         shiftConstraints = {
           day: { preferred: true, strict: false },
           evening: { preferred: true, strict: false },
           night: { preferred: true, strict: false }
-        };
-      } else if (shiftRand < 0.9) {
-        // 20% cannot work nights
-        shiftConstraints = {
-          day: { preferred: true, strict: false },
-          evening: { preferred: true, strict: false },
-          night: { preferred: false, strict: true }
-        };
-      } else {
-        // 10% day shift only
-        shiftConstraints = {
-          day: { preferred: true, strict: true },
-          evening: { preferred: false, strict: true },
-          night: { preferred: false, strict: true }
         };
       }
       
@@ -255,7 +268,7 @@ export const generateTestData = async (count: number): Promise<Profile[]> => {
     // Convert the database response to our Profile type
     const profiles = data.map(convertDatabaseProfile);
     
-    console.log(`Successfully generated ${profiles.length} test employees (Sjuksköterskor)`);
+    console.log(`Successfully generated ${profiles.length} test employees (Sjuksköterskor)${varied ? ' with varied constraints' : ' - all can work all shifts'}`);
     return profiles;
   } catch (error) {
     console.error('Error generating test data:', error);
