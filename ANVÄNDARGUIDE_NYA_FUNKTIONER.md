@@ -77,7 +77,21 @@ Klicka på **"Återställ"** för att ångra alla osparade ändringar.
 
 ## 3. AI-begränsningar 🤖
 
-### Lägg till krav med naturligt språk
+### När visas AI-villkor?
+
+AI-villkor visas **endast när du har ett genererat schema**. Detta gör att du kan:
+1. Först generera ett schema och se resultatet
+2. Analysera schemat och identifiera problem
+3. Lägga till extra villkor för att justera nästa optimering
+
+### Aktivera AI-villkor
+
+1. Generera först ett schema (klicka på "Generera schema")
+2. När schemat visas, se knappen **"Lägg till AI-baserade schemavillkor"**
+3. Klicka på knappen för att expandera villkorsfältet
+4. Skriv dina villkor med naturligt språk
+
+### Lägg till villkor med naturligt språk
 
 **Skriv helt enkelt vad du vill** i textfältet:
 
@@ -144,15 +158,23 @@ Varje tillagt krav visar:
 
 Klicka på **papperskorgen** 🗑️ bredvid ett krav för att ta bort det.
 
-### Använda krav vid schemagenering
+### Använda villkor vid schemagenering
 
-1. Lägg till dina krav via AI-fältet
-2. Gå till **"Generera schema"**
-3. Nya schemat kommer respektera alla krav
+1. **Generera första schemat:** Klicka på "Generera schema (nästa månad)"
+2. **Analysera resultatet:** Se över schemat som genererats
+3. **Lägg till villkor:** Klicka på "Lägg till AI-baserade schemavillkor"
+4. **Skriv dina krav:** T.ex. "Anna ska inte jobba natt 15 november"
+5. **Generera om:** Klicka på "Generera schema" igen
+6. **Nytt optimerat schema:** Systemet tar nu hänsyn till dina villkor
+
+**Arbetsflöde:**
+```
+Generera schema → Analysera → Lägg till villkor → Generera om → Förbättrat schema
+```
 
 **Bakom kulisserna:**
-- Hårda krav läggs till som absoluta begränsningar i optimeringen
-- Mjuka krav påverkar poängberäkningen (kommer snart)
+- Hårda villkor läggs till som absoluta begränsningar i optimeringen
+- Mjuka villkor påverkar poängberäkningen (kommer snart)
 
 ---
 

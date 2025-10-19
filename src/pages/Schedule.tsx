@@ -19,7 +19,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { Shift } from "@/types/shift";
 import { Button } from "@/components/ui/button";
-import { Calendar, GanttChartSquare, Edit3 } from "lucide-react";
+import { Calendar, GanttChartSquare, Edit3, Brain } from "lucide-react";
 import type { ParsedConstraint } from "@/utils/constraintParser";
 import { bulkSaveShifts } from "@/utils/shiftBulkOperations";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +31,7 @@ const Schedule = () => {
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [scheduleViewMode, setScheduleViewMode] = useState<'standard' | 'gantt' | 'editor'>('standard');
   const [aiConstraints, setAiConstraints] = useState<ParsedConstraint[]>([]);
+  const [showAIConstraints, setShowAIConstraints] = useState(false); // New: control visibility
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -277,21 +278,42 @@ const Schedule = () => {
           </div>
         </header>
 
-        {/* AI Constraint Input Section */}
-        {scheduleViewMode === 'standard' && (
+        {/* AI Constraint Input Section - Only show when schedule exists and in standard view */}
+        {scheduleViewMode === 'standard' && typedShifts.length > 0 && (
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-4">
-            <AIConstraintInput 
-              employees={profiles.map(p => ({
-                id: p.id,
-                first_name: p.first_name,
-                last_name: p.last_name
-              }))}
-              onConstraintsChange={(constraints) => {
-                setAiConstraints(constraints);
-                console.log('AI Constraints updated:', constraints);
-                // TODO: Pass to scheduler optimization
-              }}
-            />
+            {!showAIConstraints ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowAIConstraints(true)}
+                className="w-full border-2 border-dashed border-purple-300 hover:border-purple-500 hover:bg-purple-50 transition-colors"
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                Lägg till AI-baserade schemavillkor
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <AIConstraintInput 
+                  employees={profiles.map(p => ({
+                    id: p.id,
+                    first_name: p.first_name,
+                    last_name: p.last_name
+                  }))}
+                  onConstraintsChange={(constraints) => {
+                    setAiConstraints(constraints);
+                    console.log('AI Constraints updated:', constraints);
+                    // TODO: Pass to scheduler optimization
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAIConstraints(false)}
+                  className="w-full"
+                >
+                  Dölj AI-villkor
+                </Button>
+              </div>
+            )}
           </div>
         )}
 

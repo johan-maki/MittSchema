@@ -125,27 +125,34 @@ This document summarizes the implementation of three major features for the sche
 **File:** `src/components/schedule/AIConstraintInput.tsx` (180 lines)
 
 **Features:**
-- **Textarea Input:** Natural language constraint entry
-- **Parse Button:** "Lägg till krav" - triggers parsing
+- **Conditional Visibility:** Only shown when schedule exists (UX improvement)
+- **Expandable Section:** Triggered by "Lägg till AI-baserade schemavillkor" button
+- **Compact Design:** Modern, purple-themed card with minimal UI
+- **Textarea Input:** Natural language constraint entry (2 rows)
+- **Parse Button:** "Lägg till villkor" - triggers parsing
 - **Confidence Badges:**
   - 🟢 High (green) - All parts identified correctly
   - 🟡 Medium (yellow) - Some ambiguity
   - 🔴 Low (red) - Missing critical information
 - **Constraint Type Badges:**
-  - Blockerat pass (red)
-  - Skiftpreferens (blue)
-  - Erfarenhetskrav (purple)
+  - Blockerad (red) - Cannot work specific slot
+  - Preferens (blue) - Shift preference
+  - Erfarenhet (purple) - Experience requirement
 - **Hard vs Soft Indicators:**
-  - 🔒 Hårt krav (hard constraint)
-  - 💭 Mjukt krav (soft constraint)
+  - 🔒 Hårt (hard constraint)
+  - 💭 Mjukt (soft constraint)
 - **Constraint List:** 
-  - Display all parsed constraints
-  - Delete button for each
-  - Formatted descriptions in Swedish
-- **Example Prompts:** Shown when list is empty
+  - Compact cards with hover effects
+  - Delete button (visible on hover)
+  - Max height with scrolling
+  - Active count display
+- **Example Prompts:** Shown when list is empty (blue info box)
 
 **Integration:**
-- Visible only in "Kalender" view (standard mode)
+- Hidden until schedule is generated (typedShifts.length > 0)
+- Expandable via button click (showAIConstraints state)
+- Collapsible via "Dölj AI-villkor" button
+- Only visible in "Kalender" view (standard mode)
 - State managed in Schedule.tsx
 - Passed to backend via API
 
@@ -223,14 +230,26 @@ model.addConstr(
 ```typescript
 const [scheduleViewMode, setScheduleViewMode] = useState<'standard' | 'gantt' | 'editor'>('standard');
 const [aiConstraints, setAiConstraints] = useState<ParsedConstraint[]>([]);
+const [showAIConstraints, setShowAIConstraints] = useState(false); // Controls visibility
 ```
 
-### AI Constraint Flow
+### AI Constraint Flow (Updated UX)
 ```
-User types → Parse → Display with badges → 
-Add to array → Send to backend with next schedule generation → 
-Gurobi applies as hard constraints → New schedule respects constraints
+User generates schedule → Schedule appears → 
+User clicks "Lägg till AI-baserade schemavillkor" → 
+Input field expands → User types constraint → Parse → 
+Display with badges → Add to array → 
+User clicks "Generera schema" again → 
+Send constraints to backend → Gurobi applies as hard constraints → 
+New optimized schedule respects constraints
 ```
+
+**UX Improvements:**
+- AI constraints hidden by default (cleaner initial view)
+- Only shown when schedule exists (contextual relevance)
+- Expandable/collapsible design (user control)
+- Clear visual indication of active constraints
+- Encourages iterative workflow: Generate → Analyze → Constrain → Re-generate
 
 ---
 
