@@ -1118,8 +1118,8 @@ class GurobiScheduleOptimizer:
         
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
+        # - Work percentage target matching (weight: 80) - when cost OFF, STRONGLY try to hit each employee's contracted percentage
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
-        # - Work percentage target matching (weight: 40) - when cost OFF, try to hit each employee's contracted percentage
         # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
         # - Preferred shifts are very important (weight: 18) - respect shift preferences
         # - Weekend fairness is high priority (weight: 15) - increased for better fairness
@@ -1139,9 +1139,11 @@ class GurobiScheduleOptimizer:
         
         # Add work_percentage deviation penalty when cost optimization is OFF
         if not self.optimize_for_cost:
-            # High weight (40) to strongly encourage matching contracted work percentages
+            # VERY HIGH weight (80) to STRONGLY encourage matching contracted work percentages
+            # This is almost as important as coverage itself!
             # This ensures 100% employees get full schedules, 50% get half, etc.
-            objective_terms.append(-40 * work_percentage_deviation)
+            # Without this high weight, coverage maximization will overfill schedules
+            objective_terms.append(-80 * work_percentage_deviation)
         
         # Add cost term only if cost optimization is enabled
         if self.optimize_for_cost:
