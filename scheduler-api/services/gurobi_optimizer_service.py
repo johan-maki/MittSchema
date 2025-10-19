@@ -98,6 +98,8 @@ class GurobiScheduleOptimizer:
             self.manual_constraints = manual_constraints or []
             self.optimize_for_cost = optimize_for_cost
             
+            # Set min and max staff per shift
+            self.min_staff_per_shift = min_staff_per_shift
             # Set max staff per shift - default to min (exact staffing) for backward compatibility
             self.max_staff_per_shift = max_staff_per_shift if max_staff_per_shift is not None else min_staff_per_shift
             
