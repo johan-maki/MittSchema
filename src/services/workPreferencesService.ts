@@ -90,6 +90,9 @@ export class WorkPreferencesService {
     newWorkPreferences: WorkPreferences
   ): Promise<void> {
     console.log(`🔄 WorkPreferencesService: Updating full work_preferences for employee ${employeeId}`);
+    console.log(`📊 work_preferences object being sent to Supabase:`, JSON.stringify(newWorkPreferences, null, 2));
+    console.log(`📊 hard_blocked_slots in object:`, newWorkPreferences.hard_blocked_slots);
+    console.log(`📊 medium_blocked_slots in object:`, newWorkPreferences.medium_blocked_slots);
     
     // Uppdatera BÅDA fälten samtidigt för konsistens
     const { data, error } = await supabase
@@ -106,7 +109,13 @@ export class WorkPreferencesService {
       throw error;
     }
     
-    console.log('✅ WorkPreferencesService: Successfully updated work_preferences and synced work_percentage:', data);
+    console.log('✅ WorkPreferencesService: Successfully updated work_preferences and synced work_percentage');
+    console.log('📄 Data returned from Supabase:', JSON.stringify(data, null, 2));
+    if (data && data.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const returnedData = data[0] as any;
+      console.log('🔍 work_preferences in returned data:', returnedData.work_preferences);
+    }
   }
   
   /**
