@@ -1,6 +1,6 @@
 """
 Route optimization service using Gurobi for Vehicle Routing Problem (VRP).
-This service optimizes delivery routes for home care services with Google Maps integration.
+This service optimizes delivery routes for home care services using Haversine distance calculations.
 """
 
 from datetime import datetime
@@ -9,7 +9,6 @@ import numpy as np
 from gurobipy import Model, GRB, quicksum
 import logging
 from dataclasses import dataclass
-from services.google_maps_service import get_google_maps_service
 
 logger = logging.getLogger(__name__)
 
@@ -79,65 +78,6 @@ class RouteOptimizerService:
                     distance_matrix[i][j] = self.calculate_distance(lat1, lon1, lat2, lon2)
                     
         return distance_matrix
-    
-    def create_google_maps_distance_matrix(self, customers: List[Customer], depot_lat: float = 59.3293, 
-                                         depot_lng: float = 18.0686, google_maps_api_key: str = None) -> np.ndarray:
-        """
-        Create distance matrix using Google Maps Distance Matrix API for real driving distances.
-        Falls back to Haversine formula if Google Maps is unavailable.
-        
-        Args:
-            customers: List of Customer objects
-            depot_lat: Depot latitude
-            depot_lng: Depot longitude 
-            google_maps_api_key: Google Maps API key
-            
-        Returns:
-            Distance matrix as numpy array
-        """
-        n = len(customers)
-        locations = [(depot_lat, depot_lng)] + [(c.latitude, c.longitude) for c in customers]
-        
-        if google_maps_api_key:
-            try:
-                # Initialize Google Maps service
-                maps_service = get_google_maps_service(google_maps_api_key)
-                
-                # Get distance matrix from Google Maps
-                logger.info(f"🗺️ Fetching real driving distances from Google Maps for {n+1} locations...")
-                
-                matrix_data = maps_service.get_distance_matrix(locations, locations)
-                
-                if matrix_data:
-                    # Extract distance data
-                    distance_data = maps_service.extract_distance_matrix_data(matrix_data)
-                    
-                    if distance_data and len(distance_data) == n + 1:
-                        # Convert to numpy array
-                        distance_matrix = np.zeros((n + 1, n + 1))
-                        
-                        for i in range(n + 1):
-                            for j in range(n + 1):
-                                if i != j and i < len(distance_data) and j < len(distance_data[i]):
-                                    distance_matrix[i][j] = distance_data[i][j]['distance_km']
-                                    
-                        logger.info("✅ Successfully created distance matrix using Google Maps real driving distances")
-                        return distance_matrix
-                    else:
-                        logger.error("❌ Invalid distance matrix data from Google Maps")
-                        raise ValueError("Google Maps API returned invalid distance matrix data")
-                else:
-                    logger.error("❌ Failed to get distance matrix from Google Maps")
-                    raise ValueError("Google Maps API call failed")
-                    
-            except Exception as e:
-                logger.error(f"❌ Error using Google Maps Distance Matrix API: {str(e)}")
-                raise ValueError(f"Google Maps integration not working: {str(e)}")
-        else:
-            logger.error("ℹ️ No Google Maps API key provided")
-            raise ValueError("Google Maps API key is required for route optimization")
-        
-        # No fallback - Google Maps is required
         
     def optimize_route(
         self, 
@@ -146,10 +86,10 @@ class RouteOptimizerService:
         depot_coordinates: Optional[Tuple[float, float]] = None,
         max_route_time: int = 480,  # 8 hours in minutes
         vehicle_speed_kmh: float = 40.0,  # Average speed in urban areas
-        google_maps_api_key: str = None  # Google Maps API key for real distances and geocoding
+        google_maps_api_key: str = None  # Deprecated - no longer used
     ) -> Dict[str, Any]:
         """
-        Optimize route using Gurobi mathematical optimization with Google Maps integration.
+        Optimize route using Gurobi mathematical optimization with Haversine distance calculations.
         
         Args:
             customers: List of customer dictionaries
@@ -157,7 +97,7 @@ class RouteOptimizerService:
             depot_coordinates: (lat, lng) of starting point
             max_route_time: Maximum route time in minutes
             vehicle_speed_kmh: Average vehicle speed for time calculations
-            google_maps_api_key: Google Maps API key for geocoding and real distances
+            google_maps_api_key: Deprecated - no longer used (kept for API compatibility)
             
         Returns:
             Dictionary with optimized route, total distance/time, and statistics
@@ -166,13 +106,10 @@ class RouteOptimizerService:
         if len(customers) < 2:
             raise ValueError("At least 2 customers required for route optimization")
             
-        # Geocode addresses that don't have coordinates using Google Maps
+        # Process customer addresses and coordinates
         logger.info("🌍 Processing customer addresses and coordinates...")
         
         customer_objects = []
-        
-        # TEMPORARILY DISABLE GEOCODING TO FIND THE BUG
-        geocoded_results = {}
         
         # Convert to Customer objects with existing coordinates or mock coordinates
         for i, cust in enumerate(customers):
@@ -207,9 +144,10 @@ class RouteOptimizerService:
         logger.info(f"🚀 Starting route optimization for {len(customer_objects)} customers")
         
         try:
-            # Create distance matrix using Google Maps if API key provided, otherwise use Haversine
-            distance_matrix = self.create_google_maps_distance_matrix(
-                customer_objects, depot_lat, depot_lng, google_maps_api_key
+            # Create distance matrix using Haversine formula (as-the-crow-flies distances)
+            logger.info("📐 Calculating distances using Haversine formula...")
+            distance_matrix = self.create_distance_matrix(
+                customer_objects, depot_lat, depot_lng
             )
             n = len(customer_objects)
             

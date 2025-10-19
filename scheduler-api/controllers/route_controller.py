@@ -1,13 +1,13 @@
 """
 Route optimization API endpoints for the scheduling system.
-Provides endpoints for optimizing delivery routes using Gurobi.
+Provides endpoints for optimizing delivery routes using Gurobi with Haversine distances.
 """
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any, Tuple
 from services.route_optimizer_service import RouteOptimizerService
-from config import logger, GOOGLE_MAPS_API_KEY
+from config import logger
 
 router = APIRouter(prefix="/api/route", tags=["route-optimization"])
 
@@ -91,14 +91,13 @@ async def optimize_route(request: RouteOptimizationRequest):
         # Initialize route optimizer
         optimizer = RouteOptimizerService()
         
-        # Optimize route with Google Maps integration
+        # Optimize route using Haversine distance calculations
         result = optimizer.optimize_route(
             customers=customers_data,
             optimization_criteria=request.optimization_criteria,
             depot_coordinates=request.startLocation,
             max_route_time=request.max_route_time,
-            vehicle_speed_kmh=request.vehicle_speed_kmh,
-            google_maps_api_key=GOOGLE_MAPS_API_KEY
+            vehicle_speed_kmh=request.vehicle_speed_kmh
         )
         
         # Return response
@@ -246,55 +245,23 @@ class GeocodeResponse(BaseModel):
 @router.post("/geocode", response_model=GeocodeResponse)
 async def geocode_address(request: GeocodeRequest):
     """
-    Convert an address to latitude/longitude coordinates using Google Maps Geocoding API.
+    Geocoding endpoint - Currently disabled (use frontend Nominatim instead).
     
-    This endpoint is useful for converting customer addresses to coordinates
-    before running route optimization.
+    This endpoint is kept for API compatibility but returns an error.
+    Use the frontend's free Nominatim-based geocoding instead.
     
     Args:
         request: Address to geocode
         
     Returns:
-        Geocoded coordinates and formatted address, or error if geocoding fails
+        Error message directing to use frontend geocoding
     """
     
-    logger.info(f"🌍 Geocoding address: {request.address}")
+    logger.info(f"🌍 Geocoding request received for: {request.address}")
+    logger.info("ℹ️ Backend geocoding disabled - use frontend Nominatim instead")
     
-    try:
-        from services.google_maps_service import get_google_maps_service
-        
-        if not GOOGLE_MAPS_API_KEY:
-            return GeocodeResponse(
-                success=False,
-                address=request.address,
-                error="Google Maps API key not configured"
-            )
-        
-        # Initialize Google Maps service
-        maps_service = get_google_maps_service(GOOGLE_MAPS_API_KEY)
-        
-        # Geocode the address
-        result = maps_service.geocode_address(request.address)
-        
-        if result:
-            return GeocodeResponse(
-                success=True,
-                address=request.address,
-                latitude=result['latitude'],
-                longitude=result['longitude'],
-                formatted_address=result.get('formatted_address', request.address)
-            )
-        else:
-            return GeocodeResponse(
-                success=False,
-                address=request.address,
-                error="Address could not be geocoded"
-            )
-            
-    except Exception as e:
-        logger.error(f"❌ Geocoding error: {str(e)}")
-        return GeocodeResponse(
-            success=False,
-            address=request.address,
-            error=str(e)
-        )
+    return GeocodeResponse(
+        success=False,
+        address=request.address,
+        error="Backend geocoding disabled. Please use frontend address autocomplete (OpenStreetMap Nominatim) instead."
+    )
