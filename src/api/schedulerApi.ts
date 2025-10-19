@@ -166,7 +166,7 @@ export const schedulerApi = {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout (increased for Gurobi optimization)
         
         const response = await fetch(url, {
           method: "POST",
