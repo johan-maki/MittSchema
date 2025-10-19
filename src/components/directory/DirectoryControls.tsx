@@ -24,7 +24,6 @@ export function DirectoryControls() {
   const [isGenerating4, setIsGenerating4] = useState(false);
   const [isGenerating10, setIsGenerating10] = useState(false);
   const [isGenerating20, setIsGenerating20] = useState(false);
-  const [isGenerating50, setIsGenerating50] = useState(false);
   const [newProfile, setNewProfile] = useState<InsertProfile>({
     id: '',
     first_name: '',
@@ -141,7 +140,6 @@ export function DirectoryControls() {
                   count === 4 ? setIsGenerating4 : 
                   count === 10 ? setIsGenerating10 :
                   count === 20 ? setIsGenerating20 :
-                  count === 50 ? setIsGenerating50 :
                   setIsGenerating;
     setter(true);
     try {
@@ -281,16 +279,6 @@ export function DirectoryControls() {
         >
           <Users className="h-4 w-4 mr-2" />
           {isGenerating20 ? "Genererar..." : "Testdata (20)"}
-        </Button>
-
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => handleGenerateTestData(50)}
-          disabled={isGenerating50}
-        >
-          <Users className="h-4 w-4 mr-2" />
-          {isGenerating50 ? "Genererar..." : "Testdata (50)"}
         </Button>
       </div>
     </div>
