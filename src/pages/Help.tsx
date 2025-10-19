@@ -267,16 +267,20 @@ const Help = () => {
                       <strong>Användning:</strong> "Jag föredrar att jobba dessa pass/dagar"
                     </p>
                     <p className="text-sm text-emerald-700">
-                      <strong>Hur det fungerar:</strong> Systemet försöker respektera dessa önskemål men kan 
-                      åsidosätta dem för att säkerställa god täckning och rättvis fördelning.
+                      <strong>Hur det fungerar:</strong> Systemet lägger stor vikt vid att respektera dessa önskemål 
+                      och försöker minimera tilldelning av icke-föredragna arbetspass. Dock kan preferenserna åsidosättas 
+                      för att säkerställa god täckning och grundläggande rättvis fördelning.
                     </p>
                     <div className="bg-white/60 p-3 rounded-lg">
-                      <p className="text-xs text-emerald-800 font-medium">Exempel:</p>
+                      <p className="text-xs text-emerald-800 font-medium mb-1">Exempel:</p>
                       <ul className="text-xs text-emerald-700 mt-1 space-y-1">
-                        <li>• Föredrar dagpass framför kvällspass</li>
-                        <li>• Vill helst jobba måndag-fredag</li>
-                        <li>• Önskar färre nattpass</li>
+                        <li>• Föredrar dagpass framför kvällspass → Systemet försöker ge färre kvällspass</li>
+                        <li>• Vill helst jobba måndag-fredag → Färre helgpass om möjligt</li>
+                        <li>• Önskar färre nattpass → Prioriteras för andra passtyper</li>
                       </ul>
+                      <p className="text-xs text-emerald-600 mt-2 italic">
+                        💡 Tips: För starkare undvikande, använd "Arbetstillfällen jag helst avstår" (gula).
+                      </p>
                     </div>
                   </div>
                 </div>

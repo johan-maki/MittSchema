@@ -995,22 +995,22 @@ class GurobiScheduleOptimizer:
         # - Coverage is most important (weight: 100)
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
         # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
+        # - Preferred shifts are very important (weight: 25) - significantly increased to respect shift preferences
         # - Weekend fairness is high priority (weight: 20) - increased for better fairness
         # - Preferred days matter (weight: 12) - high weight for day preferences
         # - Shift type fairness is important (weight: 8)
-        # - Preferred shifts matter (weight: 8) - increased weight for better preference respect
         self.model.setObjective(
             100 * total_coverage 
             - 50 * total_unfairness 
             - 30 * medium_blocked_penalty
+            - 25 * non_preferred_shift_penalty
             - 20 * weekend_unfairness 
             - 8 * shift_type_unfairness 
-            - 12 * non_preferred_day_penalty
-            - 8 * non_preferred_shift_penalty,
+            - 12 * non_preferred_day_penalty,
             GRB.MAXIMIZE
         )
         
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Medium blocks (30x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x), Preferred shifts (8x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (25x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
