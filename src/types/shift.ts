@@ -19,6 +19,7 @@ export type Shift = {
     last_name: string;
     hourly_rate?: number;
     experience_level?: number;
+    department?: string | null;
   };
 };
 
