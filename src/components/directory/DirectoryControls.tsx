@@ -21,7 +21,7 @@ export function DirectoryControls() {
   const [isClearing, setIsClearing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerating3, setIsGenerating3] = useState(false);
-  const [isGenerating5, setIsGenerating5] = useState(false);
+  const [isGenerating4, setIsGenerating4] = useState(false);
   const [isGenerating10, setIsGenerating10] = useState(false);
   const [isGenerating20, setIsGenerating20] = useState(false);
   const [newProfile, setNewProfile] = useState<InsertProfile>({
@@ -137,7 +137,7 @@ export function DirectoryControls() {
   const handleGenerateTestData = async (count = 6) => {
     console.log(`🧪 Generating ${count} test employees for development...`);
     const setter = count === 3 ? setIsGenerating3 : 
-                  count === 5 ? setIsGenerating5 : 
+                  count === 4 ? setIsGenerating4 : 
                   count === 10 ? setIsGenerating10 :
                   count === 20 ? setIsGenerating20 :
                   setIsGenerating;
@@ -244,11 +244,11 @@ export function DirectoryControls() {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => handleGenerateTestData(5)}
-          disabled={isGenerating5}
+          onClick={() => handleGenerateTestData(4)}
+          disabled={isGenerating4}
         >
           <Users className="h-4 w-4 mr-2" />
-          {isGenerating5 ? "Genererar..." : "Testdata (5)"}
+          {isGenerating4 ? "Genererar..." : "Testdata (4)"}
         </Button>
 
         <Button 

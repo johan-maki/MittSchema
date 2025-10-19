@@ -1003,8 +1003,8 @@ class GurobiScheduleOptimizer:
             100 * total_coverage 
             - 50 * total_unfairness 
             - 30 * medium_blocked_penalty
-            - 25 * non_preferred_shift_penalty
-            - 20 * weekend_unfairness 
+            - 18 * non_preferred_shift_penalty
+            - 15 * weekend_unfairness 
             - 8 * shift_type_unfairness 
             - 12 * non_preferred_day_penalty,
             GRB.MAXIMIZE
