@@ -237,7 +237,7 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                                   e.stopPropagation();
                                   handleShiftClick(shift);
                                 }}
-                                className={`group flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] font-medium border ${colors[shiftType as keyof typeof colors]} hover:shadow-sm transition-all cursor-pointer ${
+                                className={`group flex items-center gap-1.5 px-2 py-1.5 rounded text-xs font-medium border ${colors[shiftType as keyof typeof colors]} hover:shadow-sm transition-all cursor-pointer ${
                                   shift.is_published 
                                     ? 'opacity-100' 
                                     : 'opacity-75 border-dashed'
@@ -247,13 +247,13 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                                   <div className="w-1 h-1 bg-emerald-500 rounded-full flex-shrink-0" />
                                 )}
                                 
-                                <Icon className="h-2.5 w-2.5 flex-shrink-0" />
-                                <Avatar className="h-4 w-4 flex-shrink-0">
-                                  <AvatarFallback className="text-[9px] bg-white/80 font-bold">
+                                <Icon className="h-3 w-3 flex-shrink-0" />
+                                <Avatar className="h-5 w-5 flex-shrink-0">
+                                  <AvatarFallback className="text-[10px] bg-white/80 font-bold">
                                     {getEmployeeInitials(shift)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="truncate flex-1">
+                                <span className="truncate flex-1 font-semibold">
                                   {shift.profiles ? shift.profiles.first_name : 'Okänd'}
                                 </span>
                               </div>

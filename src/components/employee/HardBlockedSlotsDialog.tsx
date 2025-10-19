@@ -197,14 +197,14 @@ export const HardBlockedSlotsDialog = ({
                   return (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                      className={`flex items-center justify-between p-2 ${colors.bgColor} border ${colors.borderColor} rounded-lg ${colors.hoverBg} transition-colors`}
                     >
                       <div className="flex items-center gap-2">
                         <div className="text-center min-w-[50px]">
-                          <div className="text-lg font-bold text-red-600">
+                          <div className={`text-lg font-bold ${colors.textColor}`}>
                             {format(slotDate, 'd', { locale: sv })}
                           </div>
-                          <div className="text-[10px] text-red-600 uppercase font-medium">
+                          <div className={`text-[10px] ${colors.textColor} uppercase font-medium`}>
                             {format(slotDate, 'MMM', { locale: sv })}
                           </div>
                         </div>
@@ -228,7 +228,7 @@ export const HardBlockedSlotsDialog = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRemoveSlot(slot)}
-                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-100"
+                        className={`h-7 w-7 p-0 ${colors.textColor} hover:${colors.textColor.replace('text-', 'text-')}-700 ${colors.hoverBg}`}
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
@@ -268,6 +268,7 @@ export const HardBlockedSlotsDialog = ({
                 const isSelected = selectedDate && isSameDay(date, selectedDate);
                 const hasBlocks = blockedCount > 0;
                 const isPast = date < today;
+                const primaryColor = variant === 'hard' ? 'red' : 'amber';
 
                 return (
                   <button
@@ -278,19 +279,19 @@ export const HardBlockedSlotsDialog = ({
                       relative h-10 p-1 rounded-md border transition-all
                       ${isPast ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
                         isSelected ? 'border-blue-500 bg-blue-50 shadow-md border-2' :
-                        hasBlocks ? 'border-red-300 bg-red-50 hover:bg-red-100' :
+                        hasBlocks ? `border-${primaryColor}-300 bg-${primaryColor}-50 hover:bg-${primaryColor}-100` :
                         remainingSlots > 0 ? 'border-slate-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer' :
                         'border-slate-200 bg-slate-50 cursor-not-allowed'}
                     `}
                   >
                     <div className="text-center">
-                      <div className={`text-sm font-semibold ${isSelected ? 'text-blue-700' : hasBlocks ? 'text-red-600' : 'text-slate-800'}`}>
+                      <div className={`text-sm font-semibold ${isSelected ? 'text-blue-700' : hasBlocks ? `text-${primaryColor}-600` : 'text-slate-800'}`}>
                         {format(date, 'd')}
                       </div>
                       {hasBlocks && (
                         <div className="flex justify-center gap-0.5 mt-0.5">
                           {Array.from({ length: blockedCount }).map((_, i) => (
-                            <div key={i} className="w-1 h-1 rounded-full bg-red-500" />
+                            <div key={i} className={`w-1 h-1 rounded-full bg-${primaryColor}-500`} />
                           ))}
                         </div>
                       )}
