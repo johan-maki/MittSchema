@@ -16,12 +16,13 @@ Filtreringssystemet för schemaläggning ger chefer kraftfulla verktyg för att 
 
 ### 2. **Avdelning** 🏥
 - **Typ**: Single-select dropdown
-- **Funktion**: Filtrera pass per avdelning/roll
-- **Auto-population**: Dynamiskt uppdaterad från employee.role
+- **Funktion**: Filtrera pass per avdelning (t.ex. Akutmottagning, IVA)
+- **Auto-population**: Dynamiskt uppdaterad från employee.department
 - **Användningsfall**:
-  - Visa endast sjuksköterskor eller undersköterskor
+  - Visa endast pass från en specifik avdelning
   - Avdelningsspecifik schemaöversikt
   - Resursallokering per avdelning
+  - **OBS**: Detta filtrerar på avdelning, inte yrkesroll (role)
 
 ### 3. **Skifttyp** ⏰
 - **Typ**: Single-select dropdown
@@ -37,15 +38,16 @@ Filtreringssystemet för schemaläggning ger chefer kraftfulla verktyg för att 
 
 ### 4. **Erfarenhetsnivå** ⭐
 - **Typ**: Single-select dropdown
-- **Alternativ**:
-  - ⭐ Nivå 1 (Junior)
-  - ⭐⭐ Nivå 2 (Medel)
-  - ⭐⭐⭐ Nivå 3 (Senior)
-  - Alla nivåer
+- **Funktion**: Filtrera efter medarbetarens erfarenhetsnivå
+- **Nivåer**: 
+  - **Nivå 1 (Nyexaminerad)**: Ny personal, begränsad erfarenhet
+  - **Nivå 2 (Erfaren)**: Medel erfarenhet och kompetens
+  - **Nivå 3 (Mycket erfaren)**: Hög erfarenhet och självständighet
+  - **Nivå 4 (Expert)**: Expert med specialkompetens och ledarskap
 - **Användningsfall**:
-  - Säkerställa erfaren personal på kritiska skift
-  - Balansera kompetens över dygnet
-  - Utbildningsplanering för juniorer
+  - Säkerställ rätt kompetens per pass
+  - Resursplanering baserad på erfarenhetsmix
+  - Utbildningsplanering
 
 ### 5. **Publiceringsstatus** ✅
 - **Typ**: Single-select dropdown

@@ -81,7 +81,7 @@ const Schedule = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, role')
+        .select('id, first_name, last_name, role, department')
         .order('first_name');
 
       if (error) {

@@ -20,12 +20,12 @@ export function filterShifts(
     filtered = filtered.filter(shift => shift.employee_id === filters.employee);
   }
 
-  // Filter by department/role
+  // Filter by department
   if (filters.department) {
     filtered = filtered.filter(shift => {
       if (!shift.profiles) return false;
-      const profile = shift.profiles as { role?: string };
-      return profile.role === filters.department;
+      const profile = shift.profiles as { department?: string | null };
+      return profile.department === filters.department;
     });
   }
 
@@ -74,13 +74,13 @@ export function countActiveFilters(filters: ScheduleFilterOptions): number {
  * Get unique departments from employees
  */
 export function getUniqueDepartments(
-  employees: Array<{ role?: string }>
+  employees: Array<{ role?: string; department?: string | null }>
 ): string[] {
   const departments = new Set<string>();
   
   employees.forEach(emp => {
-    if (emp.role) {
-      departments.add(emp.role);
+    if (emp.department) {
+      departments.add(emp.department);
     }
   });
   

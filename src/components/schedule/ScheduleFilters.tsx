@@ -19,7 +19,7 @@ import { X, FilterX, Users, Building2, Clock, Star, CheckCircle } from 'lucide-r
 
 export interface ScheduleFilterOptions {
   employee?: string; // employee_id
-  department?: string; // role/department
+  department?: string; // department (not role)
   shiftType?: 'day' | 'evening' | 'night' | 'all';
   experienceLevel?: number | 'all';
   publicationStatus?: 'published' | 'unpublished' | 'all';
@@ -28,7 +28,7 @@ export interface ScheduleFilterOptions {
 interface ScheduleFiltersProps {
   filters: ScheduleFilterOptions;
   onFilterChange: (filters: ScheduleFilterOptions) => void;
-  employees: Array<{ id: string; first_name: string; last_name: string; role?: string }>;
+  employees: Array<{ id: string; first_name: string; last_name: string; role?: string; department?: string | null }>;
   availableDepartments: string[];
   activeFilterCount?: number;
 }
@@ -175,9 +175,10 @@ export function ScheduleFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alla nivåer</SelectItem>
-                <SelectItem value="1">⭐ Nivå 1 (Junior)</SelectItem>
-                <SelectItem value="2">⭐⭐ Nivå 2 (Medel)</SelectItem>
-                <SelectItem value="3">⭐⭐⭐ Nivå 3 (Senior)</SelectItem>
+                <SelectItem value="1">⭐ Nivå 1 (Nyexaminerad)</SelectItem>
+                <SelectItem value="2">⭐⭐ Nivå 2 (Erfaren)</SelectItem>
+                <SelectItem value="3">⭐⭐⭐ Nivå 3 (Mycket erfaren)</SelectItem>
+                <SelectItem value="4">⭐⭐⭐⭐ Nivå 4 (Expert)</SelectItem>
               </SelectContent>
             </Select>
           </div>
