@@ -9,7 +9,7 @@ export const useShiftData = (currentDate: Date, currentView: 'day' | 'week' | 'm
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['shifts', currentDate, currentView, 'august31-fix-v2'], // Force cache refresh
+    queryKey: ['shifts', currentDate, currentView, 'department-fix-v1'], // Force cache refresh with department data
     queryFn: async () => {
       if (!user) return [];
       
