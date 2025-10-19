@@ -173,40 +173,82 @@ export const generateTestData = async (count: number, varied: boolean = false): 
     for (let i = 0; i < count; i++) {
       let workPercentage: number;
       let shiftConstraints;
+      let dayConstraints;
       
       if (varied) {
-        // Randomize work percentage: 70% full-time (100%), 20% part-time (75%), 10% part-time (50%)
-        const rand = Math.random();
-        if (rand < 0.7) {
-          workPercentage = 100; // 70% full-time
-        } else if (rand < 0.9) {
-          workPercentage = 75; // 20% at 75%
-        } else {
-          workPercentage = 50; // 10% at 50%
-        }
+        // Specific varied setup for testing:
+        // Employee 0: 50% work (part-time)
+        // Employee 1: Prefers not to work nights (soft constraint)
+        // Employee 2: Prefers not to work weekends (soft constraint)
+        // Employees 3-5: No preferences, 100%
         
-        // Randomize shift constraints: 70% all shifts, 20% no nights, 10% day only
-        const shiftRand = Math.random();
-        if (shiftRand < 0.7) {
-          // 70% can work all shifts
+        if (i === 0) {
+          // Employee 1: Works 50%
+          workPercentage = 50;
           shiftConstraints = {
             day: { preferred: true, strict: false },
             evening: { preferred: true, strict: false },
             night: { preferred: true, strict: false }
           };
-        } else if (shiftRand < 0.9) {
-          // 20% cannot work nights
+          dayConstraints = {
+            monday: { available: true, strict: false },
+            tuesday: { available: true, strict: false },
+            wednesday: { available: true, strict: false },
+            thursday: { available: true, strict: false },
+            friday: { available: true, strict: false },
+            saturday: { available: true, strict: false },
+            sunday: { available: true, strict: false }
+          };
+        } else if (i === 1) {
+          // Employee 2: Prefers not to work nights (soft constraint)
+          workPercentage = 100;
           shiftConstraints = {
             day: { preferred: true, strict: false },
             evening: { preferred: true, strict: false },
-            night: { preferred: false, strict: true }
+            night: { preferred: false, strict: false } // Soft: prefers not to, but can if needed
+          };
+          dayConstraints = {
+            monday: { available: true, strict: false },
+            tuesday: { available: true, strict: false },
+            wednesday: { available: true, strict: false },
+            thursday: { available: true, strict: false },
+            friday: { available: true, strict: false },
+            saturday: { available: true, strict: false },
+            sunday: { available: true, strict: false }
+          };
+        } else if (i === 2) {
+          // Employee 3: Prefers not to work weekends (soft constraint)
+          workPercentage = 100;
+          shiftConstraints = {
+            day: { preferred: true, strict: false },
+            evening: { preferred: true, strict: false },
+            night: { preferred: true, strict: false }
+          };
+          dayConstraints = {
+            monday: { available: true, strict: false },
+            tuesday: { available: true, strict: false },
+            wednesday: { available: true, strict: false },
+            thursday: { available: true, strict: false },
+            friday: { available: true, strict: false },
+            saturday: { available: false, strict: false }, // Soft: prefers not to, but can if needed
+            sunday: { available: false, strict: false }    // Soft: prefers not to, but can if needed
           };
         } else {
-          // 10% day shift only
+          // Employees 4-6: No preferences, 100%
+          workPercentage = 100;
           shiftConstraints = {
-            day: { preferred: true, strict: true },
-            evening: { preferred: false, strict: true },
-            night: { preferred: false, strict: true }
+            day: { preferred: true, strict: false },
+            evening: { preferred: true, strict: false },
+            night: { preferred: true, strict: false }
+          };
+          dayConstraints = {
+            monday: { available: true, strict: false },
+            tuesday: { available: true, strict: false },
+            wednesday: { available: true, strict: false },
+            thursday: { available: true, strict: false },
+            friday: { available: true, strict: false },
+            saturday: { available: true, strict: false },
+            sunday: { available: true, strict: false }
           };
         }
       } else {
@@ -217,11 +259,7 @@ export const generateTestData = async (count: number, varied: boolean = false): 
           evening: { preferred: true, strict: false },
           night: { preferred: true, strict: false }
         };
-      }
-      
-      const workPreferences = {
-        work_percentage: workPercentage,
-        day_constraints: {
+        dayConstraints = {
           monday: { available: true, strict: false },
           tuesday: { available: true, strict: false },
           wednesday: { available: true, strict: false },
@@ -229,7 +267,12 @@ export const generateTestData = async (count: number, varied: boolean = false): 
           friday: { available: true, strict: false },
           saturday: { available: true, strict: false },
           sunday: { available: true, strict: false }
-        },
+        };
+      }
+      
+      const workPreferences = {
+        work_percentage: workPercentage,
+        day_constraints: dayConstraints,
         shift_constraints: shiftConstraints
       };
       
