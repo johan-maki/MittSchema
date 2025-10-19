@@ -135,6 +135,7 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
       night: { preferred: true, strict: false },
     },
     hard_blocked_slots: [],
+    medium_blocked_slots: [],
   };
 
   if (!json || typeof json !== 'object' || Array.isArray(json)) {
@@ -194,6 +195,9 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
       hard_blocked_slots: Array.isArray(jsonObj.hard_blocked_slots) 
         ? (jsonObj.hard_blocked_slots as HardBlockedSlot[])
         : [],
+      medium_blocked_slots: Array.isArray(jsonObj.medium_blocked_slots) 
+        ? (jsonObj.medium_blocked_slots as MediumBlockedSlot[])
+        : [],
     };
   }
   
@@ -244,6 +248,9 @@ export function convertWorkPreferences(json: Json): WorkPreferences {
     },
     hard_blocked_slots: Array.isArray(jsonObj.hard_blocked_slots) 
       ? (jsonObj.hard_blocked_slots as HardBlockedSlot[])
+      : [],
+    medium_blocked_slots: Array.isArray(jsonObj.medium_blocked_slots) 
+      ? (jsonObj.medium_blocked_slots as MediumBlockedSlot[])
       : [],
   };
   

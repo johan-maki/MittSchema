@@ -57,15 +57,6 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
     ...defaultPreferences,
   }));
 
-  // Helper function to convert WorkPreferences to a Json-compatible object
-  const toJsonObject = () => {
-    return {
-      work_percentage: preferences.work_percentage,
-      day_constraints: preferences.day_constraints,
-      shift_constraints: preferences.shift_constraints
-    };
-  };
-
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['work-preferences', employeeId],
     queryFn: async () => {
@@ -112,10 +103,10 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const jsonObj = toJsonObject();
-      
       console.log('🔄 Saving work preferences for employee:', employeeId);
-      console.log('📄 Data being saved:', JSON.stringify(jsonObj, null, 2));
+      console.log('📄 Full preferences object being saved:', JSON.stringify(preferences, null, 2));
+      console.log('📊 Hard blocked slots count:', preferences.hard_blocked_slots?.length || 0);
+      console.log('📊 Medium blocked slots count:', preferences.medium_blocked_slots?.length || 0);
       
       // Använd WorkPreferencesService för konsistent uppdatering
       await WorkPreferencesService.updateWorkPreferences(employeeId, preferences);
@@ -140,7 +131,10 @@ export const WorkPreferences = ({ employeeId }: WorkPreferencesProps) => {
       if (verifyError) {
         console.error('❌ Verification failed:', verifyError);
       } else {
-        console.log('🔍 Verification - data in database:', verifyData.work_preferences);
+        console.log('🔍 Verification - data in database:', JSON.stringify(verifyData.work_preferences, null, 2));
+        const verified = convertWorkPreferences(verifyData.work_preferences);
+        console.log('🔍 Verified hard_blocked_slots:', verified.hard_blocked_slots);
+        console.log('🔍 Verified medium_blocked_slots:', verified.medium_blocked_slots);
       }
       
     } catch (error: unknown) {
