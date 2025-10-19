@@ -1,9 +1,0 @@
-This is a test file for commit testing.
-
-Created on: 2025-10-18
-
-You can safely delete this file after testing your commit.
-
-Purpose: Testing git commit functionality
-Status: Temporary test file
-tgtgtg
