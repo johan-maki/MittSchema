@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { CalendarHeader } from "@/components/shifts/CalendarHeader";
 import { WeekView } from "@/components/shifts/WeekView";
@@ -8,6 +8,7 @@ import ModernDayView from "@/components/shifts/ModernDayView";
 import { GanttScheduleView } from "@/components/schedule/GanttScheduleView";
 import { ScheduleEditorView } from "@/components/schedule/ScheduleEditorView";
 import { AIConstraintInput } from "@/components/schedule/AIConstraintInput";
+import { ScheduleFilters, type ScheduleFilterOptions } from "@/components/schedule/ScheduleFilters";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShiftData } from "@/hooks/useShiftData";
 import { ScheduleActions } from "@/components/shifts/ScheduleActions";
@@ -19,11 +20,13 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ShiftForm } from "@/components/shifts/ShiftForm";
 import { Shift } from "@/types/shift";
 import { Button } from "@/components/ui/button";
-import { Calendar, GanttChartSquare, Edit3, Brain } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, GanttChartSquare, Edit3, Brain, Filter, FilterX } from "lucide-react";
 import type { ParsedConstraint } from "@/utils/constraintParser";
 import { bulkSaveShifts } from "@/utils/shiftBulkOperations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { filterShifts, countActiveFilters, getUniqueDepartments, getFilterSummary } from "@/utils/scheduleFilters";
 
 
 const Schedule = () => {
@@ -31,7 +34,13 @@ const Schedule = () => {
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [scheduleViewMode, setScheduleViewMode] = useState<'standard' | 'gantt' | 'editor'>('standard');
   const [aiConstraints, setAiConstraints] = useState<ParsedConstraint[]>([]);
-  const [showAIConstraints, setShowAIConstraints] = useState(false); // New: control visibility
+  const [showAIConstraints, setShowAIConstraints] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<ScheduleFilterOptions>({
+    shiftType: 'all',
+    experienceLevel: 'all',
+    publicationStatus: 'all',
+  });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -50,16 +59,6 @@ const Schedule = () => {
     'first_name' in shift.profiles && 
     'last_name' in shift.profiles
   );
-  
-  // Ensure profiles are required for components that need them
-  const shiftsWithProfiles = typedShifts.map(shift => ({
-    ...shift,
-    profiles: {
-      first_name: shift.profiles!.first_name,
-      last_name: shift.profiles!.last_name,
-      experience_level: shift.profiles!.experience_level || 1
-    }
-  }));
 
   const { data: profiles = [], error: profileError } = useQuery({
     queryKey: ['profiles'],
@@ -94,6 +93,36 @@ const Schedule = () => {
     }
   });
 
+  // Compute unique departments from employees
+  const availableDepartments = useMemo(() => {
+    return getUniqueDepartments(employees);
+  }, [employees]);
+
+  // Apply filters to shifts
+  const filteredShifts = useMemo(() => {
+    return filterShifts(typedShifts, filters);
+  }, [typedShifts, filters]);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    return countActiveFilters(filters);
+  }, [filters]);
+
+  // Get filter summary
+  const filterSummary = useMemo(() => {
+    return getFilterSummary(filters, typedShifts.length, filteredShifts.length, employees);
+  }, [filters, typedShifts.length, filteredShifts.length, employees]);
+
+  // Ensure profiles are required for components that need them
+  const shiftsWithProfiles = filteredShifts.map(shift => ({
+    ...shift,
+    profiles: {
+      first_name: shift.profiles!.first_name,
+      last_name: shift.profiles!.last_name,
+      experience_level: shift.profiles!.experience_level || 1
+    }
+  }));
+
   const handleShiftClick = (shift: Shift) => {
     setSelectedShift(shift);
     setIsEditDialogOpen(true);
@@ -115,7 +144,7 @@ const Schedule = () => {
 
     // Gantt view - works regardless of day/week/month selection
     if (scheduleViewMode === 'gantt') {
-      const ganttShifts = typedShifts.map(shift => ({
+      const ganttShifts = filteredShifts.map(shift => ({
         id: shift.id,
         employee_id: shift.employee_id || '',
         employee_name: shift.profiles ? `${shift.profiles.first_name} ${shift.profiles.last_name}` : 'Unknown',
@@ -135,7 +164,7 @@ const Schedule = () => {
 
     // Editor view
     if (scheduleViewMode === 'editor') {
-      const editorShifts = typedShifts.map(shift => ({
+      const editorShifts = filteredShifts.map(shift => ({
         id: shift.id,
         employee_id: shift.employee_id || '',
         employee_name: shift.profiles ? `${shift.profiles.first_name} ${shift.profiles.last_name}` : 'Unknown',
@@ -196,11 +225,11 @@ const Schedule = () => {
     // Standard calendar views
     switch (currentView) {
       case 'day':
-        return <ModernDayView date={currentDate} shifts={typedShifts} />;
+        return <ModernDayView date={currentDate} shifts={filteredShifts} />;
       case 'week':
         return (
           <ManagerScheduleView 
-            shifts={typedShifts} 
+            shifts={filteredShifts} 
             profiles={profiles}
             currentDate={currentDate}
             onDateChange={setCurrentDate}
@@ -265,6 +294,22 @@ const Schedule = () => {
                     Redigera
                   </Button>
                 </div>
+
+                {/* Filter toggle button */}
+                <Button
+                  variant={showFilters ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filter
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-indigo-600 text-white">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
               </div>
               <ScheduleActions
                 currentView={currentView}
@@ -277,6 +322,41 @@ const Schedule = () => {
             </div>
           </div>
         </header>
+
+        {/* Filters Section - Show when filters are toggled */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="border-b border-gray-200/60 bg-white/50 backdrop-blur-sm"
+            >
+              <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
+                <ScheduleFilters
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  employees={employees}
+                  availableDepartments={availableDepartments}
+                  activeFilterCount={activeFilterCount}
+                />
+                
+                {/* Filter summary badge */}
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    {filterSummary}
+                  </p>
+                  {activeFilterCount > 0 && (
+                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                      {filteredShifts.length} resultat
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* AI Constraint Input Section - Only show when schedule exists and in standard view */}
         {scheduleViewMode === 'standard' && typedShifts.length > 0 && (
@@ -327,7 +407,35 @@ const Schedule = () => {
             className="flex-1 overflow-y-auto"
           >
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
-              {renderView()}
+              {/* Empty state when filters return no results */}
+              {activeFilterCount > 0 && filteredShifts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-full p-6 mb-4">
+                    <Filter className="h-12 w-12 text-indigo-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Inga pass matchar dina filter
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6 max-w-md">
+                    Inga schemapass hittades med de valda filterkriterierna. 
+                    Prova att justera filtren eller rensa dem för att se alla pass.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => setFilters({ 
+                      shiftType: 'all', 
+                      experienceLevel: 'all', 
+                      publicationStatus: 'all' 
+                    })}
+                    className="gap-2"
+                  >
+                    <FilterX className="h-4 w-4" />
+                    Rensa alla filter
+                  </Button>
+                </div>
+              ) : (
+                renderView()
+              )}
             </div>
           </motion.div>
         </AnimatePresence>
