@@ -2,6 +2,7 @@ import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay, parseIS
 import { sv } from "date-fns/locale";
 import { Profile } from "@/types/profile";
 import { Shift } from "@/types/shift";
+import { isSwedishHoliday } from "@/utils/holidays";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -169,15 +170,18 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                 const isCurrentMonthDay = isCurrentMonth(day);
                 const isTodayDate = isToday(day);
                 const isWeekendDay = isWeekend(day);
+                const holiday = isSwedishHoliday(day);
 
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`min-h-[110px] p-2 border-r last:border-r-0 cursor-pointer transition-all duration-150 ${
+                    className={`relative min-h-[110px] p-2 border-r last:border-r-0 cursor-pointer transition-all duration-150 ${
                       !isCurrentMonthDay 
                         ? 'bg-slate-50 text-slate-400' 
                         : isTodayDate 
                         ? 'bg-indigo-50 border-2 border-indigo-400 -m-px' 
+                        : holiday
+                        ? 'bg-red-50 hover:bg-red-100'
                         : isWeekendDay 
                         ? 'bg-slate-50 hover:bg-slate-100' 
                         : 'bg-white hover:bg-slate-50'
@@ -192,6 +196,8 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                             ? 'bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center'
                             : !isCurrentMonthDay
                             ? 'text-slate-400'
+                            : holiday
+                            ? 'text-red-700 bg-red-200 w-6 h-6 rounded-full flex items-center justify-center'
                             : isWeekendDay
                             ? 'text-slate-600 bg-slate-200 w-6 h-6 rounded-full flex items-center justify-center'
                             : 'text-slate-700'
@@ -199,6 +205,16 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                       >
                         {format(day, 'd')}
                       </span>
+                      
+                      {/* Holiday indicator */}
+                      {holiday && isCurrentMonthDay && (
+                        <div className="absolute top-1 right-1 group/holiday">
+                          <div className="w-2 h-2 bg-red-600 rounded-full" />
+                          <div className="absolute right-0 top-6 hidden group-hover/holiday:block bg-red-700 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-20">
+                            {holiday.name}
+                          </div>
+                        </div>
+                      )}
                       
                       {dayShifts.length > 0 && (
                         <Badge 
