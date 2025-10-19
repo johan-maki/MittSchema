@@ -72,9 +72,18 @@ export function parseConstraint(
 
   // Parse shift types
   const shifts: ('day' | 'evening' | 'night')[] = [];
-  for (const [keyword, shiftType] of Object.entries(SHIFT_KEYWORDS)) {
-    if (lowerText.includes(keyword)) {
-      shifts.push(shiftType);
+  
+  // Special case: "ledigt" means blocked from ALL shifts
+  const hasLedigit = lowerText.includes('ledigt') || lowerText.includes('ledig');
+  
+  if (hasLedigit) {
+    shifts.push('day', 'evening', 'night');
+  } else {
+    // Normal shift keyword matching
+    for (const [keyword, shiftType] of Object.entries(SHIFT_KEYWORDS)) {
+      if (lowerText.includes(keyword)) {
+        shifts.push(shiftType);
+      }
     }
   }
 
@@ -125,8 +134,9 @@ function parseDates(text: string): string[] {
   const dates: string[] = [];
   const currentYear = new Date().getFullYear();
 
-  // Pattern: "15 november" or "15-17 november"
-  const monthPattern = /(\d{1,2})(?:-(\d{1,2}))?\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december|jan|feb|mar|apr|maj|jun|jul|aug|sep|okt|nov|dec)/gi;
+  // Pattern: "15 november", "15-17 november", "23e november" 
+  // The :?e? makes the ordinal suffix optional (23, 23e, or 23:e)
+  const monthPattern = /(\d{1,2})(?:-(\d{1,2}))?(?::?e)?\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december|jan|feb|mar|apr|maj|jun|jul|aug|sep|okt|nov|dec)/gi;
   
   let match;
   while ((match = monthPattern.exec(text)) !== null) {
@@ -137,19 +147,23 @@ function parseDates(text: string): string[] {
 
     if (month) {
       for (let day = startDay; day <= endDay; day++) {
-        const date = new Date(currentYear, month - 1, day);
-        dates.push(date.toISOString().split('T')[0]);
+        // Create date at noon UTC to avoid timezone issues
+        const date = new Date(Date.UTC(currentYear, month - 1, day, 12, 0, 0));
+        const dateStr = date.toISOString().split('T')[0];
+        dates.push(dateStr);
       }
     }
   }
 
-  // Pattern: "23:e" (ordinal day number - assume current month)
-  const ordinalPattern = /(\d{1,2}):e/g;
+  // Pattern: "23e" or "23:e" WITHOUT a month name (ordinal day number - assume current month)
+  // Only match if NOT followed by a month name to avoid double-matching "23e november"
+  const ordinalPattern = /(\d{1,2}):?e(?!\s+(?:januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december|jan|feb|mar|apr|maj|jun|jul|aug|sep|okt|nov|dec))/gi;
   while ((match = ordinalPattern.exec(text)) !== null) {
     const day = parseInt(match[1]);
     const currentMonth = new Date().getMonth();
-    const date = new Date(currentYear, currentMonth, day);
-    dates.push(date.toISOString().split('T')[0]);
+    const date = new Date(Date.UTC(currentYear, currentMonth, day, 12, 0, 0));
+    const dateStr = date.toISOString().split('T')[0];
+    dates.push(dateStr);
   }
 
   return dates;

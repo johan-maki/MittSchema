@@ -223,7 +223,7 @@ const Schedule = () => {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-56px)] flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
         {/* Enhanced unified header with better visual hierarchy */}
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-20 shadow-sm">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3">
@@ -324,9 +324,9 @@ const Schedule = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="flex-1 overflow-hidden"
+            className="flex-1 overflow-y-auto"
           >
-            <div className="h-full max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
               {renderView()}
             </div>
           </motion.div>
