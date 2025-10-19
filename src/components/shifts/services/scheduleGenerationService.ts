@@ -19,6 +19,7 @@ interface ScheduleSettings {
   include_weekends?: boolean;
   includeWeekends?: boolean;
   optimizeForCost?: boolean;
+  maxStaffPerShift?: number | null;
   [key: string]: unknown;
 }
 
@@ -269,7 +270,8 @@ export const generateScheduleForNextMonth = async (
     minStaffPerShift: settings?.min_staff_per_shift || settings?.minStaffPerShift || 1, // Default to 1
     minExperiencePerShift: settings?.min_experience_per_shift || settings?.minExperiencePerShift || 1,
     includeWeekends: settings?.include_weekends !== false && settings?.includeWeekends !== false, // Default to true
-    optimizeForCost: settings?.optimizeForCost ?? false // Default to false
+    optimizeForCost: settings?.optimizeForCost ?? false, // Default to false
+    maxStaffPerShift: settings?.maxStaffPerShift ?? null // null = exact staffing (same as min)
   };
 
   console.log('🎯 Using Gurobi configuration:', gurobiConfig);
@@ -436,7 +438,8 @@ export const generateScheduleForNextMonth = async (
       employeePreferences,
       3, // retries
       false, // allowPartialCoverage = false for first attempt (strict requirements)
-      gurobiConfig.optimizeForCost // Pass cost optimization flag
+      gurobiConfig.optimizeForCost, // Pass cost optimization flag
+      gurobiConfig.maxStaffPerShift // Pass max staffing limit (null = exact staffing)
     );
   } catch (error) {
     // Enhanced error classification

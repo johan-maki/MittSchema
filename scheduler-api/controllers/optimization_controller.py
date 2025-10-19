@@ -66,6 +66,7 @@ async def handle_optimization_request(request: ScheduleRequest):
             random_seed=random_seed,
             optimizer=request.optimizer or "gurobi",
             min_staff_per_shift=request.min_staff_per_shift or 1,
+            max_staff_per_shift=request.max_staff_per_shift,  # Pass through - None is valid (means exact staffing)
             min_experience_per_shift=request.min_experience_per_shift or 1,
             include_weekends=request.include_weekends if request.include_weekends is not None else True,
             allow_partial_coverage=True,  # Always True: generate best possible schedule regardless of coverage %

@@ -15,6 +15,7 @@ def optimize_schedule(
     random_seed: Optional[int] = None,
     optimizer: str = "gurobi",  # Keep for API compatibility, but only Gurobi is supported
     min_staff_per_shift: int = 1,
+    max_staff_per_shift: Optional[int] = None,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
@@ -39,6 +40,7 @@ def optimize_schedule(
         random_seed: Random seed for reproducible results
         optimizer: Optimizer type (only "gurobi" supported)
         min_staff_per_shift: Minimum staff required per shift
+        max_staff_per_shift: Maximum staff allowed per shift (None = same as min)
         min_experience_per_shift: Minimum experience points required per shift
         include_weekends: Whether to schedule weekend shifts
         allow_partial_coverage: Allow partial schedule when not enough staff
@@ -71,6 +73,7 @@ def optimize_schedule(
             start_date=start_date,
             end_date=end_date,
             min_staff_per_shift=min_staff_per_shift,
+            max_staff_per_shift=max_staff_per_shift,
             min_experience_per_shift=min_experience_per_shift,
             include_weekends=include_weekends,
             allow_partial_coverage=allow_partial_coverage,

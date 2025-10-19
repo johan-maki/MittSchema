@@ -5,9 +5,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface ScheduleConfig {
   minStaffPerShift: number;
+  maxStaffPerShift: number | null;
   minExperiencePerShift: number;
   includeWeekends: boolean;
   optimizeForCost: boolean;
+  allowExtraStaffing: boolean;
 }
 
 interface ScheduleConfigModalProps {
@@ -25,9 +27,11 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
 }) => {
   const [config, setConfig] = useState<ScheduleConfig>({
     minStaffPerShift: currentConfig.minStaffPerShift || 1,
+    maxStaffPerShift: currentConfig.maxStaffPerShift || null,
     minExperiencePerShift: currentConfig.minExperiencePerShift || 1,
     includeWeekends: currentConfig.includeWeekends ?? true,
     optimizeForCost: currentConfig.optimizeForCost ?? false,
+    allowExtraStaffing: currentConfig.allowExtraStaffing ?? false,
   });
 
   useEffect(() => {
@@ -60,11 +64,25 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleInputChange = (key: keyof ScheduleConfig, value: number | boolean) => {
-    setConfig(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const handleInputChange = (key: keyof ScheduleConfig, value: number | boolean | null) => {
+    setConfig(prev => {
+      const newConfig = {
+        ...prev,
+        [key]: value
+      };
+      
+      // Sync allowExtraStaffing checkbox with maxStaffPerShift calculation
+      if (key === 'allowExtraStaffing') {
+        newConfig.maxStaffPerShift = value ? prev.minStaffPerShift + 1 : null;
+      }
+      
+      // If minStaffPerShift changes and extra staffing is enabled, update max
+      if (key === 'minStaffPerShift' && prev.allowExtraStaffing) {
+        newConfig.maxStaffPerShift = (value as number) + 1;
+      }
+      
+      return newConfig;
+    });
   };
 
   const handleConfirm = () => {
@@ -285,6 +303,62 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
             </label>
           </div>
 
+          {/* Allow Extra Staffing */}
+          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+            <div className="flex items-center space-x-4">
+              <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <div className="text-lg font-semibold text-gray-700">Tillåt extra bemanning</div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-gray-400 hover:text-purple-600 transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-sm">
+                          <strong>👥 Tillåt en extra person per skift</strong>
+                          <br /><br />
+                          <strong>När aktiverat:</strong>
+                          <br />
+                          • Max personal = Min personal + 1
+                          <br />
+                          • Möjliggör utbildning av juniorer
+                          <br />
+                          • Extra backup under högriskperioder
+                          <br />
+                          • Överlappning för smidigare skiftbyte
+                          <br /><br />
+                          <strong>När inaktiverat:</strong>
+                          <br />
+                          • Exakt så många som minsta kravet per skift
+                          <br />
+                          • Mest kostnadseffektivt
+                          <br />
+                          • Standard bemanning
+                          <br /><br />
+                          <em>Rekommendation: Aktivera vid utbildning eller högriskperioder, annars inaktiverad.</em>
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="text-sm text-gray-500">Möjliggör överlappning, utbildning och backup</div>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.allowExtraStaffing}
+                onChange={(e) => handleInputChange('allowExtraStaffing', e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
           {/* Current Settings Summary */}
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Sammanfattning</h3>
@@ -307,6 +381,12 @@ export const ScheduleConfigModal: React.FC<ScheduleConfigModalProps> = ({
                 <div className="text-gray-500">Kostnadsoptimering</div>
                 <div className="text-xl font-bold text-amber-600">
                   {config.optimizeForCost ? 'På' : 'Av'}
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-lg">
+                <div className="text-gray-500">Extra bemanning</div>
+                <div className="text-xl font-bold text-purple-600">
+                  {config.allowExtraStaffing ? 'På' : 'Av'}
                 </div>
               </div>
             </div>

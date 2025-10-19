@@ -49,6 +49,7 @@ class ScheduleRequest(BaseModel):
     random_seed: Optional[int] = None
     optimizer: Optional[str] = Field(default="gurobi", description="Optimizer to use: 'gurobi' only")
     min_staff_per_shift: Optional[int] = Field(default=1, description="Minimum staff required per shift")
+    max_staff_per_shift: Optional[int] = Field(default=None, description="Maximum staff allowed per shift (None = same as min)")
     min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience points required per shift")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
     allow_partial_coverage: Optional[bool] = Field(default=False, description="Allow partial schedule when not enough staff")

@@ -1,7 +1,7 @@
 """
 Gurobi-based optimizer service for advanced schedule optimization.
 
-This service uses Gurobi's mathematical optimization solver to crea            # Add all constraints
+This service uses Gurobi's mathematical optimization solver to crea            # Add all constraints (note: max_staff_per_shift is stored in self.max_staff_per_shift)
             self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends)
             self._add_employee_preference_constraints()
             
@@ -60,6 +60,7 @@ class GurobiScheduleOptimizer:
         start_date: datetime, 
         end_date: datetime,
         min_staff_per_shift: int = 1,
+        max_staff_per_shift: Optional[int] = None,
         min_experience_per_shift: int = 1,
         include_weekends: bool = True,
         allow_partial_coverage: bool = False,
@@ -76,6 +77,7 @@ class GurobiScheduleOptimizer:
             start_date: Schedule start date
             end_date: Schedule end date
             min_staff_per_shift: Minimum staff required per shift
+            max_staff_per_shift: Maximum staff allowed per shift (None = same as min, allows exact staffing)
             min_experience_per_shift: Minimum experience points required per shift
             include_weekends: Whether to schedule weekend shifts
             random_seed: Random seed for reproducible results
@@ -96,8 +98,11 @@ class GurobiScheduleOptimizer:
             self.manual_constraints = manual_constraints or []
             self.optimize_for_cost = optimize_for_cost
             
+            # Set max staff per shift - default to min (exact staffing) for backward compatibility
+            self.max_staff_per_shift = max_staff_per_shift if max_staff_per_shift is not None else min_staff_per_shift
+            
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
-            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}, optimize_for_cost={optimize_for_cost}")
+            logger.info(f"Parameters: min_staff={min_staff_per_shift}, max_staff={self.max_staff_per_shift}, min_experience={min_experience_per_shift}, include_weekends={include_weekends}, optimize_for_cost={optimize_for_cost}")
             logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
             logger.info(f"Manual constraints provided: {len(self.manual_constraints)}")
             
@@ -480,10 +485,11 @@ class GurobiScheduleOptimizer:
                     # The optimizer will try to maximize coverage without failing if impossible
                     logger.info(f"Allowing partial coverage for {date} {shift} shift")
                 
-                # Ensure exact staff per shift (no overstaffing) - always apply this
-                # Note: For now, we enforce exact staffing (min = max) but this could be configurable
+                # Ensure maximum staff per shift (prevent excessive overstaffing)
+                # Uses max_staff_per_shift if configured, otherwise defaults to min (exact staffing)
+                # This allows flexibility for extra staffing when needed (training, backup, overlap)
                 self.model.addConstr(
-                    total_staff <= min_staff_per_shift,
+                    total_staff <= self.max_staff_per_shift,
                     name=f"max_staff_{d}_{shift}"
                 )
                 
@@ -1357,6 +1363,7 @@ def optimize_schedule_with_gurobi(
     start_date: datetime, 
     end_date: datetime,
     min_staff_per_shift: int = 1,
+    max_staff_per_shift: Optional[int] = None,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
@@ -1377,6 +1384,7 @@ def optimize_schedule_with_gurobi(
         start_date=start_date,
         end_date=end_date,
         min_staff_per_shift=min_staff_per_shift,
+        max_staff_per_shift=max_staff_per_shift,
         min_experience_per_shift=min_experience_per_shift,
         include_weekends=include_weekends,
         allow_partial_coverage=allow_partial_coverage,
