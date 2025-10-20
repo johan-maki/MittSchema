@@ -14,7 +14,6 @@ import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import ScheduleSettings from "./pages/ScheduleSettings";
-import CustomerDirectory from "./pages/CustomerDirectory";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -28,31 +27,12 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  console.log('🔧 App component loading...');
-  
-  // Debug environment variables
-  console.log('🔍 Environment check:', {
-    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-    VITE_SUPABASE_ANON_KEY: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-    NODE_ENV: import.meta.env.NODE_ENV,
-    MODE: import.meta.env.MODE
-  });
-  
   // Seed data only in development
   if (import.meta.env.DEV) {
-    console.log('🌱 Development mode: Seeding Supabase data...');
-    seedSupabaseData().then(result => {
-      if (result.success) {
-        console.log('✅ Data seeding result:', result.message);
-      } else {
-        console.warn('⚠️ Data seeding failed:', result.error);
-      }
-    }).catch(error => {
-      console.error('💥 Data seeding error:', error);
+    seedSupabaseData().catch(error => {
+      console.error('Data seeding error:', error);
     });
   }
-
-  console.log('🔧 Rendering App component...');
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -106,14 +86,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Help />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/customers"
-                element={
-                  <ProtectedRoute>
-                    <CustomerDirectory />
                   </ProtectedRoute>
                 }
               />

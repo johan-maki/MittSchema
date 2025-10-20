@@ -1,6 +1,8 @@
-# Vårdschema - AI-Driven Employee Scheduling System
+# 🏥 MittSchema - AI-Driven Healthcare Scheduling System
 
 A complete, production-ready healthcare staff scheduling application built with React, TypeScript, Supabase, and Python FastAPI with Gurobi optimization.
+
+> **📚 Documentation**: Comprehensive guides have been organized in the `/docs` folder for better discoverability.
 
 ## 🚀 Features
 
