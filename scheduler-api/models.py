@@ -2,6 +2,18 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
+class AIConstraint(BaseModel):
+    """AI-parsed constraint from natural language input"""
+    employee_id: Optional[str] = Field(default=None, description="Employee UUID")
+    employee_name: Optional[str] = Field(default=None, description="Employee name from natural language")
+    dates: List[str] = Field(default=[], description="List of ISO date strings (YYYY-MM-DD)")
+    shifts: List[str] = Field(default=[], description="Shift types: 'day', 'evening', 'night'")
+    is_hard: bool = Field(default=True, description="True = hard constraint (cannot violate), False = soft preference")
+    confidence: str = Field(default="medium", description="Confidence level: 'high', 'medium', 'low'")
+    constraint_type: str = Field(default="hard_blocked_slot", description="Type: 'hard_blocked_slot', 'preferred_shift', 'min_experience', 'unknown'")
+    original_text: str = Field(description="Original natural language input from user")
+    reason: Optional[str] = Field(default=None, description="Explanation for parsing issues or low confidence")
+
 class HardBlockedSlot(BaseModel):
     """Hard blocked time slot - employee absolutely cannot work this specific time"""
     date: str = Field(description="ISO date string (YYYY-MM-DD)")
@@ -28,17 +40,12 @@ class EmployeePreference(BaseModel):
     preferred_shifts: List[str] = Field(default=["day", "evening", "night"], description="Preferred shift types")
     max_shifts_per_week: int = Field(default=5, description="Maximum shifts per week")
     available_days: List[str] = Field(default=["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], description="Available days of week")
-    # Hard constraint fields
     excluded_shifts: List[str] = Field(default=[], description="Shifts that employee absolutely cannot work (hard constraint)")
     excluded_days: List[str] = Field(default=[], description="Days that employee absolutely cannot work (hard constraint)")
-    # New fields for hard vs soft constraints
     available_days_strict: bool = Field(default=False, description="If True, available_days becomes a hard constraint (must be followed)")
     preferred_shifts_strict: bool = Field(default=False, description="If True, preferred_shifts becomes a hard constraint")
-    # Hard blocked specific time slots - ABSOLUTE: Cannot work (max 3)
     hard_blocked_slots: Optional[List[HardBlockedSlot]] = Field(default=None, description="Specific date+shift combinations that are absolutely blocked (max 3)")
-    # Medium blocked specific time slots - PREFERENCE: Avoid if possible (max 3)
     medium_blocked_slots: Optional[List[MediumBlockedSlot]] = Field(default=None, description="Specific date+shift combinations to avoid if possible (max 3)")
-    # Additional fields for metadata
     role: Optional[str] = Field(default=None, description="Employee role (e.g., 'Sjuksköterska', 'Läkare')")
     experience_level: Optional[int] = Field(default=1, description="Employee experience points (1-5)")
 
@@ -49,13 +56,14 @@ class ScheduleRequest(BaseModel):
     random_seed: Optional[int] = None
     optimizer: Optional[str] = Field(default="gurobi", description="Optimizer to use: 'gurobi' only")
     min_staff_per_shift: Optional[int] = Field(default=1, description="Minimum staff required per shift")
-    max_staff_per_shift: Optional[int] = Field(default=None, description="Maximum staff allowed per shift (None = same as min)")
+    max_staff_per_shift: Optional[int] = Field(default=None, description="Maximum staff per shift (None = use exact min)")
     min_experience_per_shift: Optional[int] = Field(default=1, description="Minimum experience points required per shift")
     include_weekends: Optional[bool] = Field(default=True, description="Whether to schedule weekend shifts")
     allow_partial_coverage: Optional[bool] = Field(default=False, description="Allow partial schedule when not enough staff")
-    optimize_for_cost: Optional[bool] = Field(default=False, description="Optimize for minimum cost by prioritizing lower hourly rates")
+    optimize_for_cost: Optional[bool] = Field(default=False, description="Optimize for cost minimization")
     employee_preferences: Optional[List[EmployeePreference]] = Field(default=None, description="Individual employee work preferences")
-    manual_constraints: Optional[List[ManualConstraint]] = Field(default=None, description="AI-parsed or manually added constraints")
+    manual_constraints: Optional[Dict[str, Any]] = Field(default=None, description="Manual constraints from UI")
+    ai_constraints: Optional[List[AIConstraint]] = Field(default=[], description="AI-parsed constraints from natural language")
 
 class ShiftResponse(BaseModel):
     employee_id: str

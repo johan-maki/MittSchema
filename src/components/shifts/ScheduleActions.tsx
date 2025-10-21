@@ -18,6 +18,7 @@ interface ScheduleActionsProps {
   shifts: Shift[];
   isCreateDialogOpen: boolean;
   setIsCreateDialogOpen: (open: boolean) => void;
+  aiConstraints?: any[];
 }
 
 export const ScheduleActions = ({
@@ -26,7 +27,8 @@ export const ScheduleActions = ({
   onDateChange,
   shifts,
   isCreateDialogOpen,
-  setIsCreateDialogOpen
+  setIsCreateDialogOpen,
+  aiConstraints
 }: ScheduleActionsProps) => {
   const {
     isGenerating,
@@ -45,7 +47,7 @@ export const ScheduleActions = ({
     showSummary,
     setShowSummary,
     summaryData
-  } = useScheduleGeneration(currentDate, currentView, onDateChange);
+  } = useScheduleGeneration(currentDate, currentView, onDateChange, aiConstraints);
 
   const {
     handleSettingsClick,

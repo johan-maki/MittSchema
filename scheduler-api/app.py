@@ -5,12 +5,13 @@ from config import PORT, logger
 from middleware import setup_cors
 from routes.schedule_routes import router as schedule_router
 from controllers.route_controller import router as route_router
+from routes.constraint_routes import router as constraint_router
 from utils import get_supabase_client
 
 app = FastAPI(
     title="Scheduler API",
-    description="Employee scheduling optimization API with Gurobi",
-    version="1.2.1"
+    description="Employee scheduling optimization API with Gurobi and AI constraints",
+    version="1.3.0"
 )
 
 # Set up CORS middleware
@@ -19,10 +20,15 @@ setup_cors(app)
 # Include routers
 app.include_router(schedule_router)
 app.include_router(route_router)
+app.include_router(constraint_router)  # AI constraint parsing
 
 @app.get("/")
 def home():
-    return {"status": "Scheduler API active", "version": "1.2.1"}
+    return {
+        "status": "Scheduler API active",
+        "version": "1.3.0",
+        "features": ["gurobi_optimization", "ai_constraints", "route_optimization"]
+    }
 
 @app.get("/health")
 def health_check():

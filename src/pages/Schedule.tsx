@@ -318,6 +318,7 @@ const Schedule = () => {
                 shifts={shiftsWithProfiles}
                 isCreateDialogOpen={isCreateDialogOpen}
                 setIsCreateDialogOpen={setIsCreateDialogOpen}
+                aiConstraints={aiConstraints}
               />
             </div>
           </div>

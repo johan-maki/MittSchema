@@ -126,7 +126,8 @@ export const generateScheduleForNextMonth = async (
   settings: ScheduleSettings,
   timestamp?: number,
   onProgress?: (step: string, progress: number) => void,
-  onClearComplete?: () => void
+  onClearComplete?: () => void,
+  aiConstraints?: any[]
 ): Promise<{ 
   schedule: Shift[], 
   staffingIssues?: { date: string; shiftType: string; current: number; required: number }[],
@@ -439,7 +440,8 @@ export const generateScheduleForNextMonth = async (
       3, // retries
       false, // allowPartialCoverage = false for first attempt (strict requirements)
       gurobiConfig.optimizeForCost, // Pass cost optimization flag
-      gurobiConfig.maxStaffPerShift // Pass max staffing limit (null = exact staffing)
+      gurobiConfig.maxStaffPerShift, // Pass max staffing limit (null = exact staffing)
+      aiConstraints // Pass AI-parsed constraints from natural language
     );
   } catch (error) {
     // Enhanced error classification
