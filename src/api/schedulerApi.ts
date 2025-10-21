@@ -255,7 +255,8 @@ export const schedulerApi = {
     message: string;
     reason?: string;
   }> => {
-    const url = `${SCHEDULER_API.BASE_URL}/api/constraints/parse`;
+    // Use Vercel Edge Function (colocated with frontend) instead of Render backend
+    const url = `/api/constraints/parse`;
     
     try {
       const response = await fetch(url, {
