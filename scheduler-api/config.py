@@ -3,8 +3,10 @@ import os
 import logging
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (for local development)
+# On production (Render), environment variables are set via dashboard
+# load_dotenv() will not override existing environment variables
+load_dotenv(override=False)
 
 # Configure logging
 logging.basicConfig(

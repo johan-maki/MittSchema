@@ -103,9 +103,24 @@ async def health_check():
     openai_key = os.getenv("OPENAI_API_KEY")
     openai_model = os.getenv("OPENAI_MODEL", "gpt-4o")
     
+    # Debug: Check all environment variables (without exposing values)
+    env_vars_present = {
+        "OPENAI_API_KEY": "OPENAI_API_KEY" in os.environ,
+        "OPENAI_MODEL": "OPENAI_MODEL" in os.environ,
+        "SUPABASE_URL": "SUPABASE_URL" in os.environ,
+        "SUPABASE_KEY": "SUPABASE_KEY" in os.environ,
+    }
+    
+    # If key exists, show first/last 4 chars for verification
+    key_preview = None
+    if openai_key:
+        key_preview = f"{openai_key[:7]}...{openai_key[-4:]}"
+    
     return {
         "status": "healthy" if openai_key else "unhealthy",
         "openai_configured": bool(openai_key),
         "openai_model": openai_model,
+        "key_preview": key_preview,
+        "env_vars_present": env_vars_present,
         "features": ["swedish_language", "function_calling", "date_parsing"]
     }
