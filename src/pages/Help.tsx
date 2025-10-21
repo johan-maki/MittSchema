@@ -3,6 +3,7 @@ import { Link as ScrollLink } from "react-scroll";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 import { 
   Calendar, 
   Navigation2, 
@@ -27,10 +28,53 @@ import {
   CalendarCheck,
   CalendarX,
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  DollarSign
 } from "lucide-react";
 
 const Help = () => {
+  const [activeSection, setActiveSection] = useState<string>("");
+
+  // Track which FAQ section is in viewport
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = [
+        "faq-hur-skapas-schemat",
+        "faq-manuellt-andra",
+        "faq-fa-inga-pass",
+        "faq-exportera-excel",
+        "faq-publicera",
+        "faq-genereras-ej"
+      ];
+
+      for (const sectionId of sections) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          // Check if section is in viewport (with some offset)
+          if (rect.top >= 0 && rect.top <= window.innerHeight / 2) {
+            setActiveSection(sectionId);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const faqItems = [
+    { id: "faq-hur-skapas-schemat", title: "Hur skapas schemat?", icon: Brain },
+    { id: "faq-manuellt-andra", title: "Kan jag manuellt ändra schemat?", icon: Settings },
+    { id: "faq-fa-inga-pass", title: "Varför har vissa anställda inga/få pass?", icon: AlertCircle },
+    { id: "faq-exportera-excel", title: "Hur exporterar jag schemat till Excel?", icon: FileSpreadsheet },
+    { id: "faq-publicera", title: "Hur publicerar jag schemat?", icon: Calendar },
+    { id: "faq-genereras-ej", title: "Vad händer om schemat inte kan genereras?", icon: AlertCircle }
+  ];
+
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
@@ -786,6 +830,80 @@ const Help = () => {
                       <span className="text-sm font-medium text-gray-700">7. Önskade pass (gröna)</span>
                       <Badge className="bg-green-600">8x</Badge>
                     </div>
+                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
+                      <span className="text-sm font-medium text-gray-700">8. Kostnad (när aktiverad)</span>
+                      <Badge className="bg-rose-600">0.001x</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-xl border border-rose-100">
+                  <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-rose-600" />
+                    Kostnadsoptimering - Så fungerar det
+                  </h4>
+                  <div className="space-y-4">
+                    <p className="text-sm text-rose-800">
+                      Kostnadsfunktionen är <strong>valfri</strong> och kan aktiveras i schemainställningarna 
+                      via "Ta hänsyn till kostnad". Här är hur det fungerar:
+                    </p>
+                    
+                    <div className="bg-white/60 p-4 rounded-lg space-y-3">
+                      <div>
+                        <h5 className="font-semibold text-sm text-rose-900 mb-1">🎯 Viktning: 0.001x (Mycket låg)</h5>
+                        <p className="text-xs text-rose-700">
+                          Kostnaden har en extremt låg vikt (0.001) jämfört med andra faktorer (8-100). 
+                          Detta betyder att kostnaden endast fungerar som en <strong>"tie-breaker"</strong> - 
+                          den påverkar endast valet när allt annat är lika.
+                        </p>
+                      </div>
+
+                      <div>
+                        <h5 className="font-semibold text-sm text-rose-900 mb-1">💼 Hur timkostnaden beräknas</h5>
+                        <p className="text-xs text-rose-700">
+                          Varje medarbetare har en <code className="bg-rose-100 px-1 rounded">hourly_rate</code> (timlön). 
+                          Systemet multiplicerar denna med antal timmar per pass (standard 8h) för att få passkostnad.
+                          Total kostnad = Summa av alla tilldelade pass × timlön × 8 timmar.
+                        </p>
+                      </div>
+
+                      <div>
+                        <h5 className="font-semibold text-sm text-rose-900 mb-1">⚖️ Balans mellan kostnad och kvalitet</h5>
+                        <p className="text-xs text-rose-700">
+                          Viktningen 0.001 betyder att spara 1000 SEK väger lika tungt som 1 poäng täckning/rättvisa. 
+                          Med andra ord: Systemet <strong>prioriterar alltid</strong> täckning (100x), rättvisa (50x), 
+                          och preferenser (8-30x) före kostnad. Kostnaden används endast för att välja mellan 
+                          annars likvärdiga lösningar.
+                        </p>
+                      </div>
+
+                      <div>
+                        <h5 className="font-semibold text-sm text-rose-900 mb-1">📊 Praktiskt exempel</h5>
+                        <div className="bg-rose-50 p-3 rounded border border-rose-200">
+                          <p className="text-xs text-rose-800 mb-2"><strong>Scenario:</strong></p>
+                          <ul className="text-xs text-rose-700 space-y-1">
+                            <li>• <strong>Pass A:</strong> Två medarbetare passar lika bra (samma erfarenhet, tillgänglighet, rättvisa)</li>
+                            <li>• <strong>Medarbetare 1:</strong> Timlön 350 SEK → Passkostnad 2,800 SEK</li>
+                            <li>• <strong>Medarbetare 2:</strong> Timlön 450 SEK → Passkostnad 3,600 SEK</li>
+                            <li>• <strong>Resultat:</strong> Systemet väljer Medarbetare 1 (sparar 800 SEK) <em>om allt annat är lika</em></li>
+                          </ul>
+                          <p className="text-xs text-rose-600 mt-2 italic">
+                            💡 Men om Medarbetare 2 har bättre täckning, preferenser eller rättvisafördel, 
+                            väljs denna istället - kostnad bryts av högre prioriteter!
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h5 className="font-semibold text-sm text-rose-900 mb-1">🔄 När ska man aktivera kostnadsoptimering?</h5>
+                        <ul className="text-xs text-rose-700 space-y-1">
+                          <li>✅ <strong>Aktivera när:</strong> Budget är en faktor och du vill spara pengar när möjligt</li>
+                          <li>✅ <strong>Aktivera när:</strong> Du har medarbetare med olika timlöner/erfarenhetsnivåer</li>
+                          <li>❌ <strong>Inaktivera när:</strong> Du vill att schemat endast ska baseras på kompetens och rättvisa</li>
+                          <li>❌ <strong>Inaktivera när:</strong> Alla har samma timlön (ingen påverkan)</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -843,107 +961,142 @@ const Help = () => {
                   Svar på de vanligaste frågorna
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-lg border border-indigo-100">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-indigo-600" />
-                    Hur skapas schemat?
-                  </h3>
-                  <p className="text-sm text-gray-700">
-                    Schemat genereras automatiskt med Gurobi-optimering som balanserar täckning, 
-                    rättvisa och preferenser. Systemet tar hänsyn till arbetsbelastning, erfarenhet, 
-                    och alla tre nivåerna av begränsningar.
-                  </p>
-                </div>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  {/* Sticky FAQ Navigation - Desktop Only */}
+                  <div className="hidden lg:block">
+                    <div className="sticky top-24 space-y-1">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">
+                        Hoppa till fråga
+                      </p>
+                      {faqItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeSection === item.id;
+                        return (
+                          <ScrollLink
+                            key={item.id}
+                            to={item.id}
+                            smooth={true}
+                            duration={500}
+                            offset={-100}
+                            className={`flex items-start gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all ${
+                              isActive
+                                ? 'bg-indigo-100 text-indigo-700 font-medium border-l-2 border-indigo-600'
+                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-l-2 border-transparent'
+                            }`}
+                          >
+                            <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                            <span className="leading-tight">{item.title}</span>
+                          </ScrollLink>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-lg border border-purple-100">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-purple-600" />
-                    Kan jag manuellt ändra schemat?
-                  </h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    Ja! Efter att schemat genererats kan du klicka på enskilda pass för att redigera eller ta bort dem. 
-                    Du kan också lägga till nya pass manuellt.
-                  </p>
-                  <Badge variant="secondary" className="text-xs">
-                    Tips: Manuella ändringar påverkar inte automatisk regenerering
-                  </Badge>
-                </div>
+                  {/* FAQ Content */}
+                  <div className="lg:col-span-3 space-y-4">
+                    <div id="faq-hur-skapas-schemat" className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-lg border border-indigo-100 scroll-mt-24">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-indigo-600" />
+                        Hur skapas schemat?
+                      </h3>
+                      <p className="text-sm text-gray-700">
+                        Schemat genereras automatiskt med Gurobi-optimering som balanserar täckning, 
+                        rättvisa och preferenser. Systemet tar hänsyn till arbetsbelastning, erfarenhet, 
+                        och alla tre nivåerna av begränsningar.
+                      </p>
+                    </div>
 
-                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-lg border border-amber-100">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
-                    Varför har vissa anställda inga/få pass?
-                  </h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    Detta kan bero på flera faktorer:
-                  </p>
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-600">•</span>
-                      <span><strong>Låg arbetsbelastning:</strong> Kontrollera att arbetsbelastning % är korrekt satt</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-600">•</span>
-                      <span><strong>För många begränsningar:</strong> För många hårda/starka blockeringar begränsar möjligheterna</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-600">•</span>
-                      <span><strong>Låg erfarenhet:</strong> Systemet kan ha svårt att uppfylla erfarenhetskrav</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-amber-600">•</span>
-                      <span><strong>Begränsad tillgänglighet:</strong> För få tillgängliga dagar</span>
-                    </li>
-                  </ul>
-                </div>
+                    <div id="faq-manuellt-andra" className="bg-gradient-to-r from-purple-50 to-pink-50 p-5 rounded-lg border border-purple-100 scroll-mt-24">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-purple-600" />
+                        Kan jag manuellt ändra schemat?
+                      </h3>
+                      <p className="text-sm text-gray-700 mb-2">
+                        Ja! Efter att schemat genererats kan du klicka på enskilda pass för att redigera eller ta bort dem. 
+                        Du kan också lägga till nya pass manuellt.
+                      </p>
+                      <Badge variant="secondary" className="text-xs">
+                        Tips: Manuella ändringar påverkar inte automatisk regenerering
+                      </Badge>
+                    </div>
 
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-5 rounded-lg border border-emerald-100">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
-                    Hur exporterar jag schemat till Excel?
-                  </h3>
-                  <p className="text-sm text-gray-700">
-                    Efter att schemat har genererats, klicka på "Exportera schema" eller "Ladda ner schema som Excel" 
-                    för att få en .xlsx-fil med alla pass, anställda, tider och avdelningar.
-                  </p>
-                </div>
+                    <div id="faq-fa-inga-pass" className="bg-gradient-to-r from-amber-50 to-yellow-50 p-5 rounded-lg border border-amber-100 scroll-mt-24">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-amber-600" />
+                        Varför har vissa anställda inga/få pass?
+                      </h3>
+                      <p className="text-sm text-gray-700 mb-2">
+                        Detta kan bero på flera faktorer:
+                      </p>
+                      <ul className="space-y-1 text-sm text-gray-700">
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600">•</span>
+                          <span><strong>Låg arbetsbelastning:</strong> Kontrollera att arbetsbelastning % är korrekt satt</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600">•</span>
+                          <span><strong>För många begränsningar:</strong> För många hårda/starka blockeringar begränsar möjligheterna</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600">•</span>
+                          <span><strong>Låg erfarenhet:</strong> Systemet kan ha svårt att uppfylla erfarenhetskrav</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600">•</span>
+                          <span><strong>Begränsad tillgänglighet:</strong> För få tillgängliga dagar</span>
+                        </li>
+                      </ul>
+                    </div>
 
-                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-5 rounded-lg border border-blue-100">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    Hur publicerar jag schemat?
-                  </h3>
-                  <p className="text-sm text-gray-700">
-                    När du är nöjd med schemat, publicera det så att medarbetarna kan se sina pass. 
-                    Opublicerade pass visas med "utkast"-etikett och är endast synliga för chefer.
-                  </p>
-                </div>
+                    <div id="faq-exportera-excel" className="bg-gradient-to-r from-emerald-50 to-green-50 p-5 rounded-lg border border-emerald-100 scroll-mt-24">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+                        Hur exporterar jag schemat till Excel?
+                      </h3>
+                      <p className="text-sm text-gray-700">
+                        Efter att schemat har genererats, klicka på "Exportera schema" eller "Ladda ner schema som Excel" 
+                        för att få en .xlsx-fil med alla pass, anställda, tider och avdelningar.
+                      </p>
+                    </div>
 
-                <div className="bg-gradient-to-r from-red-50 to-rose-50 p-5 rounded-lg border border-red-100">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-red-600" />
-                    Vad händer om schemat inte kan genereras?
-                  </h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    Om Gurobi inte kan hitta en lösning kan det bero på:
-                  </p>
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600">•</span>
-                      <span><strong>För få anställda:</strong> Fler medarbetare behövs för täckning</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600">•</span>
-                      <span><strong>Omöjliga krav:</strong> Minsta erfarenhetskrav kan vara för högt</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-red-600">•</span>
-                      <span><strong>Konflikt constraints:</strong> För många hårda begränsningar överlappar</span>
-                    </li>
-                  </ul>
-                  <div className="mt-2 text-xs bg-red-100 p-2 rounded">
-                    <strong>Lösning:</strong> Justera krav nedåt, öka arbetsbelastning, eller be anställda ta bort några begränsningar.
+                    <div id="faq-publicera" className="bg-gradient-to-r from-blue-50 to-cyan-50 p-5 rounded-lg border border-blue-100 scroll-mt-24">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                        Hur publicerar jag schemat?
+                      </h3>
+                      <p className="text-sm text-gray-700">
+                        När du är nöjd med schemat, publicera det så att medarbetarna kan se sina pass. 
+                        Opublicerade pass visas med "utkast"-etikett och är endast synliga för chefer.
+                      </p>
+                    </div>
+
+                    <div id="faq-genereras-ej" className="bg-gradient-to-r from-red-50 to-rose-50 p-5 rounded-lg border border-red-100 scroll-mt-24">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                        Vad händer om schemat inte kan genereras?
+                      </h3>
+                      <p className="text-sm text-gray-700 mb-2">
+                        Om Gurobi inte kan hitta en lösning kan det bero på:
+                      </p>
+                      <ul className="space-y-1 text-sm text-gray-700">
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600">•</span>
+                          <span><strong>För få anställda:</strong> Fler medarbetare behövs för täckning</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600">•</span>
+                          <span><strong>Omöjliga krav:</strong> Minsta erfarenhetskrav kan vara för högt</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600">•</span>
+                          <span><strong>Konflikt constraints:</strong> För många hårda begränsningar överlappar</span>
+                        </li>
+                      </ul>
+                      <div className="mt-2 text-xs bg-red-100 p-2 rounded">
+                        <strong>Lösning:</strong> Justera krav nedåt, öka arbetsbelastning, eller be anställda ta bort några begränsningar.
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
