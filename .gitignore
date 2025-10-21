@@ -37,3 +37,7 @@ verify-*.mjs
 find-service-id.sh
 *.local
 .env
+
+# API Key Reference Files (contains secrets)
+OPENAI_KEY_REFERENCE.md
+*_KEY_REFERENCE.md

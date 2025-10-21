@@ -10,3 +10,7 @@ services:
         value: https://ebyvourlaomcwitpibdl.supabase.co
       - key: SUPABASE_KEY
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVieXZvdXJsYW9tY3dpdHBpYmRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxODY4NDYsImV4cCI6MjA2NTc2Mjg0Nn0.jNK_J5mLw4DKZO8NTmXQzA5d51ugm9czzNkAEWyd4gY
+      - key: OPENAI_API_KEY
+        sync: false  # Managed via Render Dashboard for security
+      - key: OPENAI_MODEL
+        value: gpt-4o
