@@ -32,27 +32,32 @@ import {
   DollarSign
 } from "lucide-react";
 
+// All main sections in the help page
+const mainSections = [
+  { id: "hur-fungerar-schemaläggningen", title: "Hur fungerar schemaläggningen?", icon: Brain },
+  { id: "begränsningssystem", title: "3-nivå begränsningssystem", icon: Target },
+  { id: "navigera-i-systemet", title: "Navigera i systemet", icon: Navigation2 },
+  { id: "schema-process", title: "Schemagenereringsprocess", icon: Zap },
+  { id: "preferenser", title: "Anställdas preferenser", icon: UserCog },
+  { id: "optimering", title: "Optimeringsalgoritmen", icon: BarChart3 },
+  { id: "vanliga-frågor-faq", title: "Vanliga frågor (FAQ)", icon: HelpCircle },
+  { id: "support", title: "Support", icon: Mail }
+];
+
 const Help = () => {
   const [activeSection, setActiveSection] = useState<string>("");
 
-  // Track which FAQ section is in viewport
+  // Track which section is in viewport
   useEffect(() => {
     const handleScroll = () => {
-      const sections = [
-        "faq-hur-skapas-schemat",
-        "faq-manuellt-andra",
-        "faq-fa-inga-pass",
-        "faq-exportera-excel",
-        "faq-publicera",
-        "faq-genereras-ej"
-      ];
+      const sectionIds = mainSections.map(s => s.id);
 
-      for (const sectionId of sections) {
+      for (const sectionId of sectionIds) {
         const element = document.getElementById(sectionId);
         if (element) {
           const rect = element.getBoundingClientRect();
           // Check if section is in viewport (with some offset)
-          if (rect.top >= 0 && rect.top <= window.innerHeight / 2) {
+          if (rect.top >= 0 && rect.top <= window.innerHeight / 3) {
             setActiveSection(sectionId);
             break;
           }
@@ -78,9 +83,9 @@ const Help = () => {
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-          {/* Hero Header */}
-          <div className="text-center mb-12">
+        {/* Hero Header - Full Width */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
               <HelpCircle className="h-8 w-8 text-white" />
             </div>
@@ -94,7 +99,7 @@ const Help = () => {
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <Card className="border-indigo-100 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
@@ -137,48 +142,57 @@ const Help = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
 
-          {/* Table of Contents */}
-          <Card className="mb-12 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Navigation2 className="h-5 w-5 text-indigo-600" />
-                Snabbnavigering
-              </CardTitle>
-              <CardDescription>Hoppa direkt till det du söker</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[
-                  { title: "Hur fungerar schemaläggningen?", id: "hur-fungerar-schemaläggningen", icon: Brain },
-                  { title: "3-nivå begränsningssystem", id: "begränsningssystem", icon: Target },
-                  { title: "Navigera i systemet", id: "navigera-i-systemet", icon: Navigation2 },
-                  { title: "Schemagenereringsprocess", id: "schema-process", icon: Zap },
-                  { title: "Anställdas preferenser", id: "preferenser", icon: UserCog },
-                  { title: "Vanliga frågor (FAQ)", id: "vanliga-frågor-faq", icon: HelpCircle },
-                  { title: "Optimeringsalgoritmen", id: "optimering", icon: BarChart3 },
-                  { title: "Support", id: "support", icon: Mail }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <ScrollLink
-                      key={item.id}
-                      to={item.id}
-                      smooth={true}
-                      duration={500}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-colors cursor-pointer group border border-transparent hover:border-indigo-200"
-                    >
-                      <Icon className="h-4 w-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-                      <span className="text-sm font-medium">{item.title}</span>
-                    </ScrollLink>
-                  );
-                })}
+        {/* Main Content with Sticky Sidebar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            
+            {/* Sticky Sidebar Navigation - Desktop Only */}
+            <div className="hidden lg:block lg:col-span-1">
+              <div className="sticky top-24">
+                <Card className="bg-white/90 backdrop-blur-sm border-indigo-100">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Navigation2 className="h-4 w-4" />
+                      Navigation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <nav className="space-y-1">
+                      {mainSections.map((section) => {
+                        const Icon = section.icon;
+                        const isActive = activeSection === section.id;
+                        return (
+                          <ScrollLink
+                            key={section.id}
+                            to={section.id}
+                            smooth={true}
+                            duration={500}
+                            className={`flex items-start gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all group text-sm ${
+                              isActive
+                                ? "bg-indigo-100 text-indigo-700 font-medium"
+                                : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
+                            }`}
+                          >
+                            <Icon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
+                              isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-indigo-500"
+                            }`} />
+                            <span className="leading-tight">{section.title}</span>
+                          </ScrollLink>
+                        );
+                      })}
+                    </nav>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
+            {/* Main Content Area */}
+            <div className="lg:col-span-4 space-y-12">
+              
           {/* How Scheduling Works */}
-          <section id="hur-fungerar-schemaläggningen" className="scroll-mt-20 mb-12">
+          <section id="hur-fungerar-schemaläggningen" className="scroll-mt-20">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -950,7 +964,7 @@ const Help = () => {
           </section>
 
           {/* FAQ */}
-          <section id="vanliga-frågor-faq" className="scroll-mt-20 mb-12">
+          <section id="vanliga-frågor-faq" className="scroll-mt-20">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -962,39 +976,7 @@ const Help = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  {/* Sticky FAQ Navigation - Desktop Only */}
-                  <div className="hidden lg:block">
-                    <div className="sticky top-24 space-y-1">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">
-                        Hoppa till fråga
-                      </p>
-                      {faqItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = activeSection === item.id;
-                        return (
-                          <ScrollLink
-                            key={item.id}
-                            to={item.id}
-                            smooth={true}
-                            duration={500}
-                            offset={-100}
-                            className={`flex items-start gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all ${
-                              isActive
-                                ? 'bg-indigo-100 text-indigo-700 font-medium border-l-2 border-indigo-600'
-                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-l-2 border-transparent'
-                            }`}
-                          >
-                            <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                            <span className="leading-tight">{item.title}</span>
-                          </ScrollLink>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* FAQ Content */}
-                  <div className="lg:col-span-3 space-y-4">
+                <div className="space-y-4">
                     <div id="faq-hur-skapas-schemat" className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-lg border border-indigo-100 scroll-mt-24">
                       <h3 className="font-semibold mb-2 flex items-center gap-2">
                         <Brain className="h-5 w-5 text-indigo-600" />
@@ -1097,14 +1079,13 @@ const Help = () => {
                         <strong>Lösning:</strong> Justera krav nedåt, öka arbetsbelastning, eller be anställda ta bort några begränsningar.
                       </div>
                     </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
           </section>
 
           {/* Support */}
-          <section id="support" className="scroll-mt-20 mb-12">
+          <section id="support" className="scroll-mt-20">
             <Card className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl text-white">
@@ -1167,8 +1148,10 @@ const Help = () => {
             </Card>
           </section>
 
-        </div>
-      </div>
+            </div> {/* End Main Content Area */}
+          </div> {/* End Grid */}
+        </div> {/* End Container */}
+      </div> {/* End Background */}
     </AppLayout>
   );
 };
