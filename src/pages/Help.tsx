@@ -93,7 +93,7 @@ const Help = () => {
               Hjälpcenter
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Allt du behöver veta om vårt AI-drivna schemaläggningssystem. 
+              Allt du behöver veta om vårt optimeringsbaserade schemaläggningssystem. 
               Från grundläggande navigation till avancerade optimeringsfunktioner.
             </p>
           </div>
@@ -107,7 +107,7 @@ const Help = () => {
                     <Sparkles className="h-5 w-5 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-indigo-600">AI-driven</p>
+                    <p className="text-2xl font-bold text-indigo-600">Optimeringsdriven</p>
                     <p className="text-sm text-gray-600">Gurobi-optimering</p>
                   </div>
                 </div>
@@ -221,7 +221,7 @@ const Help = () => {
                     <div>
                       <h4 className="font-semibold text-purple-900 mb-1">Rättvis fördelning</h4>
                       <p className="text-sm text-purple-700">
-                        AI:n balanserar arbetsbelastning mellan alla medarbetare och säkerställer 
+                        Optimeringsmotorn balanserar arbetsbelastning mellan alla medarbetare och säkerställer 
                         att varje pass uppfyller erfarenhetskrav.
                       </p>
                     </div>
@@ -576,7 +576,7 @@ const Help = () => {
                       <ul className="space-y-2 text-sm">
                         <li className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                          <span>AI-driven ruttoptimering för hemtjänst</span>
+                          <span>Optimeringsdriven ruttplanering för hemtjänst</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
@@ -1141,7 +1141,7 @@ const Help = () => {
                   </p>
                   <p className="text-sm text-indigo-200 flex items-center justify-center gap-2">
                     <Sparkles className="h-4 w-4" />
-                    AI-drivet schemaläggningssystem för modern sjukvård
+                    Optimeringsbaserat schemaläggningssystem för modern sjukvård
                   </p>
                 </div>
               </CardContent>
