@@ -192,7 +192,7 @@ const Help = () => {
             <div className="lg:col-span-4 space-y-12">
               
           {/* How Scheduling Works */}
-          <section id="hur-fungerar-schemaläggningen" className="scroll-mt-40">
+          <section id="hur-fungerar-schemaläggningen" className="scroll-mt-48">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -293,7 +293,7 @@ const Help = () => {
           </section>
 
           {/* 3-Level Constraints System */}
-          <section id="begränsningssystem" className="scroll-mt-40 mb-12">
+          <section id="begränsningssystem" className="scroll-mt-48 mb-12">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -461,7 +461,7 @@ const Help = () => {
           </section>
 
           {/* System Navigation */}
-          <section id="navigera-i-systemet" className="scroll-mt-40 mb-12">
+          <section id="navigera-i-systemet" className="scroll-mt-48 mb-12">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -599,7 +599,7 @@ const Help = () => {
           </section>
 
           {/* Schema Generation Process */}
-          <section id="schema-process" className="scroll-mt-40 mb-12">
+          <section id="schema-process" className="scroll-mt-48 mb-12">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -706,7 +706,7 @@ const Help = () => {
           </section>
 
           {/* Employee Preferences */}
-          <section id="preferenser" className="scroll-mt-40 mb-12">
+          <section id="preferenser" className="scroll-mt-48 mb-12">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -801,7 +801,7 @@ const Help = () => {
 
 
           {/* Optimization Algorithm */}
-          <section id="optimering" className="scroll-mt-40 mb-12">
+          <section id="optimering" className="scroll-mt-48 mb-12">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -964,7 +964,7 @@ const Help = () => {
           </section>
 
           {/* FAQ */}
-          <section id="vanliga-frågor-faq" className="scroll-mt-40">
+          <section id="vanliga-frågor-faq" className="scroll-mt-48">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -1085,7 +1085,7 @@ const Help = () => {
           </section>
 
           {/* Support */}
-          <section id="support" className="scroll-mt-40">
+          <section id="support" className="scroll-mt-48">
             <Card className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl text-white">
