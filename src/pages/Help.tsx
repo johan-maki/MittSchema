@@ -814,40 +814,139 @@ const Help = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
-                  <h4 className="font-semibold text-lg mb-3">Objektivfunktion (Prioriterad ordning)</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">1. Maximal täckning</span>
-                      <Badge className="bg-indigo-600">100x</Badge>
+                  <h4 className="font-semibold text-lg mb-4">Objektivfunktion (Prioriterad ordning)</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Optimeringsmotorn balanserar flera mål samtidigt. Varje mål har en vikt som bestämmer hur viktigt det är. 
+                    Högre vikt = högre prioritet.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {/* 1. Maximal täckning */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-indigo-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">1. Maximal täckning</span>
+                        <Badge className="bg-indigo-600">100x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Alla pass ska vara bemannade med rätt antal personal.
+                      </p>
+                      <div className="bg-indigo-50 p-2 rounded text-xs text-indigo-800">
+                        <strong>Exempel:</strong> Om ett pass kräver 2 sjuksköterskor, prioriterar systemet att fylla det passet 
+                        före allt annat. Täckning är alltid viktigast!
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">2. Rättvis totalfördelning</span>
-                      <Badge className="bg-purple-600">50x</Badge>
+
+                    {/* 2. Rättvis totalfördelning */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-purple-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">2. Rättvis totalfördelning</span>
+                        <Badge className="bg-purple-600">50x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Balansera totala antalet pass mellan alla medarbetare så att ingen jobbar mycket mer eller mindre än andra.
+                      </p>
+                      <div className="bg-purple-50 p-2 rounded text-xs text-purple-800">
+                        <strong>Exempel:</strong> Om Sara jobbar 100% och Erik jobbar 100%, ska båda få ungefär lika många pass. 
+                        Inte Sara 20 pass och Erik 5 pass.
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">3. Starka preferenser (gula)</span>
-                      <Badge className="bg-amber-600">30x</Badge>
+
+                    {/* 3. Starka preferenser */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-amber-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">3. Starka preferenser (gula)</span>
+                        <Badge className="bg-amber-600">30x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Undvik att schemalägga medarbetare på dagar de markerat som "helst inte" (gula).
+                      </p>
+                      <div className="bg-amber-50 p-2 rounded text-xs text-amber-800">
+                        <strong>Exempel:</strong> Anna har markerat 15 mars som "helst avstår". Systemet försöker undvika att ge henne pass den dagen, 
+                        men kan göra det om det behövs för täckning.
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">4. Helgbalans</span>
-                      <Badge className="bg-blue-600">20x</Badge>
+
+                    {/* 4. Helgbalans */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">4. Helgbalans</span>
+                        <Badge className="bg-blue-600">20x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Fördela helgpass rättvist mellan alla medarbetare.
+                      </p>
+                      <div className="bg-blue-50 p-2 rounded text-xs text-blue-800">
+                        <strong>Exempel:</strong> Istället för att Lisa jobbar 4 helger och Maria 0 helger, 
+                        fördelar systemet så båda jobbar ungefär lika många helger (t.ex. 2 helger var).
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">5. Önskade dagar (gröna)</span>
-                      <Badge className="bg-emerald-600">12x</Badge>
+
+                    {/* 5. Önskade dagar */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-emerald-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">5. Önskade dagar (gröna)</span>
+                        <Badge className="bg-emerald-600">12x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Respektera vilka veckodagar varje medarbetare föredrar att jobba.
+                      </p>
+                      <div className="bg-emerald-50 p-2 rounded text-xs text-emerald-800">
+                        <strong>Exempel:</strong> Johan föredrar att jobba mån-fre. Systemet försöker ge honom färre helgpass 
+                        och fler vardagspass när det är möjligt.
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">6. Passtyps-balans</span>
-                      <Badge className="bg-slate-600">8x</Badge>
+
+                    {/* 6. Passtyps-balans */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">6. Passtyps-balans</span>
+                        <Badge className="bg-slate-600">8x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Fördela dag-, kväll- och nattpass jämnt mellan medarbetare.
+                      </p>
+                      <div className="bg-slate-50 p-2 rounded text-xs text-slate-800">
+                        <strong>Exempel:</strong> Undvik att en person får 10 nattpass medan en annan får 0 nattpass. 
+                        Fördela så alla får en blandning av passtyper.
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">7. Önskade pass (gröna)</span>
-                      <Badge className="bg-green-600">8x</Badge>
+
+                    {/* 7. Önskade pass */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">7. Önskade pass (gröna)</span>
+                        <Badge className="bg-green-600">8x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Respektera vilka passtyper (dag/kväll/natt) varje medarbetare föredrar.
+                      </p>
+                      <div className="bg-green-50 p-2 rounded text-xs text-green-800">
+                        <strong>Exempel:</strong> Sara föredrar dagpass. Systemet försöker ge henne fler dagpass och färre kvälls-/nattpass 
+                        när det är möjligt.
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between bg-white/60 p-3 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">8. Kostnad (när aktiverad)</span>
-                      <Badge className="bg-rose-600">0.001x</Badge>
+
+                    {/* 8. Kostnad */}
+                    <div className="bg-white/80 p-4 rounded-lg border border-rose-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">8. Kostnad (när aktiverad)</span>
+                        <Badge className="bg-rose-600">0.001x</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        <strong>Vad det betyder:</strong> Vid lika kvalifikationer, välj medarbetare med lägre timlön.
+                      </p>
+                      <div className="bg-rose-50 p-2 rounded text-xs text-rose-800">
+                        <strong>Exempel:</strong> Om både Emma (350 kr/h) och David (450 kr/h) passar lika bra för ett pass, 
+                        väljer systemet Emma för att spara 800 kr. Men endast om alla andra faktorer är lika!
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="mt-4 bg-indigo-100 p-3 rounded-lg">
+                    <p className="text-xs text-indigo-800">
+                      <strong>💡 Viktigt:</strong> Vikterna bestämmer prioritetsordningen. Täckning (100x) är 50 gånger viktigare än kostnad (0.001x), 
+                      vilket betyder att kvalitet alltid går före ekonomi!
+                    </p>
                   </div>
                 </div>
 
