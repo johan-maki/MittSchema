@@ -37,7 +37,7 @@ const mainSections = [
   { id: "hur-fungerar-schemaläggningen", title: "Hur fungerar schemaläggningen?", icon: Brain },
   { id: "begränsningssystem", title: "3-nivå begränsningssystem", icon: Target },
   { id: "navigera-i-systemet", title: "Navigera i systemet", icon: Navigation2 },
-  { id: "schema-process", title: "Schemagenereringsprocess", icon: Zap },
+  { id: "schema-process", title: "Schemagenerering", icon: Zap },
   { id: "preferenser", title: "Anställdas preferenser", icon: UserCog },
   { id: "optimering", title: "Optimeringsalgoritmen", icon: BarChart3 },
   { id: "vanliga-frågor-faq", title: "Vanliga frågor (FAQ)", icon: HelpCircle },
@@ -169,16 +169,16 @@ const Help = () => {
                             to={section.id}
                             smooth={true}
                             duration={500}
-                            className={`flex items-start gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all group text-sm ${
+                            className={`flex items-start gap-2 px-2.5 py-2.5 rounded-lg cursor-pointer transition-all group text-xs ${
                               isActive
                                 ? "bg-indigo-100 text-indigo-700 font-medium"
                                 : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
                             }`}
                           >
-                            <Icon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
+                            <Icon className={`h-3.5 w-3.5 flex-shrink-0 mt-0.5 ${
                               isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-indigo-500"
                             }`} />
-                            <span className="leading-tight">{section.title}</span>
+                            <span className="leading-tight break-words">{section.title}</span>
                           </ScrollLink>
                         );
                       })}
