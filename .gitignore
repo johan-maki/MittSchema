@@ -36,3 +36,4 @@ check-frontend.html
 verify-*.mjs
 find-service-id.sh
 *.local
+.env
