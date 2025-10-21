@@ -33,7 +33,7 @@ interface GurobiScheduleRequest {
     experience_level?: number;
     work_percentage?: number; // Add work_percentage for capacity calculations
   }>;
-  manual_constraints?: Array<{
+  manual_constraints?: Record<string, {
     type: string;
     employee_id?: string;
     dates?: string[];
@@ -180,7 +180,9 @@ export const schedulerApi = {
       optimize_for_cost: optimizeForCost, // NEW: Signal backend to optimize for cost
       max_staff_per_shift: maxStaffPerShift, // NEW: Maximum staff per shift (null = exact staffing)
       employee_preferences: employeePreferences || [], // Lägg till employee preferences
-      manual_constraints: manualConstraints || [], // AI-parsed or manually added constraints
+      manual_constraints: (manualConstraints && manualConstraints.length > 0) 
+        ? Object.fromEntries(manualConstraints.map((c, i) => [`constraint_${i}`, c]))
+        : {}, // Convert array to dict for backend compatibility
       ai_constraints: aiConstraints || [] // Natural language constraints parsed by GPT-4
     };
     
