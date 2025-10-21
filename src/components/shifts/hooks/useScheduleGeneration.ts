@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfWeek, endOfWeek, addWeeks, addDays, addMonths } from "date-fns";
 
-export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month', onDateChange?: (date: Date) => void) => {
+export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month', onDateChange?: (date: Date) => void, aiConstraints?: any[]) => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -199,6 +199,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       // Small delay to ensure UI updates visually
       await new Promise(resolve => setTimeout(resolve, 300));
       
+      console.log(`🤖 Passing ${aiConstraints?.length || 0} AI constraints to schedule generation`);
+      
       const generatedSchedule = await generateScheduleForNextMonth(
         currentDate, 
         profiles, 
@@ -211,7 +213,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           await queryClient.invalidateQueries({ queryKey: ['shifts'] });
           await queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
           console.log('✅ Double cache invalidation completed');
-        }
+        },
+        aiConstraints
       );
 
       console.log("🔍 DEBUG: Next month schedule generation result:", generatedSchedule);

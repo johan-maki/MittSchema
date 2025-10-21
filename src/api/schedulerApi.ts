@@ -42,6 +42,7 @@ interface GurobiScheduleRequest {
     confidence?: string;
     description?: string;
   }>;
+  ai_constraints?: any[];
 }
 
 interface GurobiScheduleResponse {
@@ -140,7 +141,8 @@ export const schedulerApi = {
       is_hard: boolean;
       confidence?: string;
       description?: string;
-    }>
+    }>,
+    aiConstraints?: any[]
   ): Promise<GurobiScheduleResponse> => {
     // Use local Gurobi API from environment config
     const url = `${SCHEDULER_API.BASE_URL}${SCHEDULER_API.ENDPOINTS.OPTIMIZE_SCHEDULE}`;
@@ -178,7 +180,8 @@ export const schedulerApi = {
       optimize_for_cost: optimizeForCost, // NEW: Signal backend to optimize for cost
       max_staff_per_shift: maxStaffPerShift, // NEW: Maximum staff per shift (null = exact staffing)
       employee_preferences: employeePreferences || [], // Lägg till employee preferences
-      manual_constraints: manualConstraints || [] // AI-parsed or manually added constraints
+      manual_constraints: manualConstraints || [], // AI-parsed or manually added constraints
+      ai_constraints: aiConstraints || [] // Natural language constraints parsed by GPT-4
     };
     
     console.log("🚀 Calling Gurobi scheduler API with:", requestBody);
@@ -242,5 +245,38 @@ export const schedulerApi = {
     }
     
     throw new Error('Unable to connect to Gurobi optimizer after multiple attempts. Please check the service status and try again.');
+  },
+
+  parseAIConstraint: async (text: string, department?: string): Promise<{
+    success: boolean;
+    constraint?: any;
+    message: string;
+    reason?: string;
+  }> => {
+    const url = `${SCHEDULER_API.BASE_URL}/api/constraints/parse`;
+    
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          department,
+          context_date: new Date().toISOString().split('T')[0]
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to parse constraint: ${response.status} ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error parsing AI constraint:', error);
+      throw error;
+    }
   }
 };

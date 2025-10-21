@@ -5,6 +5,8 @@ gurobipy==12.0.2
 supabase==2.13.0
 python-dotenv==1.0.1
 pydantic==2.10.6
-httpx==0.28.1
+httpx==0.27.2
 numpy==1.26.4
 requests==2.32.0
+openai==1.54.3
+python-dateutil==2.9.0
