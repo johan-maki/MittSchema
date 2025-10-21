@@ -179,7 +179,7 @@ export const ModernMonthlySchedule = ({ date, shifts, profiles }: ModernMonthlyS
                       !isCurrentMonthDay 
                         ? 'bg-slate-50 text-slate-400' 
                         : isTodayDate 
-                        ? 'bg-indigo-50 border-2 border-indigo-400 -m-px' 
+                        ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-500' 
                         : holiday
                         ? 'bg-red-50 hover:bg-red-100'
                         : isWeekendDay 
