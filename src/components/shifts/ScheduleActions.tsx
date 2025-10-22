@@ -10,6 +10,7 @@ import { GenerateButton } from "./actions/GenerateButton";
 import { useSchedulePublishing } from "./actions/useSchedulePublishing";
 import { ScheduleSummaryModal } from "@/components/ui/ScheduleSummaryModal";
 import { PublicationStatus } from "./PublicationStatus";
+import { ScheduleChangesModal } from "@/components/schedule/ScheduleChangesModal";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -42,6 +43,12 @@ export const ScheduleActions = ({
     generateSchedule,
     acceptSchedule,
     cancelSchedule,
+    acceptScheduleChanges,
+    startEditingPublishedSchedule,
+    isEditingPublished,
+    showChangesModal,
+    setShowChangesModal,
+    scheduleChanges,
     profiles,
     staffingIssues,
     showSummary,
@@ -126,6 +133,18 @@ export const ScheduleActions = ({
         />
       )}
 
+      {/* Schedule Changes Modal - shows diff when editing published schedule */}
+      {showChangesModal && scheduleChanges && (
+        <ScheduleChangesModal
+          isOpen={showChangesModal}
+          onClose={() => setShowChangesModal(false)}
+          onAccept={acceptScheduleChanges}
+          changes={scheduleChanges}
+          unchangedCount={summaryData?.shifts ? summaryData.shifts.length - scheduleChanges.length : 0}
+          totalChangedEmployees={new Set(scheduleChanges.map(c => c.employeeName)).size}
+        />
+      )}
+
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <ScheduleActionsMenu
           onPublishClick={handlePublishSchedule}
@@ -133,6 +152,8 @@ export const ScheduleActions = ({
           onClearClick={handleClearUnpublished}
           onSettingsClick={handleSettingsClick}
           hasPublishedShifts={hasPublishedShifts}
+          onEditPublishedClick={() => startEditingPublishedSchedule(currentDate)}
+          isEditingPublished={isEditingPublished}
         />
         <DialogContent>
           <ShiftForm

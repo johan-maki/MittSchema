@@ -10,6 +10,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfWeek, endOfWeek, addWeeks, addDays, addMonths } from "date-fns";
 
+// Extended Shift type with employee relation
+type ShiftWithEmployee = Shift & {
+  employee?: {
+    id: string;
+    full_name: string;
+  };
+};
+
 export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'week' | 'month', onDateChange?: (date: Date) => void, aiConstraints?: any[]) => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -20,6 +28,15 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const [showSummary, setShowSummary] = useState(false);
   const [previousOptimizationScore, setPreviousOptimizationScore] = useState<number | undefined>(undefined);
   const [currentOptimizationScore, setCurrentOptimizationScore] = useState<number | undefined>(undefined);
+  const [isEditingPublished, setIsEditingPublished] = useState(false);
+  const [existingShifts, setExistingShifts] = useState<Shift[]>([]);
+  const [showChangesModal, setShowChangesModal] = useState(false);
+  const [scheduleChanges, setScheduleChanges] = useState<Array<{
+    employeeName: string;
+    date: string;
+    oldShift: string;
+    newShift: string | null;
+  }>>([]);
   const [summaryData, setSummaryData] = useState<{
     shifts: Shift[];
     startDate: Date;
@@ -203,6 +220,28 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       
       console.log(`🤖 Passing ${aiConstraints?.length || 0} AI constraints to schedule generation`);
       
+      // If editing published schedule, merge existing shifts as soft-lock preferences
+      let mergedConstraints = aiConstraints || [];
+      if (isEditingPublished && existingShifts.length > 0) {
+        console.log(`🔒 SOFT LOCK: Converting ${existingShifts.length} existing shifts to high-priority preferences`);
+        
+        // Convert existing shifts to soft-lock preferences with very high weight
+        const lockedPreferences = existingShifts.map(shift => ({
+          employee_id: shift.employee_id,
+          constraint_type: 'shift_preference',
+          shift_type: shift.shift_type,
+          start_date: new Date(shift.start_time).toISOString().split('T')[0],
+          end_date: new Date(shift.start_time).toISOString().split('T')[0],
+          is_hard: false, // Soft constraint - can be overridden if absolutely necessary
+          confidence: 1.0,
+          weight: 1000, // Very high weight to strongly prefer keeping these shifts
+          locked: true // Mark as locked for Gurobi
+        }));
+        
+        mergedConstraints = [...(aiConstraints || []), ...lockedPreferences];
+        console.log(`📊 Total constraints: ${mergedConstraints.length} (${aiConstraints?.length || 0} AI + ${lockedPreferences.length} locked)`);
+      }
+      
       const generatedSchedule = await generateScheduleForNextMonth(
         currentDate, 
         profiles, 
@@ -216,7 +255,7 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
           await queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
           console.log('✅ Double cache invalidation completed');
         },
-        aiConstraints
+        mergedConstraints
       );
 
       console.log("🔍 DEBUG: Next month schedule generation result:", generatedSchedule);
@@ -346,7 +385,28 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     }
 
     try {
-      // Save the generated shifts to database
+      // If editing published schedule, compare and show changes
+      if (isEditingPublished && existingShifts.length > 0) {
+        const comparison = compareShifts(existingShifts, summaryData.shifts);
+        
+        console.log(`📊 Schedule comparison:`, {
+          changes: comparison.changes.length,
+          unchanged: comparison.unchangedCount,
+          affectedEmployees: comparison.totalChangedEmployees
+        });
+        
+        // Store changes for modal
+        setScheduleChanges(comparison.changes);
+        
+        // Close summary modal and show changes modal
+        setShowSummary(false);
+        setShowChangesModal(true);
+        
+        // Don't save yet - wait for user confirmation in changes modal
+        return true;
+      }
+      
+      // Normal flow (not editing published schedule)
       const saveResult = await saveScheduleToSupabase(summaryData.shifts);
       
       if (saveResult) {
@@ -371,6 +431,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
         // Close summary modal
         setShowSummary(false);
         setSummaryData(null);
+        setIsEditingPublished(false);
+        setExistingShifts([]);
         
         return true;
       } else {
@@ -397,10 +459,202 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     // Just close the modal and discard the generated schedule
     setShowSummary(false);
     setSummaryData(null);
+    setIsEditingPublished(false);
+    setExistingShifts([]);
     toast({
       title: "Schema avbrutet",
       description: "Schemat har inte sparats.",
     });
+  };
+
+  // Function to accept changes after reviewing the diff
+  const acceptScheduleChanges = async () => {
+    if (!summaryData) {
+      console.error('No summary data available');
+      return false;
+    }
+
+    try {
+      // Save the modified schedule to database
+      const saveResult = await saveScheduleToSupabase(summaryData.shifts);
+      
+      if (saveResult) {
+        const changedCount = scheduleChanges.length;
+        const unchangedCount = existingShifts.length - changedCount;
+        
+        toast({
+          title: "Schema uppdaterat",
+          description: `${changedCount} pass ändrade, ${unchangedCount} pass oförändrade.`,
+        });
+        
+        // Invalidate cache
+        queryClient.invalidateQueries({ queryKey: ['shifts'] });
+        queryClient.invalidateQueries({ queryKey: ['employee-shifts'] });
+        
+        // Close modals and reset state
+        setShowChangesModal(false);
+        setScheduleChanges([]);
+        setSummaryData(null);
+        setIsEditingPublished(false);
+        setExistingShifts([]);
+        
+        return true;
+      } else {
+        toast({
+          title: "Kunde inte spara schema",
+          description: "Det gick inte att spara schemat. Försök igen.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error('Error accepting schedule changes:', error);
+      toast({
+        title: "Fel vid sparning",
+        description: "Ett fel uppstod när schemat skulle sparas.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  // Function to start editing a published schedule
+  const startEditingPublishedSchedule = async (targetDate: Date) => {
+    try {
+      console.log('🔧 Starting to edit published schedule for:', targetDate.toISOString().split('T')[0]);
+      
+      // Load existing shifts for the target month
+      const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+      const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+      
+      const { data: shifts, error } = await supabase
+        .from('shifts')
+        .select(`
+          *,
+          employee:employees!employee_id(id, full_name)
+        `)
+        .gte('start_time', startOfMonth.toISOString())
+        .lte('start_time', endOfMonth.toISOString());
+      
+      if (error) {
+        console.error('Error loading existing shifts:', error);
+        toast({
+          title: "Kunde inte ladda schema",
+          description: "Fel vid hämtning av befintligt schema.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!shifts || shifts.length === 0) {
+        toast({
+          title: "Inget publicerat schema",
+          description: "Det finns inget publicerat schema för denna månad.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      console.log(`✅ Loaded ${shifts.length} existing shifts for editing`);
+      setExistingShifts(shifts);
+      setIsEditingPublished(true);
+      
+      toast({
+        title: "Redigerar publicerat schema",
+        description: `${shifts.length} befintliga pass laddade. Lägg till begränsningar (t.ex. "Anna är sjuk 15 november") och generera om.`,
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error starting edit mode:', error);
+      toast({
+        title: "Fel",
+        description: "Kunde inte starta redigeringsläge.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  // Function to compare shifts and detect changes
+  const compareShifts = (oldShifts: Shift[], newShifts: Shift[]) => {
+    const changes: Array<{
+      employeeName: string;
+      date: string;
+      oldShift: string;
+      newShift: string | null;
+    }> = [];
+    
+    const changedEmployees = new Set<string>();
+    
+    // Create a map of old shifts for easy lookup
+    const oldShiftMap = new Map<string, ShiftWithEmployee>();
+    oldShifts.forEach(shift => {
+      const key = `${shift.employee_id}_${new Date(shift.start_time).toISOString().split('T')[0]}`;
+      oldShiftMap.set(key, shift as ShiftWithEmployee);
+    });
+    
+    // Create a map of new shifts
+    const newShiftMap = new Map<string, Shift>();
+    newShifts.forEach(shift => {
+      const key = `${shift.employee_id}_${new Date(shift.start_time).toISOString().split('T')[0]}`;
+      newShiftMap.set(key, shift);
+    });
+    
+    // Check for changed or removed shifts
+    oldShiftMap.forEach((oldShift, key) => {
+      const newShift = newShiftMap.get(key);
+      
+      if (!newShift) {
+        // Shift was removed
+        const employeeName = oldShift.employee?.full_name || 'Okänd';
+        const date = new Date(oldShift.start_time).toLocaleDateString('sv-SE', { 
+          day: 'numeric', 
+          month: 'long' 
+        });
+        const oldShiftLabel = getShiftLabel(oldShift.shift_type);
+        
+        changes.push({
+          employeeName,
+          date,
+          oldShift: oldShiftLabel,
+          newShift: null
+        });
+        changedEmployees.add(oldShift.employee_id);
+      } else if (oldShift.shift_type !== newShift.shift_type) {
+        // Shift type changed
+        const employeeName = oldShift.employee?.full_name || 'Okänd';
+        const date = new Date(oldShift.start_time).toLocaleDateString('sv-SE', { 
+          day: 'numeric', 
+          month: 'long' 
+        });
+        const oldShiftLabel = getShiftLabel(oldShift.shift_type);
+        const newShiftLabel = getShiftLabel(newShift.shift_type);
+        
+        changes.push({
+          employeeName,
+          date,
+          oldShift: oldShiftLabel,
+          newShift: newShiftLabel
+        });
+        changedEmployees.add(oldShift.employee_id);
+      }
+    });
+    
+    return {
+      changes,
+      totalChangedEmployees: changedEmployees.size,
+      unchangedCount: oldShifts.length - changes.length
+    };
+  };
+
+  const getShiftLabel = (shiftType: string): string => {
+    const labels: Record<string, string> = {
+      'day': 'Dag',
+      'evening': 'Kväll',
+      'night': 'Natt'
+    };
+    return labels[shiftType] || shiftType;
   };
 
   return {
@@ -415,6 +669,13 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     generateSchedule,
     acceptSchedule,
     cancelSchedule,
+    acceptScheduleChanges,
+    startEditingPublishedSchedule,
+    isEditingPublished,
+    existingShifts,
+    showChangesModal,
+    setShowChangesModal,
+    scheduleChanges,
     profiles,
     staffingIssues,
     showSummary,

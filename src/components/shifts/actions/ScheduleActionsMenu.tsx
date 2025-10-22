@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { MoreVertical, CheckCircle2, Ban, PlusCircle, Settings, XCircle, AlertTriangle } from "lucide-react";
+import { MoreVertical, CheckCircle2, Ban, PlusCircle, Settings, XCircle, AlertTriangle, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { DialogTrigger } from "@/components/ui/dialog";
 
@@ -9,7 +9,9 @@ interface ScheduleActionsMenuProps {
   onUnpublishClick: () => void;
   onClearClick: () => void;
   onSettingsClick: () => void;
+  onEditPublishedClick?: () => void;
   hasPublishedShifts: boolean;
+  isEditingPublished?: boolean;
 }
 
 export const ScheduleActionsMenu = ({
@@ -17,7 +19,9 @@ export const ScheduleActionsMenu = ({
   onUnpublishClick,
   onClearClick,
   onSettingsClick,
+  onEditPublishedClick,
   hasPublishedShifts,
+  isEditingPublished = false,
 }: ScheduleActionsMenuProps) => {
   return (
     <DropdownMenu>
@@ -30,6 +34,31 @@ export const ScheduleActionsMenu = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
+        {/* Edit Published Schedule - shown when there's a published schedule */}
+        {hasPublishedShifts && onEditPublishedClick && (
+          <>
+            <DropdownMenuItem 
+              onClick={onEditPublishedClick} 
+              className={`${
+                isEditingPublished 
+                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' 
+                  : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              }`}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {isEditingPublished ? 'Redigerar publicerat schema...' : 'Redigera publicerat schema'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {isEditingPublished ? 'Lägg till begränsningar och generera om' : 'Hantera sjukdom och frånvaro'}
+                </span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         {/* Publishing Section */}
         {!hasPublishedShifts ? (
           <DropdownMenuItem onClick={onPublishClick} className="text-green-600 hover:text-green-700 hover:bg-green-50">
