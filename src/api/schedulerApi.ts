@@ -350,6 +350,9 @@ export const schedulerApi = {
         priority = 1000;
       }
       
+      // Get current user ID for RLS policy
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Table will exist after migration - use new schema
       const { data, error } = await (supabase as any)
         .from('ai_constraints')
@@ -360,7 +363,8 @@ export const schedulerApi = {
           constraint_type: newConstraintType,
           priority: priority,
           original_text: constraint.original_text,
-          department: constraint.department || 'Akutmottagning'
+          department: constraint.department || 'Akutmottagning',
+          created_by: user?.id || null // CRITICAL: Set created_by for RLS deletion policy
         }])
         .select()
         .single();
