@@ -18,13 +18,11 @@ interface Employee {
 interface DatabaseConstraint {
   id: string;
   employee_id?: string;
-  employee_name: string;
+  // employee_name is NOT stored in database - must be resolved from employee_id
+  dates: string[]; // Array of dates from new schema
+  shifts: string[]; // Array of shift types from new schema
   constraint_type: string;
-  shift_type?: string;
-  start_date: string;
-  end_date: string;
-  is_hard: boolean;
-  confidence: string;
+  priority: number;
   original_text: string;
 }
 
@@ -85,25 +83,34 @@ export function AIConstraintInput({
           // Convert database constraints to ParsedConstraint format
           const loadedConstraints: ParsedConstraint[] = result.constraints.map((dbConstraint: unknown) => {
             const constraint = dbConstraint as DatabaseConstraint; // Type assertion for database row
-            // Generate dates array from start_date and end_date
-            const dates: string[] = [];
-            if (constraint.start_date && constraint.end_date) {
-              const start = new Date(constraint.start_date);
-              const end = new Date(constraint.end_date);
-              
-              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                dates.push(d.toISOString().split('T')[0]);
+            
+            // 🔧 CRITICAL FIX: Resolve employee_name from employee_id
+            let employeeName = 'Okänd anställd';
+            if (constraint.employee_id) {
+              const matchedEmployee = employees.find(emp => emp.id === constraint.employee_id);
+              if (matchedEmployee) {
+                employeeName = `${matchedEmployee.first_name} ${matchedEmployee.last_name}`;
+                console.log(`✅ Resolved employee: ${constraint.employee_id} → ${employeeName}`);
+              } else {
+                console.warn(`⚠️ No employee found for constraint with employee_id: "${constraint.employee_id}"`);
               }
             }
+            
+            // Dates are already in array format from new schema
+            const dates = constraint.dates || [];
+            
+            // Convert constraint_type and priority to is_hard and confidence
+            const is_hard = constraint.constraint_type === 'hard_unavailable' || constraint.constraint_type === 'hard_required';
+            const confidence = constraint.priority >= 1000 ? 'high' : 'medium';
             
             return {
               id: constraint.id,
               employee_id: constraint.employee_id,
-              employee_name: constraint.employee_name,
+              employee_name: employeeName, // Use resolved employee name
               dates: dates,
-              shifts: constraint.shift_type ? [constraint.shift_type] : [],
-              is_hard: constraint.is_hard,
-              confidence: constraint.confidence || 'medium',
+              shifts: constraint.shifts || [],
+              is_hard: is_hard,
+              confidence: confidence,
               constraint_type: constraint.constraint_type,
               original_text: constraint.original_text,
               reason: undefined // Not stored in database
@@ -127,7 +134,7 @@ export function AIConstraintInput({
     
     loadSavedConstraints();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount - onConstraintsChange intentionally excluded
+  }, [employees]); // Re-load when employees change to resolve names correctly
 
   const handleParse = async (selectedEmployeeId?: string) => {
     const textToParse = selectedEmployeeId ? pendingConstraintText : inputText;

@@ -4,8 +4,49 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, UserCircle2, HelpCircle, MapPin, Sun, Moon, Sparkles, Menu, Users } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+
+// Define NavLinks outside component to avoid re-creation on every render
+const NavLinks = () => (
+  <>
+    <Link 
+      to="/schedule" 
+      className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+    >
+      <Calendar className="w-4 h-4 group-hover:scale-110 transition-transform" />
+      Schema
+    </Link>
+    <Link 
+      to="/directory" 
+      className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+    >
+      <Users className="w-4 h-4 group-hover:scale-110 transition-transform" />
+      Personalkatalog
+    </Link>
+    <Link 
+      to="/employee" 
+      className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+    >
+      <UserCircle2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+      Anställdas vy
+    </Link>
+    <Link 
+      to="/route-planning" 
+      className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+    >
+      <MapPin className="w-4 h-4 group-hover:scale-110 transition-transform" />
+      Slingplanering
+    </Link>
+    <Link 
+      to="/help" 
+      className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+    >
+      <HelpCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+      Hjälp
+    </Link>
+  </>
+);
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
@@ -40,46 +81,6 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     navigate("/auth");
   };
 
-  const NavLinks = () => (
-    <>
-      <Link 
-        to="/schedule" 
-        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
-      >
-        <Calendar className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        Schema
-      </Link>
-      <Link 
-        to="/directory" 
-        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
-      >
-        <Users className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        Personalkatalog
-      </Link>
-      <Link 
-        to="/employee" 
-        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
-      >
-        <UserCircle2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        Anställdas vy
-      </Link>
-      <Link 
-        to="/route-planning" 
-        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
-      >
-        <MapPin className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        Slingplanering
-      </Link>
-      <Link 
-        to="/help" 
-        className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
-      >
-        <HelpCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-        Hjälp
-      </Link>
-    </>
-  );
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-indigo-50/20 dark:bg-gray-900 transition-colors duration-200">
       <header className="border-b bg-white/80 backdrop-blur-md dark:bg-gray-800 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
@@ -102,7 +103,51 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             </SheetTrigger>
             <SheetContent side="left" className="w-[240px] dark:bg-gray-800 dark:text-white">
               <div className="flex flex-col gap-2 pt-6">
-                <NavLinks />
+                <SheetClose asChild>
+                  <Link 
+                    to="/schedule" 
+                    className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                  >
+                    <Calendar className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Schema
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link 
+                    to="/directory" 
+                    className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                  >
+                    <Users className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Personalkatalog
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link 
+                    to="/employee" 
+                    className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                  >
+                    <UserCircle2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Anställdas vy
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link 
+                    to="/route-planning" 
+                    className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                  >
+                    <MapPin className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Slingplanering
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link 
+                    to="/help" 
+                    className="group px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-150 flex items-center gap-2 dark:text-white dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                  >
+                    <HelpCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Hjälp
+                  </Link>
+                </SheetClose>
               </div>
             </SheetContent>
           </Sheet>
