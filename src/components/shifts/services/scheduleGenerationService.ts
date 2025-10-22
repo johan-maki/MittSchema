@@ -456,6 +456,31 @@ export const generateScheduleForNextMonth = async (
       
       finalAIConstraints = convertedConstraints;
       console.log(`📊 AI constraints ready for Gurobi:`, finalAIConstraints);
+      
+      // 🔍 DETAILED DEBUG: Show exactly what each constraint means
+      console.log('\n🎯 === AI CONSTRAINTS BREAKDOWN ===');
+      finalAIConstraints.forEach((constraint: {
+        employee_id: string;
+        employee_name: string;
+        constraint_type: string;
+        shift_type?: string;
+        start_date: string;
+        end_date: string;
+        is_hard: boolean;
+        confidence: number;
+        original_text?: string;
+      }, index: number) => {
+        console.log(`\n📌 Constraint ${index + 1}:`);
+        console.log(`   Employee: ${constraint.employee_name} (${constraint.employee_id})`);
+        console.log(`   Type: ${constraint.constraint_type}`);
+        console.log(`   Shift Type: ${constraint.shift_type || 'ALL (alla passtyper)'}`);
+        console.log(`   Date Range: ${constraint.start_date} → ${constraint.end_date}`);
+        console.log(`   Is Hard: ${constraint.is_hard ? '🔒 HARD (måste respekteras)' : '💡 SOFT (preferens)'}`);
+        console.log(`   Confidence: ${constraint.confidence}`);
+        console.log(`   Original Text: "${constraint.original_text}"`);
+        console.log(`   → Gurobi behandlar detta som: ${constraint.is_hard ? 'hard_blocked_slots' : 'medium_blocked_slots'}`);
+      });
+      console.log('\n=================================\n');
     } else {
       console.log('ℹ️ No AI constraints found in Supabase');
     }
@@ -464,7 +489,12 @@ export const generateScheduleForNextMonth = async (
     // Continue with whatever constraints we have
   }
   
-  console.log(`🚀 Sending ${finalAIConstraints.length} AI constraints to Gurobi`);
+  console.log(`\n🚀 === SENDING TO GUROBI ===`);
+  console.log(`   Total AI constraints: ${finalAIConstraints.length}`);
+  console.log(`   Department: ${settings?.department || 'Akutmottagning'}`);
+  console.log(`   Date range: ${gurobiStartISO} → ${gurobiEndISO}`);
+  console.log(`   Employee preferences: ${employeePreferences.length}`);
+  console.log(`===========================\n`);
   
   let response;
   
