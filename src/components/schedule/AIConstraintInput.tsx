@@ -76,74 +76,75 @@ export function AIConstraintInput({
       return;
     }
     
-    const loadSavedConstraints = async () => {
-      console.log('📥 Loading saved AI constraints from Supabase...');
-      setIsLoading(true);
-      
-      try {
-        const result = await schedulerApi.loadAIConstraints('Akutmottagning');
-        
-        if (result.success && result.constraints) {
-          console.log(`✅ Loaded ${result.constraints.length} constraints from Supabase`);
-          
-          // Convert database constraints to ParsedConstraint format
-          const loadedConstraints: ParsedConstraint[] = result.constraints.map((dbConstraint: unknown) => {
-            const constraint = dbConstraint as DatabaseConstraint; // Type assertion for database row
-            
-            // 🔧 CRITICAL FIX: Resolve employee_name from employee_id
-            let employeeName = 'Okänd anställd';
-            if (constraint.employee_id) {
-              const matchedEmployee = employees.find(emp => emp.id === constraint.employee_id);
-              if (matchedEmployee) {
-                employeeName = `${matchedEmployee.first_name} ${matchedEmployee.last_name}`;
-                console.log(`✅ Resolved employee: ${constraint.employee_id} → ${employeeName}`);
-              } else {
-                console.warn(`⚠️ No employee found for constraint with employee_id: "${constraint.employee_id}"`);
-              }
-            }
-            
-            // Dates are already in array format from new schema
-            const dates = constraint.dates || [];
-            
-            // Convert constraint_type and priority to is_hard and confidence
-            const is_hard = constraint.constraint_type === 'hard_unavailable' || constraint.constraint_type === 'hard_required';
-            const confidence = constraint.priority >= 1000 ? 'high' : 'medium';
-            
-            return {
-              id: constraint.id,
-              employee_id: constraint.employee_id,
-              employee_name: employeeName, // Use resolved employee name
-              dates: dates,
-              shifts: constraint.shifts || [],
-              is_hard: is_hard,
-              confidence: confidence,
-              constraint_type: constraint.constraint_type,
-              original_text: constraint.original_text,
-              reason: undefined // Not stored in database
-            };
-          });
-          
-          setParsedConstraints(loadedConstraints);
-          setHasLoadedOnce(true); // Mark as loaded
-          
-          if (onConstraintsChange) {
-            onConstraintsChange(loadedConstraints);
-          }
-        } else {
-          console.log('ℹ️ No saved constraints found or error:', result.error);
-          setHasLoadedOnce(true); // Mark as loaded even if empty
-        }
-      } catch (err) {
-        console.error('❌ Error loading constraints:', err);
-        setHasLoadedOnce(true); // Mark as loaded even on error
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadSavedConstraints();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees.length]); // Only depend on employee count, not the array itself
+  
+  // Extracted loading function so it can be called manually
+  const loadSavedConstraints = async () => {
+    console.log('📥 Loading saved AI constraints from Supabase...');
+    setIsLoading(true);
+    
+    try {
+      const result = await schedulerApi.loadAIConstraints('Akutmottagning');
+      
+      if (result.success && result.constraints) {
+        console.log(`✅ Loaded ${result.constraints.length} constraints from Supabase`);
+        
+        // Convert database constraints to ParsedConstraint format
+        const loadedConstraints: ParsedConstraint[] = result.constraints.map((dbConstraint: unknown) => {
+          const constraint = dbConstraint as DatabaseConstraint; // Type assertion for database row
+          
+          // 🔧 CRITICAL FIX: Resolve employee_name from employee_id
+          let employeeName = 'Okänd anställd';
+          if (constraint.employee_id) {
+            const matchedEmployee = employees.find(emp => emp.id === constraint.employee_id);
+            if (matchedEmployee) {
+              employeeName = `${matchedEmployee.first_name} ${matchedEmployee.last_name}`;
+              console.log(`✅ Resolved employee: ${constraint.employee_id} → ${employeeName}`);
+            } else {
+              console.warn(`⚠️ No employee found for constraint with employee_id: "${constraint.employee_id}"`);
+            }
+          }
+          
+          // Dates are already in array format from new schema
+          const dates = constraint.dates || [];
+          
+          // Convert constraint_type and priority to is_hard and confidence
+          const is_hard = constraint.constraint_type === 'hard_unavailable' || constraint.constraint_type === 'hard_required';
+          const confidence = constraint.priority >= 1000 ? 'high' : 'medium';
+          
+          return {
+            id: constraint.id,
+            employee_id: constraint.employee_id,
+            employee_name: employeeName, // Use resolved employee name
+            dates: dates,
+            shifts: constraint.shifts || [],
+            is_hard: is_hard,
+            confidence: confidence,
+            constraint_type: constraint.constraint_type,
+            original_text: constraint.original_text,
+            reason: undefined // Not stored in database
+          };
+        });
+        
+        setParsedConstraints(loadedConstraints);
+        setHasLoadedOnce(true); // Mark as loaded
+        
+        if (onConstraintsChange) {
+          onConstraintsChange(loadedConstraints);
+        }
+      } else {
+        console.log('ℹ️ No saved constraints found or error:', result.error);
+        setHasLoadedOnce(true); // Mark as loaded even if empty
+      }
+    } catch (err) {
+      console.error('❌ Error loading constraints:', err);
+      setHasLoadedOnce(true); // Mark as loaded even on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleParse = async (selectedEmployeeId?: string) => {
     const textToParse = selectedEmployeeId ? pendingConstraintText : inputText;
@@ -285,12 +286,14 @@ export function AIConstraintInput({
       
       if (!deleteResult.success) {
         console.error('❌ Failed to delete constraint from Supabase:', deleteResult.error);
-        // Still remove from UI even if deletion fails
+        setError('Kunde inte ta bort kravet från databasen. Försök igen.');
+        return; // Don't remove from UI if database deletion failed
       } else {
         console.log('✅ Constraint deleted from Supabase');
       }
     }
     
+    // Only update UI after successful database deletion
     const updated = parsedConstraints.filter((_, i) => i !== index);
     setParsedConstraints(updated);
     
