@@ -70,19 +70,18 @@ def optimize_schedule(
     
     try:
         # Use the dedicated Gurobi optimizer service
+        # Note: max_staff_per_shift, optimize_for_cost, and manual_constraints are accepted for
+        # API compatibility but not currently used by Gurobi (uses min_staff_per_shift for exact staffing)
         result = optimize_schedule_with_gurobi(
             employees=employees,
             start_date=start_date,
             end_date=end_date,
             min_staff_per_shift=min_staff_per_shift,
-            max_staff_per_shift=max_staff_per_shift,
             min_experience_per_shift=min_experience_per_shift,
             include_weekends=include_weekends,
             allow_partial_coverage=allow_partial_coverage,
-            optimize_for_cost=optimize_for_cost,
             random_seed=random_seed,
             employee_preferences=employee_preferences,
-            manual_constraints=manual_constraints,
             ai_constraints=ai_constraints
         )
         
