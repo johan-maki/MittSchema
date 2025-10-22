@@ -285,11 +285,12 @@ export const schedulerApi = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Parse error:', errorText);
+        console.error('❌ Edge Function HTTP error:', response.status, errorText);
         throw new Error(`Failed to parse constraint: ${response.status} ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('✅ Edge Function returned:', result);
       return result;
     } catch (error) {
       console.error('Error parsing AI constraint:', error);

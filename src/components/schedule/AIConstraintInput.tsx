@@ -219,6 +219,10 @@ export function AIConstraintInput({
           onConstraintsChange(newConstraints);
         }
       } else {
+        console.error('❌ Parsing failed:', result);
+        console.error('   Success:', result.success);
+        console.error('   Constraint:', result.constraint);
+        console.error('   Message:', result.message);
         setError(result.message || 'Kunde inte tolka begränsningen');
       }
     } catch (err) {
