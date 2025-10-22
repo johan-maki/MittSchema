@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,21 @@ interface Employee {
   full_name?: string;
 }
 
+interface DatabaseConstraint {
+  id: string;
+  employee_id?: string;
+  employee_name: string;
+  constraint_type: string;
+  shift_type?: string;
+  start_date: string;
+  end_date: string;
+  is_hard: boolean;
+  confidence: string;
+  original_text: string;
+}
+
 interface ParsedConstraint {
+  id?: string; // Database ID for deletion
   employee_id?: string;
   employee_name?: string;
   dates: string[];
@@ -36,7 +50,67 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
   const [inputText, setInputText] = useState('');
   const [parsedConstraints, setParsedConstraints] = useState<ParsedConstraint[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 📥 LOAD SAVED CONSTRAINTS FROM SUPABASE on component mount
+  useEffect(() => {
+    const loadSavedConstraints = async () => {
+      console.log('📥 Loading saved AI constraints from Supabase...');
+      setIsLoading(true);
+      
+      try {
+        const result = await schedulerApi.loadAIConstraints('Akutmottagning');
+        
+        if (result.success && result.constraints) {
+          console.log(`✅ Loaded ${result.constraints.length} constraints from Supabase`);
+          
+          // Convert database constraints to ParsedConstraint format
+          const loadedConstraints: ParsedConstraint[] = result.constraints.map((dbConstraint: unknown) => {
+            const constraint = dbConstraint as DatabaseConstraint; // Type assertion for database row
+            // Generate dates array from start_date and end_date
+            const dates: string[] = [];
+            if (constraint.start_date && constraint.end_date) {
+              const start = new Date(constraint.start_date);
+              const end = new Date(constraint.end_date);
+              
+              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                dates.push(d.toISOString().split('T')[0]);
+              }
+            }
+            
+            return {
+              id: constraint.id,
+              employee_id: constraint.employee_id,
+              employee_name: constraint.employee_name,
+              dates: dates,
+              shifts: constraint.shift_type ? [constraint.shift_type] : [],
+              is_hard: constraint.is_hard,
+              confidence: constraint.confidence || 'medium',
+              constraint_type: constraint.constraint_type,
+              original_text: constraint.original_text,
+              reason: undefined // Not stored in database
+            };
+          });
+          
+          setParsedConstraints(loadedConstraints);
+          
+          if (onConstraintsChange) {
+            onConstraintsChange(loadedConstraints);
+          }
+        } else {
+          console.log('ℹ️ No saved constraints found or error:', result.error);
+        }
+      } catch (err) {
+        console.error('❌ Error loading constraints:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSavedConstraints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount - onConstraintsChange intentionally excluded
 
   const handleParse = async () => {
     if (!inputText.trim()) return;
@@ -60,8 +134,32 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
           }
         }
         
-        // Map the API response to the expected format
+        // 💾 SAVE TO SUPABASE - This is the critical fix!
+        console.log('💾 Saving AI constraint to Supabase...');
+        const saveResult = await schedulerApi.saveAIConstraint({
+          employee_name: result.constraint.employee_name,
+          employee_id: result.constraint.employee_id,
+          constraint_type: result.constraint.constraint_type,
+          shift_type: result.constraint.shift_type,
+          start_date: result.constraint.start_date,
+          end_date: result.constraint.end_date,
+          is_hard: result.constraint.is_hard,
+          confidence: result.constraint.confidence || 'medium',
+          original_text: inputText,
+          department: 'Akutmottagning'
+        });
+
+        if (!saveResult.success) {
+          console.error('❌ Failed to save constraint to Supabase:', saveResult.error);
+          setError('Kravet tolkades men kunde inte sparas. Försök igen.');
+          return;
+        }
+
+        console.log('✅ Constraint saved to Supabase with ID:', saveResult.data?.id);
+        
+        // Map the API response to the expected format (including database ID)
         const mappedConstraint: ParsedConstraint = {
+          id: saveResult.data?.id, // Include database ID for deletion
           employee_id: result.constraint.employee_id,
           employee_name: result.constraint.employee_name,
           dates: dates,
@@ -83,15 +181,30 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
       } else {
         setError(result.message || 'Kunde inte tolka begränsningen');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error parsing constraint:', err);
-      setError(err.message || 'Fel vid tolkning av begränsning');
+      setError(err instanceof Error ? err.message : 'Fel vid tolkning av begränsning');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleRemoveConstraint = (index: number) => {
+  const handleRemoveConstraint = async (index: number) => {
+    const constraintToRemove = parsedConstraints[index];
+    
+    // 🗑️ DELETE FROM SUPABASE if it has an ID
+    if (constraintToRemove.id) {
+      console.log('🗑️ Deleting constraint from Supabase:', constraintToRemove.id);
+      const deleteResult = await schedulerApi.deleteAIConstraint(constraintToRemove.id);
+      
+      if (!deleteResult.success) {
+        console.error('❌ Failed to delete constraint from Supabase:', deleteResult.error);
+        // Still remove from UI even if deletion fails
+      } else {
+        console.log('✅ Constraint deleted from Supabase');
+      }
+    }
+    
     const updated = parsedConstraints.filter((_, i) => i !== index);
     setParsedConstraints(updated);
     
@@ -157,6 +270,15 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center space-y-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="text-sm text-muted-foreground">Laddar sparade begränsningar...</p>
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="space-y-2">
           <Textarea
             placeholder="Exempel: 'Charlotte ska inte jobba natt 15 november' eller 'Erik är ledig 20-25 december'"
@@ -244,6 +366,8 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
               ))}
             </div>
           </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>
