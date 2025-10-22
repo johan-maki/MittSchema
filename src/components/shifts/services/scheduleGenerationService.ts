@@ -430,71 +430,64 @@ export const generateScheduleForNextMonth = async (
   let finalAIConstraints = aiConstraints || [];
   
   try {
-    console.log('📥 Loading AI constraints from Supabase before generation...');
-    const { data: dbConstraints, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: dbConstraints, error } = await (supabase as any)
       .from('ai_constraints')
       .select('*')
       .eq('department', settings?.department || 'Akutmottagning');
     
     if (error) {
-      console.error('❌ Error loading AI constraints from Supabase:', error);
+      console.error('❌ Error loading AI constraints:', error);
     } else if (dbConstraints && dbConstraints.length > 0) {
-      console.log(`✅ Loaded ${dbConstraints.length} AI constraints from Supabase`);
-      
-      // Convert database format to Gurobi-compatible format
-      const convertedConstraints = dbConstraints.map((dbConstraint: any) => ({
-        employee_id: dbConstraint.employee_id,
-        employee_name: dbConstraint.employee_name,
-        constraint_type: dbConstraint.constraint_type,
-        shift_type: dbConstraint.shift_type,
-        start_date: dbConstraint.start_date,
-        end_date: dbConstraint.end_date,
-        is_hard: dbConstraint.is_hard,
-        confidence: dbConstraint.confidence || 1.0,
-        original_text: dbConstraint.original_text
-      }));
+      // 🔧 CRITICAL FIX: Resolve employee names to IDs using profiles
+      const convertedConstraints = dbConstraints
+        .map((dbConstraint: {
+          employee_name: string;
+          employee_id: string | null;
+          constraint_type: string;
+          shift_type?: string;
+          start_date: string;
+          end_date: string;
+          is_hard: boolean;
+          confidence?: number;
+          original_text?: string;
+        }) => {
+          // Find employee by matching first name (case-insensitive)
+          const matchedEmployee = profiles.find(p => 
+            p.first_name?.toLowerCase() === dbConstraint.employee_name?.toLowerCase()
+          );
+          
+          if (!matchedEmployee) {
+            console.warn(`⚠️ No employee found for constraint: "${dbConstraint.employee_name}"`);
+            return null; // Skip constraints for unknown employees
+          }
+          
+          return {
+            employee_id: matchedEmployee.id, // Use resolved UUID
+            employee_name: `${matchedEmployee.first_name} ${matchedEmployee.last_name}`,
+            constraint_type: dbConstraint.constraint_type,
+            shift_type: dbConstraint.shift_type,
+            start_date: dbConstraint.start_date,
+            end_date: dbConstraint.end_date,
+            is_hard: dbConstraint.is_hard,
+            confidence: dbConstraint.confidence || 1.0,
+            original_text: dbConstraint.original_text
+          };
+        })
+        .filter(Boolean); // Remove null entries
       
       finalAIConstraints = convertedConstraints;
-      console.log(`📊 AI constraints ready for Gurobi:`, finalAIConstraints);
       
-      // 🔍 DETAILED DEBUG: Show exactly what each constraint means
-      console.log('\n🎯 === AI CONSTRAINTS BREAKDOWN ===');
-      finalAIConstraints.forEach((constraint: {
-        employee_id: string;
-        employee_name: string;
-        constraint_type: string;
-        shift_type?: string;
-        start_date: string;
-        end_date: string;
-        is_hard: boolean;
-        confidence: number;
-        original_text?: string;
-      }, index: number) => {
-        console.log(`\n📌 Constraint ${index + 1}:`);
-        console.log(`   Employee: ${constraint.employee_name} (${constraint.employee_id})`);
-        console.log(`   Type: ${constraint.constraint_type}`);
-        console.log(`   Shift Type: ${constraint.shift_type || 'ALL (alla passtyper)'}`);
-        console.log(`   Date Range: ${constraint.start_date} → ${constraint.end_date}`);
-        console.log(`   Is Hard: ${constraint.is_hard ? '🔒 HARD (måste respekteras)' : '💡 SOFT (preferens)'}`);
-        console.log(`   Confidence: ${constraint.confidence}`);
-        console.log(`   Original Text: "${constraint.original_text}"`);
-        console.log(`   → Gurobi behandlar detta som: ${constraint.is_hard ? 'hard_blocked_slots' : 'medium_blocked_slots'}`);
-      });
-      console.log('\n=================================\n');
-    } else {
-      console.log('ℹ️ No AI constraints found in Supabase');
+      if (finalAIConstraints.length > 0) {
+        console.log(`✅ Loaded ${finalAIConstraints.length} AI constraints for Gurobi`);
+        finalAIConstraints.forEach((c: { employee_name: string; original_text?: string }) => {
+          console.log(`   • ${c.employee_name}: ${c.original_text}`);
+        });
+      }
     }
   } catch (err) {
     console.error('❌ Error loading AI constraints:', err);
-    // Continue with whatever constraints we have
   }
-  
-  console.log(`\n🚀 === SENDING TO GUROBI ===`);
-  console.log(`   Total AI constraints: ${finalAIConstraints.length}`);
-  console.log(`   Department: ${settings?.department || 'Akutmottagning'}`);
-  console.log(`   Date range: ${gurobiStartISO} → ${gurobiEndISO}`);
-  console.log(`   Employee preferences: ${employeePreferences.length}`);
-  console.log(`===========================\n`);
   
   let response;
   
