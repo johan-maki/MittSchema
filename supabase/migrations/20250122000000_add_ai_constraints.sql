@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS ai_constraints (
   
   -- Employee identification
   employee_name TEXT NOT NULL,
-  employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+  employee_id TEXT REFERENCES employees(id) ON DELETE CASCADE,
   
   -- Constraint details
   constraint_type TEXT NOT NULL CHECK (constraint_type IN ('unavailable_day', 'unavailable_shift', 'preferred_day', 'preferred_shift')),
