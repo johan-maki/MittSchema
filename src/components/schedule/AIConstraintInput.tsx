@@ -147,9 +147,25 @@ export function AIConstraintInput({
         
         // 💾 SAVE TO SUPABASE - This is the critical fix!
         console.log('💾 Saving AI constraint to Supabase...');
+        
+        // 🔧 CRITICAL FIX: Resolve employee name to ID before saving
+        const employeeName = result.constraint.employee_name || '';
+        const matchedEmployee = employees.find(emp => 
+          emp.first_name?.toLowerCase() === employeeName.toLowerCase() ||
+          `${emp.first_name} ${emp.last_name}`.toLowerCase() === employeeName.toLowerCase()
+        );
+        
+        if (!matchedEmployee) {
+          console.error(`❌ Could not find employee: "${employeeName}"`);
+          setError(`Kunde inte hitta anställd: "${employeeName}". Kontrollera stavningen.`);
+          return;
+        }
+        
+        console.log(`✅ Resolved employee: ${employeeName} → ${matchedEmployee.id}`);
+        
         const saveResult = await schedulerApi.saveAIConstraint({
           employee_name: result.constraint.employee_name,
-          employee_id: result.constraint.employee_id,
+          employee_id: matchedEmployee.id, // Use resolved employee ID
           constraint_type: result.constraint.constraint_type,
           shift_type: result.constraint.shift_type,
           start_date: result.constraint.start_date,
@@ -171,8 +187,8 @@ export function AIConstraintInput({
         // Map the API response to the expected format (including database ID)
         const mappedConstraint: ParsedConstraint = {
           id: saveResult.data?.id, // Include database ID for deletion
-          employee_id: result.constraint.employee_id,
-          employee_name: result.constraint.employee_name,
+          employee_id: matchedEmployee.id, // Use resolved employee ID
+          employee_name: `${matchedEmployee.first_name} ${matchedEmployee.last_name}`,
           dates: dates,
           shifts: result.constraint.shift_type ? [result.constraint.shift_type] : [],
           is_hard: result.constraint.is_hard,
