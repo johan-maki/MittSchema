@@ -439,38 +439,41 @@ export const generateScheduleForNextMonth = async (
     if (error) {
       console.error('❌ Error loading AI constraints:', error);
     } else if (dbConstraints && dbConstraints.length > 0) {
-      // 🔧 CRITICAL FIX: Resolve employee names to IDs using profiles
+      // 🔧 Convert new schema format to Gurobi-compatible format
       const convertedConstraints = dbConstraints
         .map((dbConstraint: {
-          employee_name: string;
-          employee_id: string | null;
+          employee_id: string;
+          dates: string[];
+          shifts: string[];
           constraint_type: string;
-          shift_type?: string;
-          start_date: string;
-          end_date: string;
-          is_hard: boolean;
-          confidence?: number;
-          original_text?: string;
+          priority: number;
+          original_text: string;
         }) => {
-          // Find employee by matching first name (case-insensitive)
-          const matchedEmployee = profiles.find(p => 
-            p.first_name?.toLowerCase() === dbConstraint.employee_name?.toLowerCase()
-          );
+          // Find employee to get full name
+          const matchedEmployee = profiles.find(p => p.id === dbConstraint.employee_id);
           
           if (!matchedEmployee) {
-            console.warn(`⚠️ No employee found for constraint: "${dbConstraint.employee_name}"`);
+            console.warn(`⚠️ No employee found for constraint with employee_id: "${dbConstraint.employee_id}"`);
             return null; // Skip constraints for unknown employees
           }
           
+          // Convert from new schema format to Gurobi format
+          const dates = dbConstraint.dates || [];
+          const start_date = dates.length > 0 ? dates[0] : '';
+          const end_date = dates.length > 0 ? dates[dates.length - 1] : '';
+          
+          // Convert constraint_type from new format to Gurobi format
+          const is_hard = dbConstraint.constraint_type === 'hard_unavailable' || dbConstraint.constraint_type === 'hard_required';
+          
           return {
-            employee_id: matchedEmployee.id, // Use resolved UUID
+            employee_id: matchedEmployee.id,
             employee_name: `${matchedEmployee.first_name} ${matchedEmployee.last_name}`,
             constraint_type: dbConstraint.constraint_type,
-            shift_type: dbConstraint.shift_type,
-            start_date: dbConstraint.start_date,
-            end_date: dbConstraint.end_date,
-            is_hard: dbConstraint.is_hard,
-            confidence: dbConstraint.confidence || 1.0,
+            shift_type: dbConstraint.shifts && dbConstraint.shifts.length > 0 ? dbConstraint.shifts[0] : undefined,
+            start_date: start_date,
+            end_date: end_date,
+            is_hard: is_hard,
+            confidence: dbConstraint.priority >= 1000 ? 'high' : 'medium',
             original_text: dbConstraint.original_text
           };
         })

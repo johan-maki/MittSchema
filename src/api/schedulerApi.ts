@@ -316,18 +316,42 @@ export const schedulerApi = {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       
-      // Table will exist after migration
+      // Convert date range to array of dates (matching new schema)
+      const dates: string[] = [];
+      const start = new Date(constraint.start_date);
+      const end = new Date(constraint.end_date);
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+      
+      // Convert shift_type to shifts array (matching new schema)
+      const shifts = constraint.shift_type ? [constraint.shift_type] : [];
+      
+      // Convert constraint_type and is_hard to new format
+      let newConstraintType = 'hard_unavailable'; // Default
+      let priority = 1000; // Default for hard constraints
+      
+      if (constraint.constraint_type === 'unavailability' || constraint.constraint_type === 'unavailable_day') {
+        newConstraintType = constraint.is_hard ? 'hard_unavailable' : 'soft_preference';
+        priority = constraint.is_hard ? 1000 : 100;
+      } else if (constraint.constraint_type === 'shift_preference') {
+        newConstraintType = 'soft_preference';
+        priority = 100;
+      } else if (constraint.constraint_type === 'required') {
+        newConstraintType = 'hard_required';
+        priority = 1000;
+      }
+      
+      // Table will exist after migration - use new schema
       const { data, error } = await (supabase as any)
         .from('ai_constraints')
         .insert([{
-          employee_name: constraint.employee_name,
           employee_id: constraint.employee_id || null,
-          constraint_type: constraint.constraint_type,
-          shift_type: constraint.shift_type || null,
-          start_date: constraint.start_date,
-          end_date: constraint.end_date,
-          is_hard: constraint.is_hard,
-          confidence: constraint.confidence || 'medium',
+          dates: dates,
+          shifts: shifts,
+          constraint_type: newConstraintType,
+          priority: priority,
           original_text: constraint.original_text,
           department: constraint.department || 'Akutmottagning'
         }])

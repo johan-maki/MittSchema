@@ -188,23 +188,6 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   const totalCoveredShifts = uniqueShiftSlots.size;
   const coveragePercentage = Math.round((totalCoveredShifts / totalRequiredShifts) * 100);
   
-  console.log('🔍 Coverage calculation debug:', {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0],
-    daysInMonth,
-    totalShifts: shifts.length,
-    shiftsInTargetMonth: shiftsInTargetMonth.length,
-    totalAssignedShifts,
-    totalRequiredShifts,
-    totalCoveredShifts,
-    coveragePercentage,
-    uniqueShiftSlotsArray: Array.from(uniqueShiftSlots).slice(0, 5), // Show first 5 for debugging
-    firstFewShifts: shifts.slice(0, 3).map(s => ({
-      start_time: s.start_time,
-      date: parseISO(s.start_time).toISOString().split('T')[0]
-    }))
-  });
-  
   // Calculate total cost (assuming average hourly rate from employees)
   const averageHourlyRate = employees.reduce((sum, emp) => sum + (emp.hourly_rate || 1000), 0) / employees.length;
   const totalCoveredHours = employeeSummaries.reduce((sum, emp) => sum + emp.totalHours, 0);
