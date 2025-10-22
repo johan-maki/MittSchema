@@ -425,6 +425,47 @@ export const generateScheduleForNextMonth = async (
   setTimeout(() => onProgress?.('⚙️ Kör matematisk optimering för schemaläggning...', 65), 1000);
   setTimeout(() => onProgress?.('🧮 Balanserar rättvisa och effektivitet...', 70), 1500);
   
+  // 🔄 LOAD AI CONSTRAINTS FROM SUPABASE BEFORE SENDING TO GUROBI
+  // This ensures constraints persist across page refreshes and are always used
+  let finalAIConstraints = aiConstraints || [];
+  
+  try {
+    console.log('📥 Loading AI constraints from Supabase before generation...');
+    const { data: dbConstraints, error } = await supabase
+      .from('ai_constraints')
+      .select('*')
+      .eq('department', settings?.department || 'Akutmottagning');
+    
+    if (error) {
+      console.error('❌ Error loading AI constraints from Supabase:', error);
+    } else if (dbConstraints && dbConstraints.length > 0) {
+      console.log(`✅ Loaded ${dbConstraints.length} AI constraints from Supabase`);
+      
+      // Convert database format to Gurobi-compatible format
+      const convertedConstraints = dbConstraints.map((dbConstraint: any) => ({
+        employee_id: dbConstraint.employee_id,
+        employee_name: dbConstraint.employee_name,
+        constraint_type: dbConstraint.constraint_type,
+        shift_type: dbConstraint.shift_type,
+        start_date: dbConstraint.start_date,
+        end_date: dbConstraint.end_date,
+        is_hard: dbConstraint.is_hard,
+        confidence: dbConstraint.confidence || 1.0,
+        original_text: dbConstraint.original_text
+      }));
+      
+      finalAIConstraints = convertedConstraints;
+      console.log(`📊 AI constraints ready for Gurobi:`, finalAIConstraints);
+    } else {
+      console.log('ℹ️ No AI constraints found in Supabase');
+    }
+  } catch (err) {
+    console.error('❌ Error loading AI constraints:', err);
+    // Continue with whatever constraints we have
+  }
+  
+  console.log(`🚀 Sending ${finalAIConstraints.length} AI constraints to Gurobi`);
+  
   let response;
   
   try {
@@ -442,7 +483,7 @@ export const generateScheduleForNextMonth = async (
       false, // allowPartialCoverage = false for first attempt (strict requirements)
       gurobiConfig.optimizeForCost, // Pass cost optimization flag
       gurobiConfig.maxStaffPerShift, // Pass max staffing limit (null = exact staffing)
-      aiConstraints // Pass AI-parsed constraints from natural language
+      finalAIConstraints // Pass AI constraints loaded from Supabase
     );
   } catch (error) {
     // Enhanced error classification
