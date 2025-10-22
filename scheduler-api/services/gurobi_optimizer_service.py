@@ -1,7 +1,7 @@
 """
 Gurobi-based optimizer service for advanced schedule optimization.
 
-This service uses Gurobi's mathematical optimization solver to crea            # Add all constraints (note: max_staff_per_shift is stored in self.max_staff_per_shift)
+This service uses Gurobi's mathematical optimization solver to crea            # Add all constraints
             self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends)
             self._add_employee_preference_constraints()
             
@@ -60,14 +60,12 @@ class GurobiScheduleOptimizer:
         start_date: datetime, 
         end_date: datetime,
         min_staff_per_shift: int = 1,
-        max_staff_per_shift: Optional[int] = None,
         min_experience_per_shift: int = 1,
         include_weekends: bool = True,
         allow_partial_coverage: bool = False,
         random_seed: Optional[int] = None,
         employee_preferences: Optional[List] = None,
-        manual_constraints: Optional[List] = None,
-        optimize_for_cost: bool = False
+        ai_constraints: Optional[List[Dict]] = None
     ) -> Dict[str, Any]:
         """
         Main optimization function that creates the optimal schedule.
@@ -77,13 +75,11 @@ class GurobiScheduleOptimizer:
             start_date: Schedule start date
             end_date: Schedule end date
             min_staff_per_shift: Minimum staff required per shift
-            max_staff_per_shift: Maximum staff allowed per shift (None = same as min, allows exact staffing)
             min_experience_per_shift: Minimum experience points required per shift
             include_weekends: Whether to schedule weekend shifts
             random_seed: Random seed for reproducible results
             employee_preferences: Individual employee work preferences
-            manual_constraints: AI-parsed or manually added constraints
-            optimize_for_cost: Whether to optimize for minimum cost (prioritize lower hourly rates)
+            ai_constraints: AI-parsed constraints from Supabase (Gurobi-ready format)
             
         Returns:
             Dictionary containing the optimized schedule and statistics
@@ -95,18 +91,18 @@ class GurobiScheduleOptimizer:
             self.employees = employees
             self.dates = create_date_list(start_date, end_date)
             self.employee_preferences = employee_preferences or []
-            self.manual_constraints = manual_constraints or []
-            self.optimize_for_cost = optimize_for_cost
-            
-            # Set min and max staff per shift
-            self.min_staff_per_shift = min_staff_per_shift
-            # Set max staff per shift - default to min (exact staffing) for backward compatibility
-            self.max_staff_per_shift = max_staff_per_shift if max_staff_per_shift is not None else min_staff_per_shift
+            self.ai_constraints = ai_constraints or []
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
-            logger.info(f"Parameters: min_staff={min_staff_per_shift}, max_staff={self.max_staff_per_shift}, min_experience={min_experience_per_shift}, include_weekends={include_weekends}, optimize_for_cost={optimize_for_cost}")
+            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}")
             logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
-            logger.info(f"Manual constraints provided: {len(self.manual_constraints)}")
+            logger.info(f"AI constraints provided: {len(self.ai_constraints)}")
+            
+            # Log AI constraints summary for debugging
+            if self.ai_constraints:
+                for constraint in self.ai_constraints:
+                    emp_name = next((e.get('name', 'Unknown') for e in employees if e.get('id') == constraint.get('employee_id')), 'Unknown')
+                    logger.info(f"  AI Constraint: {emp_name} - {constraint.get('constraint_type')} on {len(constraint.get('dates', []))} dates")
             
             # Log employee preferences for debugging
             if self.employee_preferences:
@@ -210,12 +206,11 @@ class GurobiScheduleOptimizer:
             # Add constraints
             self._add_constraints(min_staff_per_shift, min_experience_per_shift, include_weekends, allow_partial_coverage)
             
-            # Add employee preference constraints (CRITICAL: This was missing!)
+            # Add employee preference constraints
             self._add_employee_preference_constraints()
             
-            # Add manual AI-parsed constraints
-            if self.manual_constraints:
-                self._add_manual_constraints()
+            # Add AI constraints (from natural language parsing)
+            self._add_ai_constraints()
             
             # Set objective function
             self._set_objective()
@@ -487,11 +482,10 @@ class GurobiScheduleOptimizer:
                     # The optimizer will try to maximize coverage without failing if impossible
                     logger.info(f"Allowing partial coverage for {date} {shift} shift")
                 
-                # Ensure maximum staff per shift (prevent excessive overstaffing)
-                # Uses max_staff_per_shift if configured, otherwise defaults to min (exact staffing)
-                # This allows flexibility for extra staffing when needed (training, backup, overlap)
+                # Ensure exact staff per shift (no overstaffing) - always apply this
+                # Note: For now, we enforce exact staffing (min = max) but this could be configurable
                 self.model.addConstr(
-                    total_staff <= self.max_staff_per_shift,
+                    total_staff <= min_staff_per_shift,
                     name=f"max_staff_{d}_{shift}"
                 )
                 
@@ -893,64 +887,161 @@ class GurobiScheduleOptimizer:
         if employees_without_prefs:
             logger.info(f"  Employees using default constraints: {len(employees_without_prefs)}")
     
-    def _add_manual_constraints(self):
+    def _add_ai_constraints(self):
         """
-        Add manually specified constraints from AI-parser or user input.
+        Add AI-parsed constraints from natural language input (Gurobi-ready format).
         
-        Supported constraint types:
-        - hard_blocked_slot: Employee cannot work specific date+shift (hard constraint)
-        - preferred_shift: Employee prefers/avoids specific shifts (soft constraint in objective)
+        These constraints come from Supabase ai_constraints table and are already
+        in the perfect format for Gurobi - no conversion needed!
+        
+        Format:
+        {
+            "employee_id": "text-id",
+            "dates": ["2025-12-20", "2025-12-21", ...],  # Already expanded!
+            "shifts": [],  # Empty = all shifts, or ["day", "evening", "night"]
+            "constraint_type": "hard_unavailable" | "soft_preference" | "hard_required",
+            "priority": 1000,  # 1000 = must respect, 500 = strong, 100 = nice to have
+            "original_text": "user's Swedish input",
+            "natural_language": "friendly confirmation"
+        }
         """
-        logger.info(f"Adding {len(self.manual_constraints)} manual constraints...")
+        if not self.ai_constraints:
+            logger.info("No AI constraints provided, skipping AI constraint processing")
+            return
         
-        for constraint in self.manual_constraints:
+        logger.info(f"🤖 Adding {len(self.ai_constraints)} AI-parsed constraints (Gurobi-ready format)")
+        
+        # Map shift names (Swedish → English for Gurobi)
+        shift_name_map = {
+            'dag': 'day',
+            'day': 'day',
+            'kväll': 'evening',
+            'evening': 'evening',
+            'kvall': 'evening',  # Without umlaut
+            'natt': 'night',
+            'night': 'night'
+        }
+        
+        hard_constraints_added = 0
+        soft_constraints_added = 0
+        required_constraints_added = 0
+        
+        for constraint in self.ai_constraints:
             try:
-                constraint_type = constraint.type if hasattr(constraint, 'type') else constraint.get('type')
-                employee_id = constraint.employee_id if hasattr(constraint, 'employee_id') else constraint.get('employee_id')
-                dates = constraint.dates if hasattr(constraint, 'dates') else constraint.get('dates', [])
-                shift_types = constraint.shift_types if hasattr(constraint, 'shift_types') else constraint.get('shift_types', [])
-                is_hard = constraint.is_hard if hasattr(constraint, 'is_hard') else constraint.get('is_hard', True)
-                description = constraint.description if hasattr(constraint, 'description') else constraint.get('description', 'Unknown')
+                emp_id = constraint.get('employee_id')
+                constraint_type = constraint.get('constraint_type')
+                dates = constraint.get('dates', [])
+                shifts = constraint.get('shifts', [])
+                priority = constraint.get('priority', 1000)
+                original_text = constraint.get('original_text', 'N/A')
                 
-                logger.info(f"Processing manual constraint: {description} (type={constraint_type}, hard={is_hard})")
+                # Get employee name for logging
+                emp_name = next((e.get('name', 'Unknown') for e in self.employees if e.get('id') == emp_id), 'Unknown')
                 
-                if constraint_type == 'hard_blocked_slot' and is_hard:
-                    # Hard constraint: Employee absolutely cannot work this slot
-                    if not employee_id or not dates or not shift_types:
-                        logger.warning(f"Skipping incomplete hard_blocked_slot constraint: {description}")
+                # Validate employee exists
+                if not any(e.get('id') == emp_id for e in self.employees):
+                    logger.warning(f"AI constraint for unknown employee {emp_id} - skipping")
+                    continue
+                
+                # Convert date strings to indices
+                date_indices = []
+                for date_str in dates:
+                    # Parse date string (format: "YYYY-MM-DD")
+                    from datetime import datetime
+                    try:
+                        constraint_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                        
+                        # Find index in our scheduling period
+                        for d, schedule_date in enumerate(self.dates):
+                            if schedule_date.date() == constraint_date:
+                                date_indices.append(d)
+                                break
+                    except ValueError:
+                        logger.warning(f"Invalid date format '{date_str}' in AI constraint - skipping this date")
                         continue
-                    
-                    for date_str in dates:
-                        # Find date index in self.dates
-                        try:
-                            target_date = datetime.fromisoformat(date_str.replace('Z', '+00:00')).date()
-                            date_idx = next(i for i, d in enumerate(self.dates) if d.date() == target_date)
-                            
-                            for shift_type in shift_types:
-                                if shift_type in self.shift_types:
-                                    # Add hard constraint: this shift must be 0
-                                    self.model.addConstr(
-                                        self.shifts[(employee_id, date_idx, shift_type)] == 0,
-                                        name=f"manual_hard_block_{employee_id}_{date_idx}_{shift_type}"
-                                    )
-                                    logger.info(f"  ✓ Added hard block: {employee_id} cannot work {shift_type} on {date_str}")
-                        except (ValueError, StopIteration) as e:
-                            logger.warning(f"Skipping invalid date {date_str} in constraint: {e}")
-                            continue
                 
-                elif constraint_type == 'hard_blocked_slot' and not is_hard:
-                    # Soft constraint: Employee prefers not to work this slot
-                    # This would be handled in objective function - not yet implemented
-                    logger.info(f"  → Soft constraint for {description} (would add penalty in objective)")
+                if not date_indices:
+                    logger.warning(f"AI constraint dates outside scheduling period - skipping: {dates}")
+                    continue
+                
+                # Normalize shift names and handle empty shifts (means all shifts)
+                target_shifts = []
+                if not shifts or len(shifts) == 0:
+                    # Empty array = all shifts affected
+                    target_shifts = self.shift_types
+                else:
+                    for shift in shifts:
+                        normalized = shift_name_map.get(shift.lower(), shift.lower())
+                        if normalized in self.shift_types:
+                            target_shifts.append(normalized)
+                        else:
+                            logger.warning(f"Unknown shift type '{shift}' in AI constraint - skipping this shift")
+                
+                if not target_shifts:
+                    logger.warning(f"No valid shifts in AI constraint - skipping")
+                    continue
+                
+                # Apply constraint based on type
+                if constraint_type == 'hard_unavailable':
+                    # HARD CONSTRAINT: Employee absolutely cannot work these dates/shifts
+                    logger.info(f"🚫 HARD UNAVAILABLE: {emp_name} blocked from {len(date_indices)} dates, shifts: {target_shifts} (priority: {priority})")
+                    logger.info(f"   Original: \"{original_text}\"")
+                    
+                    for day_index in date_indices:
+                        for shift in target_shifts:
+                            self.model.addConstr(
+                                self.shifts[(emp_id, day_index, shift)] == 0,
+                                name=f"ai_hard_unavailable_{emp_id}_{day_index}_{shift}"
+                            )
+                            hard_constraints_added += 1
+                
+                elif constraint_type == 'hard_required':
+                    # HARD CONSTRAINT: Employee MUST work these dates/shifts (if possible)
+                    logger.info(f"✅ HARD REQUIRED: {emp_name} must work {len(date_indices)} dates, shifts: {target_shifts} (priority: {priority})")
+                    logger.info(f"   Original: \"{original_text}\"")
+                    
+                    for day_index in date_indices:
+                        for shift in target_shifts:
+                            # Set variable to 1 (must work this shift)
+                            self.model.addConstr(
+                                self.shifts[(emp_id, day_index, shift)] == 1,
+                                name=f"ai_hard_required_{emp_id}_{day_index}_{shift}"
+                            )
+                            required_constraints_added += 1
+                
+                elif constraint_type == 'soft_preference':
+                    # SOFT CONSTRAINT: Employee prefers not to work these dates/shifts
+                    # Add penalty to objective function (handled in _set_objective)
+                    logger.info(f"💡 SOFT PREFERENCE: {emp_name} prefers to avoid {len(date_indices)} dates, shifts: {target_shifts} (priority: {priority})")
+                    logger.info(f"   Original: \"{original_text}\"")
+                    
+                    # Store in employee_day_penalties for objective function
+                    # Weight penalty based on priority (higher priority = stronger penalty)
+                    penalty_weight = priority / 100  # Priority 1000 → weight 10, priority 100 → weight 1
+                    
+                    if emp_id not in self.employee_day_penalties:
+                        self.employee_day_penalties[emp_id] = []
+                    
+                    for day_index in date_indices:
+                        # Store as tuple: (day_index, shifts, penalty_weight)
+                        self.employee_day_penalties[emp_id].append((day_index, target_shifts, penalty_weight))
+                    
+                    soft_constraints_added += 1
                 
                 else:
-                    logger.info(f"  → Constraint type '{constraint_type}' not yet implemented")
+                    logger.warning(f"Unknown AI constraint type '{constraint_type}' - skipping")
+                    continue
             
             except Exception as e:
-                logger.error(f"Error adding manual constraint: {e}")
+                logger.error(f"Error processing AI constraint: {e}")
+                logger.error(f"Constraint data: {constraint}")
                 continue
         
-        logger.info("Manual constraints applied successfully")
+        logger.info(f"✓ AI constraints applied:")
+        logger.info(f"  🚫 Hard unavailable: {hard_constraints_added} constraints")
+        logger.info(f"  ✅ Hard required: {required_constraints_added} constraints")
+        logger.info(f"  💡 Soft preferences: {soft_constraints_added} constraints")
+        logger.info(f"  Total: {hard_constraints_added + required_constraints_added + soft_constraints_added} constraints from {len(self.ai_constraints)} AI inputs")
     
     def _set_objective(self):
         """
@@ -964,34 +1055,13 @@ class GurobiScheduleOptimizer:
         """
         logger.info("Setting enhanced objective function with shift type fairness...")
         
-        # Primary objective: Maximize coverage (ensure all required shifts are filled)
-        # Coverage should measure "how well are minimum staffing requirements met"
-        # NOT "how many total assignments exist" (which encourages overstaffing)
-        
-        # For each shift slot, create a binary variable indicating if minimum is met
-        coverage_met_vars = {}
-        for d in range(len(self.dates)):
-            for shift in self.shift_types:
-                coverage_met_vars[(d, shift)] = self.model.addVar(
-                    vtype=GRB.BINARY, 
-                    name=f"coverage_met_d{d}_{shift}"
-                )
-                
-                # Calculate total staff assigned to this shift
-                total_staff = gp.quicksum(
-                    self.shifts[(emp['id'], d, shift)]
-                    for emp in self.employees
-                )
-                
-                # coverage_met = 1 if total_staff >= min_staff_per_shift, else 0
-                # Using indicator constraint: coverage_met == 1 => total_staff >= min_staff_per_shift
-                self.model.addConstr(
-                    (coverage_met_vars[(d, shift)] == 1) >> 
-                    (total_staff >= self.min_staff_per_shift)
-                )
-        
-        # Maximize the number of shifts where minimum staffing is met
-        total_coverage = gp.quicksum(coverage_met_vars.values())
+        # Primary objective: Maximize total assigned shifts (coverage)
+        total_coverage = gp.quicksum(
+            self.shifts[(emp['id'], d, shift)]
+            for emp in self.employees
+            for d in range(len(self.dates))
+            for shift in self.shift_types
+        )
         
         # Secondary objective: Minimize unfairness in total shift distribution
         emp_total_shifts = []
@@ -1090,97 +1160,26 @@ class GurobiScheduleOptimizer:
         if hasattr(self, 'medium_penalty_vars') and self.medium_penalty_vars:
             medium_blocked_penalty = gp.quicksum(self.medium_penalty_vars.values())
         
-        # Eighth objective: Minimize deviation from work_percentage targets (when cost optimization is OFF)
-        # This encourages giving each employee shifts matching their work_percentage exactly
-        # For example: 100% employee gets full schedule, 50% employee gets half, etc.
-        work_percentage_deviation = 0
-        if not self.optimize_for_cost:
-            # Only optimize for work_percentage targets when NOT optimizing for cost
-            # This ensures employees get their contracted hours when economics isn't a concern
-            total_weeks = len(self.dates) / 7.0
-            
-            for emp in self.employees:
-                work_percentage = emp.get('work_percentage', 100)
-                
-                # Calculate target shifts for this employee based on their work_percentage
-                target_shifts_exact = (work_percentage / 100.0) * total_weeks * 5  # 5 shifts per week
-                target_shifts = target_shifts_exact  # Use exact value for better precision
-                
-                # Calculate actual shifts assigned to this employee
-                actual_shifts = gp.quicksum(
-                    self.shifts[(emp['id'], d, shift)]
-                    for d in range(len(self.dates))
-                    for shift in self.shift_types
-                )
-                
-                # Create absolute value of deviation using auxiliary variable
-                deviation_var = self.model.addVar(vtype=GRB.CONTINUOUS, name=f"work_pct_dev_{emp['id']}")
-                self.model.addConstr(deviation_var >= actual_shifts - target_shifts)
-                self.model.addConstr(deviation_var >= target_shifts - actual_shifts)
-                
-                work_percentage_deviation += deviation_var
-            
-            logger.info("📊 Work percentage optimization ENABLED - will try to match each employee's contracted percentage")
-        else:
-            logger.info("📊 Work percentage optimization DISABLED - cost takes priority")
-        
-        # Ninth objective: Minimize total staffing cost (optional)
-        # Only included when optimize_for_cost is enabled
-        # This encourages using employees with lower hourly rates when possible
-        total_cost = 0
-        if self.optimize_for_cost:
-            total_cost = gp.quicksum(
-                self.shifts[(emp['id'], d, shift)] * emp.get('hourly_rate', 1000.0)
-                for emp in self.employees
-                for d in range(len(self.dates))
-                for shift in self.shift_types
-            )
-            logger.info("💰 Cost optimization ENABLED - will prioritize employees with lower hourly rates")
-        else:
-            logger.info("� Cost optimization DISABLED - all employees treated equally regardless of hourly rate")
-        
         # Combined objective with balanced weights:
         # - Coverage is most important (weight: 100)
         # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
-        # - Work percentage target matching (weight: 40) - when cost OFF, try to hit each employee's contracted percentage
         # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
-        # - Preferred shifts are very important (weight: 18) - respect shift preferences
-        # - Weekend fairness is high priority (weight: 15) - increased for better fairness
+        # - Preferred shifts are very important (weight: 25) - significantly increased to respect shift preferences
+        # - Weekend fairness is high priority (weight: 20) - increased for better fairness
         # - Preferred days matter (weight: 12) - high weight for day preferences
         # - Shift type fairness is important (weight: 8)
-        # - Cost is minor priority (weight: 0.001) - when enabled, prefer lower-cost employees as tie-breaker only
-        
-        objective_terms = [
-            100 * total_coverage,
-            -50 * total_unfairness,
-            -30 * medium_blocked_penalty,
-            -18 * non_preferred_shift_penalty,
-            -15 * weekend_unfairness,
-            -8 * shift_type_unfairness,
-            -12 * non_preferred_day_penalty
-        ]
-        
-        # Add work_percentage deviation penalty when cost optimization is OFF
-        if not self.optimize_for_cost:
-            # High weight (40) to strongly encourage matching contracted work percentages
-            # This ensures 100% employees get full schedules, 50% get half, etc.
-            objective_terms.append(-40 * work_percentage_deviation)
-        
-        # Add cost term only if cost optimization is enabled
-        if self.optimize_for_cost:
-            # Weight of 0.001 means: saving 1000 SEK is worth about 1 point of coverage/fairness
-            # This keeps cost as a tie-breaker rather than dominating factor
-            objective_terms.append(-0.001 * total_cost)
-        
         self.model.setObjective(
-            gp.quicksum(objective_terms),
+            100 * total_coverage 
+            - 50 * total_unfairness 
+            - 30 * medium_blocked_penalty
+            - 25 * non_preferred_shift_penalty
+            - 20 * weekend_unfairness 
+            - 8 * shift_type_unfairness 
+            - 12 * non_preferred_day_penalty,
             GRB.MAXIMIZE
         )
         
-        if self.optimize_for_cost:
-            logger.info(f"✅ Objective function set WITH cost consideration (0.001x): Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (18x), Weekend fairness (15x), Shift type (8x), Preferred days (12x), Cost (0.001x)")
-        else:
-            logger.info(f"✅ Objective function set WITHOUT cost consideration: Coverage (100x), Total fairness (50x), Work % targets (40x), Medium blocks (30x), Preferred shifts (18x), Weekend fairness (15x), Shift type (8x), Preferred days (12x)")
+        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (25x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x)")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
@@ -1262,88 +1261,9 @@ class GurobiScheduleOptimizer:
                 (coverage_stats["filled_shifts"] / coverage_stats["total_shifts"]) * 100, 1
             )
         
-        # Analyze uncovered shifts - detailed breakdown
-        uncovered_shifts = []
-        shift_type_coverage = {"day": {"filled": 0, "total": 0}, "evening": {"filled": 0, "total": 0}, "night": {"filled": 0, "total": 0}}
-        
-        for d in range(len(self.dates)):
-            date = self.dates[d]
-            for shift in self.shift_types:
-                shift_type_coverage[shift]["total"] += 1
-                is_filled = False
-                
-                for emp in self.employees:
-                    if self.shifts[(emp['id'], d, shift)].x > 0.5:
-                        is_filled = True
-                        shift_type_coverage[shift]["filled"] += 1
-                        break
-                
-                if not is_filled:
-                    # Analyze why this shift couldn't be filled
-                    reasons = []
-                    available_employees = 0
-                    
-                    for emp in self.employees:
-                        emp_id = emp['id']
-                        # Check if employee could theoretically work this shift
-                        emp_pref = next((p for p in self.employee_preferences if p.employee_id == emp_id), None)
-                        
-                        if emp_pref:
-                            # Check hard blocks
-                            if hasattr(emp_pref, 'hard_blocked_slots') and emp_pref.hard_blocked_slots:
-                                for block in emp_pref.hard_blocked_slots:
-                                    if block.get('date') == date.strftime('%Y-%m-%d') and block.get('shift_type') == shift:
-                                        reasons.append(f"{emp.get('first_name', '')} hårt blockerad")
-                                        break
-                            
-                            # Check excluded shifts
-                            if hasattr(emp_pref, 'excluded_shifts') and emp_pref.excluded_shifts:
-                                if shift in emp_pref.excluded_shifts:
-                                    reasons.append(f"{emp.get('first_name', '')} exkluderad från {shift}pass")
-                                    continue
-                            
-                            # Check excluded days
-                            day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-                            day_name = day_names[date.weekday()]
-                            if hasattr(emp_pref, 'excluded_days') and emp_pref.excluded_days:
-                                if day_name in emp_pref.excluded_days:
-                                    reasons.append(f"{emp.get('first_name', '')} exkluderad från {day_name}")
-                                    continue
-                        
-                        available_employees += 1
-                    
-                    if available_employees == 0:
-                        if not reasons:
-                            reasons.append("Ingen tillgänglig personal (alla blockerade/exkluderade)")
-                    else:
-                        reasons.append(f"Otillräcklig kapacitet ({available_employees} tillgängliga men alla upptagna)")
-                    
-                    uncovered_shifts.append({
-                        "date": date.strftime('%Y-%m-%d'),
-                        "day_name": ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"][date.weekday()],
-                        "shift_type": shift,
-                        "shift_label": {"day": "Dagpass", "evening": "Kvällspass", "night": "Nattpass"}[shift],
-                        "reasons": reasons[:3]  # Top 3 reasons
-                    })
-        
-        # Add detailed coverage analysis
-        coverage_stats["uncovered_shifts"] = uncovered_shifts
-        coverage_stats["uncovered_count"] = len(uncovered_shifts)
-        coverage_stats["shift_type_coverage"] = {
-            k: {
-                "filled": v["filled"],
-                "total": v["total"],
-                "percentage": round((v["filled"] / v["total"] * 100), 1) if v["total"] > 0 else 0
-            }
-            for k, v in shift_type_coverage.items()
-        }
-        
         # Log results
         logger.info(f"Schedule generated with {coverage_stats['coverage_percentage']}% coverage")
         logger.info(f"Filled {coverage_stats['filled_shifts']} out of {coverage_stats['total_shifts']} shifts")
-        logger.info(f"Uncovered shifts: {coverage_stats['uncovered_count']}")
-        for shift_type, data in coverage_stats["shift_type_coverage"].items():
-            logger.info(f"  {shift_type}: {data['percentage']}% ({data['filled']}/{data['total']})")
         
         # Calculate shift type fairness statistics
         shift_type_stats = {}
@@ -1429,14 +1349,12 @@ def optimize_schedule_with_gurobi(
     start_date: datetime, 
     end_date: datetime,
     min_staff_per_shift: int = 1,
-    max_staff_per_shift: Optional[int] = None,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
-    optimize_for_cost: bool = False,
     random_seed: Optional[int] = None,
     employee_preferences: Optional[List] = None,
-    manual_constraints: Optional[List] = None
+    ai_constraints: Optional[List[Dict]] = None
 ) -> Dict[str, Any]:
     """
     Main function to optimize schedule using Gurobi.
@@ -1450,12 +1368,10 @@ def optimize_schedule_with_gurobi(
         start_date=start_date,
         end_date=end_date,
         min_staff_per_shift=min_staff_per_shift,
-        max_staff_per_shift=max_staff_per_shift,
         min_experience_per_shift=min_experience_per_shift,
         include_weekends=include_weekends,
         allow_partial_coverage=allow_partial_coverage,
-        optimize_for_cost=optimize_for_cost,
         random_seed=random_seed,
         employee_preferences=employee_preferences,
-        manual_constraints=manual_constraints
+        ai_constraints=ai_constraints
     )

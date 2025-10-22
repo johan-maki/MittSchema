@@ -61,7 +61,9 @@ async def handle_optimization_request(request: ScheduleRequest):
         logger.info(f"Using random seed: {random_seed}")
         
         # Process AI constraints if provided
+        processed_ai_constraints = []
         processed_employee_preferences = request.employee_preferences
+        
         if request.ai_constraints:
             logger.info(f"📝 Received {len(request.ai_constraints)} AI constraints")
             
@@ -73,24 +75,13 @@ async def handle_optimization_request(request: ScheduleRequest):
             )
             logger.info(f"✅ {len(valid_constraints)} AI constraints validated")
             
-            # Convert AI constraints to employee preferences format
+            # Pass AI constraints directly to Gurobi (no conversion needed - already Gurobi-ready!)
             if valid_constraints:
-                # Build preferences dict from request.employee_preferences
-                pref_dict = {}
-                if request.employee_preferences:
-                    for pref in request.employee_preferences:
-                        pref_dict[pref.employee_id] = pref.model_dump()
-                
-                # Merge AI constraints
-                updated_prefs = convert_ai_constraints_to_preferences(valid_constraints, pref_dict)
-                
-                # Convert back to list of dicts (not Pydantic models)
-                processed_employee_preferences = [
-                    pref if isinstance(pref, dict) else pref.model_dump()
-                    for pref in updated_prefs.values()
+                processed_ai_constraints = [
+                    constraint if isinstance(constraint, dict) else constraint.model_dump()
+                    for constraint in valid_constraints
                 ]
-                
-                logger.info(f"🤖 Merged AI constraints into employee preferences for {len(processed_employee_preferences)} employees")
+                logger.info(f"🤖 Passing {len(processed_ai_constraints)} AI constraints directly to Gurobi (Gurobi-ready format)")
         
         # Call the scheduler service to optimize the schedule
         # Always allow partial coverage to get best possible schedule even with insufficient staff
@@ -107,8 +98,9 @@ async def handle_optimization_request(request: ScheduleRequest):
             include_weekends=request.include_weekends if request.include_weekends is not None else True,
             allow_partial_coverage=True,  # Always True: generate best possible schedule regardless of coverage %
             optimize_for_cost=request.optimize_for_cost or False,
-            employee_preferences=processed_employee_preferences,  # Use processed preferences with AI constraints
-            manual_constraints=request.manual_constraints
+            employee_preferences=processed_employee_preferences,
+            manual_constraints=request.manual_constraints,
+            ai_constraints=processed_ai_constraints  # ← Pass AI constraints directly to Gurobi!
         )
         
         # Debug: log what we got from optimizer

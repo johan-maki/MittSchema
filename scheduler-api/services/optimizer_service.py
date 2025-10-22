@@ -21,7 +21,8 @@ def optimize_schedule(
     allow_partial_coverage: bool = False,
     optimize_for_cost: bool = False,
     employee_preferences: Optional[List] = None,
-    manual_constraints: Optional[List] = None
+    manual_constraints: Optional[List] = None,
+    ai_constraints: Optional[List[Dict]] = None
 ):
     """
     Core function to optimize the employee schedule using Gurobi.
@@ -46,7 +47,8 @@ def optimize_schedule(
         allow_partial_coverage: Allow partial schedule when not enough staff
         optimize_for_cost: Optimize for minimum cost (prioritize lower hourly rates)
         employee_preferences: Individual employee work preferences
-        manual_constraints: AI-parsed or manually added constraints
+        manual_constraints: AI-parsed or manually added constraints (legacy)
+        ai_constraints: AI-parsed constraints from Supabase (Gurobi-ready format)
     
     Returns:
         Optimized schedule dictionary with coverage stats and employee assignments
@@ -80,7 +82,8 @@ def optimize_schedule(
             optimize_for_cost=optimize_for_cost,
             random_seed=random_seed,
             employee_preferences=employee_preferences,
-            manual_constraints=manual_constraints
+            manual_constraints=manual_constraints,
+            ai_constraints=ai_constraints
         )
         
         # Add department info to schedule items
