@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Brain, CheckCircle2, XCircle, AlertCircle, Trash2, Sparkles } from 'lucide-react';
+import { Brain, CheckCircle2, XCircle, AlertCircle, Trash2, Sparkles, Play, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { schedulerApi } from '@/api/schedulerApi';
 
 interface Employee {
@@ -44,9 +44,20 @@ interface ParsedConstraint {
 interface AIConstraintInputProps {
   employees: Employee[];
   onConstraintsChange?: (constraints: ParsedConstraint[]) => void;
+  onGenerateSchedule?: () => void;
+  isGenerating?: boolean;
+  previousOptimizationScore?: number;
+  currentOptimizationScore?: number;
 }
 
-export function AIConstraintInput({ employees, onConstraintsChange }: AIConstraintInputProps) {
+export function AIConstraintInput({ 
+  employees, 
+  onConstraintsChange,
+  onGenerateSchedule,
+  isGenerating = false,
+  previousOptimizationScore,
+  currentOptimizationScore
+}: AIConstraintInputProps) {
   const [inputText, setInputText] = useState('');
   const [parsedConstraints, setParsedConstraints] = useState<ParsedConstraint[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -365,6 +376,88 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
                 </Card>
               ))}
             </div>
+
+            {/* Optimization Score Comparison */}
+            {(previousOptimizationScore !== undefined || currentOptimizationScore !== undefined) && (
+              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+                <CardContent className="p-4">
+                  <h4 className="text-sm font-semibold mb-3">📊 Optimeringspoäng</h4>
+                  <div className="flex items-center justify-between gap-4">
+                    {previousOptimizationScore !== undefined && (
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground mb-1">Tidigare poäng</p>
+                        <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+                          {previousOptimizationScore.toFixed(0)}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {previousOptimizationScore !== undefined && currentOptimizationScore !== undefined && (
+                      <div className="flex items-center">
+                        {currentOptimizationScore > previousOptimizationScore ? (
+                          <TrendingUp className="h-8 w-8 text-green-500" />
+                        ) : currentOptimizationScore < previousOptimizationScore ? (
+                          <TrendingDown className="h-8 w-8 text-red-500" />
+                        ) : (
+                          <Minus className="h-8 w-8 text-gray-400" />
+                        )}
+                      </div>
+                    )}
+                    
+                    {currentOptimizationScore !== undefined && (
+                      <div className="flex-1 text-right">
+                        <p className="text-xs text-muted-foreground mb-1">Ny poäng</p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {currentOptimizationScore.toFixed(0)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {previousOptimizationScore !== undefined && currentOptimizationScore !== undefined && (
+                    <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-center">
+                        {currentOptimizationScore > previousOptimizationScore ? (
+                          <span className="text-green-600 dark:text-green-400 font-medium">
+                            ✨ Förbättring: +{(currentOptimizationScore - previousOptimizationScore).toFixed(0)} poäng
+                          </span>
+                        ) : currentOptimizationScore < previousOptimizationScore ? (
+                          <span className="text-red-600 dark:text-red-400 font-medium">
+                            ⚠️ Försämring: {(currentOptimizationScore - previousOptimizationScore).toFixed(0)} poäng
+                          </span>
+                        ) : (
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">
+                            ➖ Ingen förändring
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Generate Schedule Button */}
+            {onGenerateSchedule && (
+              <Button
+                onClick={onGenerateSchedule}
+                disabled={isGenerating}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-6 text-base shadow-lg"
+                size="lg"
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Genererar schema med nya krav...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-5 w-5 mr-2" />
+                    Generera schema med {parsedConstraints.length} {parsedConstraints.length === 1 ? 'krav' : 'krav'}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         )}
         </>

@@ -45,6 +45,16 @@ const Schedule = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [newShiftParams, setNewShiftParams] = useState<{day: Date, role: string} | null>(null);
+  
+  // Schedule generation state from ScheduleActions
+  const [scheduleGenerationState, setScheduleGenerationState] = useState<{
+    isGenerating: boolean;
+    previousOptimizationScore?: number;
+    currentOptimizationScore?: number;
+    generateSchedule?: () => void;
+  }>({
+    isGenerating: false
+  });
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -319,6 +329,7 @@ const Schedule = () => {
                 isCreateDialogOpen={isCreateDialogOpen}
                 setIsCreateDialogOpen={setIsCreateDialogOpen}
                 aiConstraints={aiConstraints}
+                onScheduleStateChange={setScheduleGenerationState}
               />
             </div>
           </div>
@@ -382,8 +393,11 @@ const Schedule = () => {
                   onConstraintsChange={(constraints) => {
                     setAiConstraints(constraints);
                     console.log('AI Constraints updated:', constraints);
-                    // TODO: Pass to scheduler optimization
                   }}
+                  onGenerateSchedule={scheduleGenerationState.generateSchedule}
+                  isGenerating={scheduleGenerationState.isGenerating}
+                  previousOptimizationScore={scheduleGenerationState.previousOptimizationScore}
+                  currentOptimizationScore={scheduleGenerationState.currentOptimizationScore}
                 />
                 <Button
                   variant="ghost"

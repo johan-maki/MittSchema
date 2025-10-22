@@ -11,6 +11,7 @@ import { useSchedulePublishing } from "./actions/useSchedulePublishing";
 import { ScheduleSummaryModal } from "@/components/ui/ScheduleSummaryModal";
 import { PublicationStatus } from "./PublicationStatus";
 import { ScheduleChangesModal } from "@/components/schedule/ScheduleChangesModal";
+import { useEffect } from "react";
 
 interface ScheduleActionsProps {
   currentView: 'day' | 'week' | 'month';
@@ -20,6 +21,12 @@ interface ScheduleActionsProps {
   isCreateDialogOpen: boolean;
   setIsCreateDialogOpen: (open: boolean) => void;
   aiConstraints?: any[];
+  onScheduleStateChange?: (state: {
+    isGenerating: boolean;
+    previousOptimizationScore?: number;
+    currentOptimizationScore?: number;
+    generateSchedule: () => void;
+  }) => void;
 }
 
 export const ScheduleActions = ({
@@ -29,7 +36,8 @@ export const ScheduleActions = ({
   shifts,
   isCreateDialogOpen,
   setIsCreateDialogOpen,
-  aiConstraints
+  aiConstraints,
+  onScheduleStateChange
 }: ScheduleActionsProps) => {
   const {
     isGenerating,
@@ -68,6 +76,18 @@ export const ScheduleActions = ({
     handleUnpublishSchedule,
     handleClearUnpublished
   } = useSchedulePublishing();
+
+  // Expose schedule generation state to parent component
+  useEffect(() => {
+    if (onScheduleStateChange) {
+      onScheduleStateChange({
+        isGenerating,
+        previousOptimizationScore,
+        currentOptimizationScore,
+        generateSchedule
+      });
+    }
+  }, [isGenerating, previousOptimizationScore, currentOptimizationScore, generateSchedule, onScheduleStateChange]);
 
   // Check if there are any published shifts
   const hasPublishedShifts = shifts.some(shift => shift.is_published);
