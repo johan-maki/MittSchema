@@ -423,9 +423,16 @@ Return ONLY valid JSON.`
     // 🎯 STEP 7: Expand date range into array
     const dates = expandDateRange(parsed.start_date, parsed.end_date)
     
-    // 🎯 STEP 8: Return Gurobi-ready constraint
+    // 🎯 STEP 8: Find employee name from ID
+    const matchedEmployee = employees.find(e => e.id === parsed.employee_id)
+    const employee_name = matchedEmployee 
+      ? `${matchedEmployee.first_name} ${matchedEmployee.last_name}`.trim()
+      : 'Unknown Employee'
+    
+    // 🎯 STEP 9: Return Gurobi-ready constraint with employee_name
     const gurobiConstraint = {
       employee_id: parsed.employee_id,
+      employee_name: employee_name,  // ← Frontend needs this!
       dates: dates,  // ← Array of all dates!
       shifts: parsed.shifts || [],
       constraint_type: parsed.constraint_type,
