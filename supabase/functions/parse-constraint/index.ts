@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,39 +42,54 @@ serve(async (req) => {
     console.log('📝 Parsing constraint:', text)
     console.log('🏢 Organization ID:', organization_id)
 
-    // 🎯 STEP 1: Load employees from Supabase
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // 🎯 STEP 1: Load employees from Supabase (with better error handling)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     
-    let employeeQuery = supabase
-      .from('employees')
-      .select('id, name, full_name')
-    
-    if (organization_id) {
-      employeeQuery = employeeQuery.eq('organization_id', organization_id)
-    }
-    
-    const { data: employees, error: employeeError } = await employeeQuery
-    
-    if (employeeError) {
-      console.error('❌ Error loading employees:', employeeError)
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Missing Supabase credentials')
       return new Response(JSON.stringify({
         success: false,
-        message: 'Failed to load employees from database'
+        message: 'Server configuration error: Missing credentials'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
     
-    console.log(`✅ Loaded ${employees?.length || 0} employees`)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
+    let employees = []
+    try {
+      let employeeQuery = supabase
+        .from('employees')
+        .select('id, name, full_name, first_name, last_name')
+      
+      if (organization_id) {
+        employeeQuery = employeeQuery.eq('organization_id', organization_id)
+      }
+      
+      const { data, error: employeeError } = await employeeQuery
+      
+      if (employeeError) {
+        console.error('❌ Error loading employees:', employeeError)
+        console.warn('⚠️ Continuing without employee validation...')
+      } else {
+        employees = data || []
+        console.log(`✅ Loaded ${employees.length} employees`)
+      }
+    } catch (dbError) {
+      console.error('❌ Failed to query employees:', dbError)
+      console.warn('⚠️ Continuing without employee validation...')
+    }
 
     // 🎯 STEP 2: Prepare employee list for ChatGPT
-    const employeeList = employees?.map(e => 
-      `- ${e.name || e.full_name} (ID: ${e.id})`
-    ).join('\n') || 'No employees found'
+    const employeeList = employees.length > 0
+      ? employees.map(e => {
+          const name = e.full_name || e.name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown'
+          return `- ${name} (ID: ${e.id})`
+        }).join('\n')
+      : '- No employees loaded (will parse name as-is)'
 
     // 🎯 STEP 3: Get current date dynamically
     const today = new Date()
@@ -345,35 +360,64 @@ Return ONLY valid JSON.`
     const data = await openaiResponse.json()
     const parsed = JSON.parse(data.choices[0]?.message?.content || '{}')
     
-    // 🎯 STEP 5: Check for errors
-    if (parsed.error === 'employee_not_found') {
-      return new Response(JSON.stringify({
-        success: false,
-        mode: 'clarify',
-        question: parsed.message,
-        options: employees?.slice(0, 5).map(e => ({
-          label: e.full_name || e.name,
-          value: e.id
-        })) || []
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    console.log('🤖 ChatGPT response:', JSON.stringify(parsed, null, 2))
     
-    // 🎯 STEP 6: Validate employee_id exists
-    const employeeExists = employees?.find(e => e.id === parsed.employee_id)
-    if (!employeeExists) {
-      return new Response(JSON.stringify({
-        success: false,
-        mode: 'clarify',
-        question: `❓ Kunde inte hitta medarbetare. Vem menar du?`,
-        options: employees?.slice(0, 5).map(e => ({
-          label: e.full_name || e.name,
-          value: e.id
-        })) || []
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    // 🎯 STEP 5: Validate and fuzzy match employee_id (if we have employees)
+    if (employees.length > 0) {
+      const employeeExists = employees.find(e => e.id === parsed.employee_id)
+      
+      if (!employeeExists) {
+        console.warn('⚠️ Employee ID not found:', parsed.employee_id)
+        
+        // Try fuzzy matching by name
+        const inputName = text.toLowerCase()
+        const matches = employees.filter(e => {
+          const fullName = (e.full_name || '').toLowerCase()
+          const name = (e.name || '').toLowerCase()
+          const firstName = (e.first_name || '').toLowerCase()
+          const lastName = (e.last_name || '').toLowerCase()
+          
+          // Check if any name field is mentioned in the input
+          return inputName.includes(fullName) || 
+                 inputName.includes(name) ||
+                 inputName.includes(firstName) ||
+                 inputName.includes(lastName) ||
+                 fullName.includes(inputName.split(' ')[0]) ||
+                 firstName.includes(inputName.split(' ')[0])
+        })
+        
+        if (matches.length === 1) {
+          console.log('✅ Fuzzy matched to:', matches[0].id)
+          parsed.employee_id = matches[0].id
+        } else if (matches.length > 1) {
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'clarify',
+            question: '❓ Flera medarbetare hittades. Vem menar du?',
+            options: matches.map(e => ({
+              label: e.full_name || e.name || `${e.first_name} ${e.last_name}`.trim(),
+              value: e.id
+            }))
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        } else {
+          // No matches found
+          return new Response(JSON.stringify({
+            success: true,
+            mode: 'clarify',
+            question: `❓ Kunde inte hitta medarbetare "${parsed.employee_id}". Vem menar du?`,
+            options: employees.slice(0, 10).map(e => ({
+              label: e.full_name || e.name || `${e.first_name} ${e.last_name}`.trim(),
+              value: e.id
+            }))
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+      }
+    } else {
+      console.warn('⚠️ No employees loaded - using employee_id as-is:', parsed.employee_id)
     }
     
     // 🎯 STEP 7: Expand date range into array
@@ -402,10 +446,11 @@ Return ONLY valid JSON.`
     })
 
   } catch (error) {
-    console.error('❌ Error:', error.message)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ Error:', errorMessage)
     return new Response(JSON.stringify({
       success: false,
-      message: `Failed to parse constraint: ${error.message}`
+      message: `Failed to parse constraint: ${errorMessage}`
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
