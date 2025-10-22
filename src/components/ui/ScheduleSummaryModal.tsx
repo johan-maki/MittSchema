@@ -8,6 +8,7 @@ import { format, parseISO, getDaysInMonth } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { EmployeePreferencesModal } from '@/components/directory/EmployeePreferencesModal';
 import { PartialCoverageWarning } from '@/components/shifts/PartialCoverageWarning';
+import { OptimizationScoreComparison } from '@/components/schedule/OptimizationScoreComparison';
 
 interface EmployeeSummary {
   id: string;
@@ -53,6 +54,8 @@ interface ScheduleSummaryModalProps {
       night: { filled: number; total: number; percentage: number };
     };
   };
+  previousOptimizationScore?: number;
+  currentOptimizationScore?: number;
 }
 
 export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
@@ -66,7 +69,9 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   startDate,
   endDate,
   staffingIssues = [],
-  coverageStats
+  coverageStats,
+  previousOptimizationScore,
+  currentOptimizationScore
 }) => {
   const [showCoverageDetails, setShowCoverageDetails] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
@@ -363,6 +368,17 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
               <p className="text-2xl font-bold text-emerald-900 mt-1">{totalCost.toLocaleString()} SEK</p>
             </div>
           </div>
+
+          {/* Optimization Score Comparison */}
+          {currentOptimizationScore !== undefined && (
+            <div className="mb-8">
+              <OptimizationScoreComparison
+                currentScore={currentOptimizationScore}
+                previousScore={previousOptimizationScore}
+                showComparison={previousOptimizationScore !== undefined}
+              />
+            </div>
+          )}
 
           {/* Unfilled Shifts Section */}
           {staffingIssues.length > 0 && (

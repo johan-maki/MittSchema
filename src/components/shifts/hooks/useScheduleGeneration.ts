@@ -18,6 +18,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
   const [showPreview, setShowPreview] = useState(false);
   const [generatedShifts, setGeneratedShifts] = useState<Shift[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [previousOptimizationScore, setPreviousOptimizationScore] = useState<number | undefined>(undefined);
+  const [currentOptimizationScore, setCurrentOptimizationScore] = useState<number | undefined>(undefined);
   const [summaryData, setSummaryData] = useState<{
     shifts: Shift[];
     startDate: Date;
@@ -255,6 +257,18 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
       }
       
       console.log("Generated schedule with", generatedSchedule.schedule.length, "shifts for next month");
+      console.log("🎯 Optimization score:", generatedSchedule.objective_value);
+      
+      // Save optimization scores for comparison
+      if (generatedSchedule.objective_value !== undefined) {
+        // If we have AI constraints, this is a new generation with constraints
+        // Move current score to previous, then save new score
+        if (aiConstraints && aiConstraints.length > 0 && currentOptimizationScore !== undefined) {
+          console.log(`📊 Constraint comparison: Previous=${currentOptimizationScore}, New=${generatedSchedule.objective_value}`);
+          setPreviousOptimizationScore(currentOptimizationScore);
+        }
+        setCurrentOptimizationScore(generatedSchedule.objective_value);
+      }
       
       // DON'T save shifts yet - show summary first and let user decide
       // Store the generated schedule temporarily for user approval
@@ -405,6 +419,8 @@ export const useScheduleGeneration = (currentDate: Date, currentView: 'day' | 'w
     staffingIssues,
     showSummary,
     setShowSummary,
-    summaryData
+    summaryData,
+    previousOptimizationScore,
+    currentOptimizationScore
   };
 };

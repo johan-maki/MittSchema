@@ -132,7 +132,8 @@ export const generateScheduleForNextMonth = async (
   schedule: Shift[], 
   staffingIssues?: { date: string; shiftType: string; current: number; required: number }[],
   coverage_stats?: CoverageStats,
-  fairness_stats?: FairnessStats 
+  fairness_stats?: FairnessStats,
+  objective_value?: number
 }> => {
   // Always generate for next month from today for consistency
   const today = new Date();
@@ -628,7 +629,8 @@ export const generateScheduleForNextMonth = async (
     schedule: convertedSchedule, // Use Gurobi result directly - no client-side modifications
     staffingIssues: [], // Gurobi should minimize these
     coverage_stats: response.coverage_stats,
-    fairness_stats: response.fairness_stats
+    fairness_stats: response.fairness_stats,
+    objective_value: response.objective_value // Include optimization score
   };
   
   return finalResult;

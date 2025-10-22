@@ -8,6 +8,7 @@ import ModernDayView from "@/components/shifts/ModernDayView";
 import { GanttScheduleView } from "@/components/schedule/GanttScheduleView";
 import { ScheduleEditorView } from "@/components/schedule/ScheduleEditorView";
 import { AIConstraintInput } from "@/components/schedule/AIConstraintInput";
+import { OptimizationScoreComparison } from "@/components/schedule/OptimizationScoreComparison";
 import { ScheduleFilters, type ScheduleFilterOptions } from "@/components/schedule/ScheduleFilters";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShiftData } from "@/hooks/useShiftData";
@@ -22,7 +23,6 @@ import { Shift } from "@/types/shift";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, GanttChartSquare, Edit3, Brain, Filter, FilterX } from "lucide-react";
-import type { ParsedConstraint } from "@/utils/constraintParser";
 import { bulkSaveShifts } from "@/utils/shiftBulkOperations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -33,7 +33,7 @@ const Schedule = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('month');
   const [scheduleViewMode, setScheduleViewMode] = useState<'standard' | 'gantt' | 'editor'>('standard');
-  const [aiConstraints, setAiConstraints] = useState<ParsedConstraint[]>([]);
+  const [aiConstraints, setAiConstraints] = useState<unknown[]>([]);
   const [showAIConstraints, setShowAIConstraints] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<ScheduleFilterOptions>({

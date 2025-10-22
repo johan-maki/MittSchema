@@ -46,7 +46,9 @@ export const ScheduleActions = ({
     staffingIssues,
     showSummary,
     setShowSummary,
-    summaryData
+    summaryData,
+    previousOptimizationScore,
+    currentOptimizationScore
   } = useScheduleGeneration(currentDate, currentView, onDateChange, aiConstraints);
 
   const {
@@ -111,6 +113,8 @@ export const ScheduleActions = ({
           endDate={summaryData.endDate}
           staffingIssues={summaryData.staffingIssues || []}
           coverageStats={summaryData.coverage_stats}
+          previousOptimizationScore={previousOptimizationScore}
+          currentOptimizationScore={currentOptimizationScore}
           onAccept={acceptSchedule}
           onRegenerate={() => {
             // Stäng modal och generera om
