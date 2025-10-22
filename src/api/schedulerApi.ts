@@ -255,104 +255,226 @@ export const schedulerApi = {
     message: string;
     reason?: string;
   }> => {
-    // ⚠️ TEMPORARY SOLUTION: Call OpenAI directly from frontend
-    // API key exposed for quick testing - ROTATE AFTER 48 HOURS (expires: 2025-10-23)
-    // TODO: Move to backend (Vercel Edge Function) when coworker has Vercel access
-    
     try {
-      const OpenAI = (await import('openai')).default;
+      // Use local proxy in development, Supabase Edge Function in production
+      const isDevelopment = import.meta.env.DEV;
+      const functionUrl = isDevelopment 
+        ? 'http://localhost:3001/parse'  // 🏠 Local proxy (API key safe on your machine)
+        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-constraint`; // 🌐 Production Supabase
       
-      // Decode the API key (base64 encoded to bypass GitHub secret scanning)
-      const encodedKey = 'c2stcHJvai1JWVZSUl9lcmlkUVh4Slp3Q2UzVE5Fd0N4eC05UkdoRlpnbmdzUFVFX2Q0WGhvcUQ4dWVtZVFjbUF6ZFMyQ081TE5iSnp4bUZTQlQzQmxia0ZKbkNkM251bWMzVWdDcGR0ZFdrRzY2ZVdTMzBvbWRCVEdhbEdyYzNId0xLaEFidllfZFZvSVMzYjhOdG1xYV9Sa0U1QUhKVnFxOEE=';
-      const apiKey = atob(encodedKey);
+      console.log(`🔐 Using ${isDevelopment ? '🏠 LOCAL PROXY' : '🌐 PRODUCTION'} endpoint:`, functionUrl);
       
-      const openai = new OpenAI({
-        apiKey,
-        dangerouslyAllowBrowser: true // ⚠️ Not recommended for production
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Only add auth header for production (Supabase)
+      if (!isDevelopment) {
+        headers['Authorization'] = `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`;
+      }
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          text,
+          department: department || 'Akutmottagning'
+        })
       });
 
-      // Call OpenAI with function calling for structured output
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `Du är en assistent som tolkar svenska schema-begränsningar.
-            
-Viktiga regler:
-- Svenska månader: januari=1, februari=2, mars=3, april=4, maj=5, juni=6, juli=7, augusti=8, september=9, oktober=10, november=11, december=12
-- Svenska veckodagar: måndag=0, tisdag=1, onsdag=2, torsdag=3, fredag=4, lördag=5, söndag=6
-- Passtyper: dag/dagtid/dagpass=day, kväll/kvällspass=evening, natt/nattpass=night
-- "inte" eller "inte vill" = HÅRD begränsning (is_hard=true)
-- "vill" eller "föredrar" = MJUK preferens (is_hard=false)
-
-När användaren säger en person och datum, hitta rätt anställd från avdelningen.`
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
-        functions: [
-          {
-            name: "parse_constraint",
-            description: "Parse a Swedish constraint into structured format",
-            parameters: {
-              type: "object",
-              properties: {
-                employee_name: {
-                  type: "string",
-                  description: "The employee's name mentioned (Swedish name)"
-                },
-                constraint_type: {
-                  type: "string",
-                  enum: ["unavailable_shift", "preferred_shift", "unavailable_day", "preferred_day"],
-                  description: "Type of constraint"
-                },
-                shift_type: {
-                  type: "string",
-                  enum: ["day", "evening", "night"],
-                  description: "Shift type if specified"
-                },
-                specific_date: {
-                  type: "string",
-                  description: "Specific date in YYYY-MM-DD format if mentioned"
-                },
-                is_hard: {
-                  type: "boolean",
-                  description: "true for 'inte/cannot', false for 'vill/prefers'"
-                },
-                confidence: {
-                  type: "string",
-                  enum: ["high", "medium", "low"],
-                  description: "Confidence in the parsing"
-                }
-              },
-              required: ["employee_name", "constraint_type", "is_hard"]
-            }
-          }
-        ],
-        function_call: { name: "parse_constraint" }
-      });
-
-      const functionCall = completion.choices[0].message.function_call;
-      if (!functionCall || !functionCall.arguments) {
-        throw new Error("OpenAI did not return a valid constraint");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Parse error:', errorText);
+        throw new Error(`Failed to parse constraint: ${response.status} ${errorText}`);
       }
 
-      const parsed = JSON.parse(functionCall.arguments);
-
-      return {
-        success: true,
-        constraint: parsed,
-        message: "Constraint parsed successfully"
-      };
+      const result = await response.json();
+      return result;
     } catch (error) {
       console.error('Error parsing AI constraint:', error);
       return {
         success: false,
         message: `Failed to parse constraint: ${error instanceof Error ? error.message : 'Unknown error'}`,
         reason: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+
+    // Save AI constraint to database (when accepted by user)
+  saveAIConstraint: async (constraint: {
+    employee_name: string;
+    employee_id?: string;
+    constraint_type: string;
+    shift_type?: string;
+    start_date: string;
+    end_date: string;
+    is_hard: boolean;
+    confidence?: string;
+    original_text: string;
+    department?: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Table will exist after migration
+      const { data, error } = await (supabase as any)
+        .from('ai_constraints')
+        .insert([{
+          employee_name: constraint.employee_name,
+          employee_id: constraint.employee_id || null,
+          constraint_type: constraint.constraint_type,
+          shift_type: constraint.shift_type || null,
+          start_date: constraint.start_date,
+          end_date: constraint.end_date,
+          is_hard: constraint.is_hard,
+          confidence: constraint.confidence || 'medium',
+          original_text: constraint.original_text,
+          department: constraint.department || 'Akutmottagning'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ Saved AI constraint to database:', data);
+      return { success: true, data };
+    } catch (error) {
+      console.error('❌ Error saving AI constraint:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save constraint'
+      };
+    }
+  },
+
+  // Load all AI constraints from database
+  loadAIConstraints: async (department?: string): Promise<{
+    success: boolean;
+    constraints?: any[];
+    error?: string;
+  }> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Table will exist after migration
+      let query = (supabase as any)
+        .from('ai_constraints')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (department) {
+        query = query.eq('department', department);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`📋 Loaded ${data?.length || 0} AI constraints from database`);
+      return { success: true, constraints: data || [] };
+    } catch (error) {
+      console.error('❌ Error loading AI constraints:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to load constraints'
+      };
+    }
+  },
+
+  // Delete AI constraint from database
+  deleteAIConstraint: async (constraintId: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Table will exist after migration
+      const { error } = await (supabase as any)
+        .from('ai_constraints')
+        .delete()
+        .eq('id', constraintId);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ Deleted AI constraint:', constraintId);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error deleting AI constraint:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete constraint'
+      };
+    }
+  }
+
+  // Load all AI constraints from database
+  loadAIConstraints: async (department?: string): Promise<{
+    success: boolean;
+    constraints?: any[];
+    error?: string;
+  }> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // @ts-ignore - ai_constraints table will exist after migration
+      let query = supabase
+        .from('ai_constraints')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (department) {
+        query = query.eq('department', department);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`📋 Loaded ${data?.length || 0} AI constraints from database`);
+      return { success: true, constraints: data || [] };
+    } catch (error) {
+      console.error('❌ Error loading AI constraints:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to load constraints'
+      };
+    }
+  },
+
+  // Delete AI constraint from database
+  deleteAIConstraint: async (constraintId: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // @ts-ignore - ai_constraints table will exist after migration
+      const { error } = await supabase
+        .from('ai_constraints')
+        .delete()
+        .eq('id', constraintId);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ Deleted AI constraint:', constraintId);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error deleting AI constraint:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete constraint'
       };
     }
   }

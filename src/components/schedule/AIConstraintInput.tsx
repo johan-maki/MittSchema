@@ -48,7 +48,32 @@ export function AIConstraintInput({ employees, onConstraintsChange }: AIConstrai
       const result = await schedulerApi.parseAIConstraint(inputText);
       
       if (result.success && result.constraint) {
-        const newConstraints = [...parsedConstraints, result.constraint];
+        // Generate all dates in the range
+        const dates: string[] = [];
+        if (result.constraint.start_date && result.constraint.end_date) {
+          const start = new Date(result.constraint.start_date);
+          const end = new Date(result.constraint.end_date);
+          
+          // Generate all dates between start and end (inclusive)
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            dates.push(d.toISOString().split('T')[0]);
+          }
+        }
+        
+        // Map the API response to the expected format
+        const mappedConstraint: ParsedConstraint = {
+          employee_id: result.constraint.employee_id,
+          employee_name: result.constraint.employee_name,
+          dates: dates,
+          shifts: result.constraint.shift_type ? [result.constraint.shift_type] : [],
+          is_hard: result.constraint.is_hard,
+          confidence: result.constraint.confidence || 'medium',
+          constraint_type: result.constraint.constraint_type,
+          original_text: inputText,
+          reason: result.constraint.reason
+        };
+
+        const newConstraints = [...parsedConstraints, mappedConstraint];
         setParsedConstraints(newConstraints);
         setInputText('');
 
