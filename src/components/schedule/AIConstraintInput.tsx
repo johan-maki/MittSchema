@@ -453,6 +453,29 @@ export function AIConstraintInput({
               <h4 className="text-sm font-semibold flex items-center gap-2">
                 Tolkade begränsningar ({parsedConstraints.length})
               </h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (window.confirm(`Är du säker på att du vill ta bort ALLA ${parsedConstraints.length} begränsningar?`)) {
+                    // Delete all from database
+                    for (const constraint of parsedConstraints) {
+                      if (constraint.id) {
+                        await schedulerApi.deleteAIConstraint(constraint.id);
+                      }
+                    }
+                    // Clear UI
+                    setParsedConstraints([]);
+                    if (onConstraintsChange) {
+                      onConstraintsChange([]);
+                    }
+                  }
+                }}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Rensa alla
+              </Button>
             </div>
 
             <div className="space-y-2">
