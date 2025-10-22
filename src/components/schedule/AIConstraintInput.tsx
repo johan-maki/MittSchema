@@ -61,6 +61,7 @@ export function AIConstraintInput({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // 🔧 Prevent infinite loop
   
   // Clarification state
   const [clarificationMode, setClarificationMode] = useState(false);
@@ -70,6 +71,11 @@ export function AIConstraintInput({
 
   // 📥 LOAD SAVED CONSTRAINTS FROM SUPABASE on component mount
   useEffect(() => {
+    // 🔧 CRITICAL FIX: Only load once to prevent infinite loop
+    if (hasLoadedOnce || employees.length === 0) {
+      return;
+    }
+    
     const loadSavedConstraints = async () => {
       console.log('📥 Loading saved AI constraints from Supabase...');
       setIsLoading(true);
@@ -118,15 +124,18 @@ export function AIConstraintInput({
           });
           
           setParsedConstraints(loadedConstraints);
+          setHasLoadedOnce(true); // Mark as loaded
           
           if (onConstraintsChange) {
             onConstraintsChange(loadedConstraints);
           }
         } else {
           console.log('ℹ️ No saved constraints found or error:', result.error);
+          setHasLoadedOnce(true); // Mark as loaded even if empty
         }
       } catch (err) {
         console.error('❌ Error loading constraints:', err);
+        setHasLoadedOnce(true); // Mark as loaded even on error
       } finally {
         setIsLoading(false);
       }
@@ -134,7 +143,7 @@ export function AIConstraintInput({
     
     loadSavedConstraints();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employees]); // Re-load when employees change to resolve names correctly
+  }, [employees.length]); // Only depend on employee count, not the array itself
 
   const handleParse = async (selectedEmployeeId?: string) => {
     const textToParse = selectedEmployeeId ? pendingConstraintText : inputText;
