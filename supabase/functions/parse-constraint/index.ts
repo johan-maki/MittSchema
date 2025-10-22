@@ -27,7 +27,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, organization_id } = await req.json()
+    const { text, organization_id, employee_id: selectedEmployeeId } = await req.json()
     
     if (!text) {
       return new Response(JSON.stringify({
@@ -41,6 +41,7 @@ serve(async (req) => {
     
     console.log('📝 Parsing constraint:', text)
     console.log('🏢 Organization ID:', organization_id)
+    console.log('👤 Pre-selected Employee ID:', selectedEmployeeId)
 
     // 🎯 STEP 1: Load employees from Supabase (with better error handling)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -383,12 +384,21 @@ Return ONLY valid JSON.`
     
     console.log('🤖 ChatGPT response:', JSON.stringify(parsed, null, 2))
     
-    // 🎯 STEP 5: Validate and fuzzy match employee_id (if we have employees)
+    // Extract constraint from parsed response (ChatGPT returns {mode, constraint})
+    const constraintData = parsed.constraint || parsed
+    
+    // 🎯 STEP 5: If employee_id was pre-selected (from clarification), use it directly
+    if (selectedEmployeeId) {
+      console.log('✅ Using pre-selected employee ID:', selectedEmployeeId)
+      constraintData.employee_id = selectedEmployeeId
+    }
+    
+    // 🎯 STEP 6: Validate and fuzzy match employee_id (if we have employees)
     if (employees.length > 0) {
-      const employeeExists = employees.find(e => e.id === parsed.employee_id)
+      const employeeExists = employees.find(e => e.id === constraintData.employee_id)
       
       if (!employeeExists) {
-        console.warn('⚠️ Employee ID not found:', parsed.employee_id)
+        console.warn('⚠️ Employee ID not found:', constraintData.employee_id)
         
         // Try fuzzy matching by name
         const inputName = text.toLowerCase()
@@ -407,7 +417,7 @@ Return ONLY valid JSON.`
         
         if (matches.length === 1) {
           console.log('✅ Fuzzy matched to:', matches[0].first_name, matches[0].last_name, matches[0].id)
-          parsed.employee_id = matches[0].id
+          constraintData.employee_id = matches[0].id
         } else if (matches.length > 1) {
           console.log('⚠️ Multiple matches found:', matches.length)
           return new Response(JSON.stringify({
@@ -439,28 +449,45 @@ Return ONLY valid JSON.`
         }
       }
     } else {
-      console.warn('⚠️ No employees loaded - using employee_id as-is:', parsed.employee_id)
+      console.warn('⚠️ No employees loaded - using employee_id as-is:', constraintData.employee_id)
     }
     
-    // 🎯 STEP 7: Expand date range into array
-    const dates = expandDateRange(parsed.start_date, parsed.end_date)
+    // 🎯 STEP 7: Validate dates and expand range
+    if (!constraintData.start_date || !constraintData.end_date) {
+      console.error('❌ ChatGPT did not return start_date or end_date!')
+      console.error('   Parsed constraint:', JSON.stringify(constraintData, null, 2))
+      return new Response(JSON.stringify({
+        success: false,
+        message: 'AI kunde inte identifiera datum. Försök vara mer specifik med datumet (t.ex. "15 november" eller "20-27 december")'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    const dates = expandDateRange(constraintData.start_date, constraintData.end_date)
     
     // 🎯 STEP 8: Find employee name from ID
-    const matchedEmployee = employees.find(e => e.id === parsed.employee_id)
+    const matchedEmployee = employees.find(e => e.id === constraintData.employee_id)
     const employee_name = matchedEmployee 
       ? `${matchedEmployee.first_name} ${matchedEmployee.last_name}`.trim()
       : 'Unknown Employee'
     
     // 🎯 STEP 9: Return Gurobi-ready constraint with employee_name
     const gurobiConstraint = {
-      employee_id: parsed.employee_id,
+      employee_id: constraintData.employee_id,
       employee_name: employee_name,  // ← Frontend needs this!
-      dates: dates,  // ← Array of all dates!
-      shifts: parsed.shifts || [],
-      constraint_type: parsed.constraint_type,
-      priority: parsed.priority,
-      original_text: parsed.original_text,
-      natural_language: parsed.natural_language
+      start_date: constraintData.start_date,  // ← Frontend needs this for saving!
+      end_date: constraintData.end_date,      // ← Frontend needs this for saving!
+      dates: dates,  // ← Array of all dates for Gurobi!
+      shifts: constraintData.shifts || [],
+      shift_type: constraintData.shifts && constraintData.shifts.length > 0 ? constraintData.shifts[0] : undefined, // For legacy compatibility
+      constraint_type: constraintData.constraint_type,
+      priority: constraintData.priority,
+      is_hard: constraintData.priority >= 1000, // Convert priority to is_hard for frontend
+      confidence: constraintData.confidence || 'high',
+      original_text: constraintData.original_text,
+      natural_language: parsed.natural_language || constraintData.natural_language
     }
     
     console.log('✅ Parsed to Gurobi format:', gurobiConstraint)

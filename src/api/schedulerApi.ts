@@ -249,11 +249,15 @@ export const schedulerApi = {
     throw new Error('Unable to connect to Gurobi optimizer after multiple attempts. Please check the service status and try again.');
   },
 
-  parseAIConstraint: async (text: string, department?: string): Promise<{
+  parseAIConstraint: async (text: string, department?: string, selectedEmployeeId?: string): Promise<{
     success: boolean;
+    mode?: 'parse' | 'clarify';
     constraint?: any;
-    message: string;
+    message?: string;
     reason?: string;
+    question?: string;
+    options?: Array<{ label: string; value: string }>;
+    natural_language?: string;
   }> => {
     try {
       // Use local proxy in development, Supabase Edge Function in production
@@ -278,7 +282,8 @@ export const schedulerApi = {
         headers,
         body: JSON.stringify({
           text,
-          department: department || 'Akutmottagning'
+          department: department || 'Akutmottagning',
+          employee_id: selectedEmployeeId // For clarification follow-ups
           // organization_id removed - Edge Function loads ALL employees now
         })
       });

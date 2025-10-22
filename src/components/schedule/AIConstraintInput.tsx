@@ -63,6 +63,12 @@ export function AIConstraintInput({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Clarification state
+  const [clarificationMode, setClarificationMode] = useState(false);
+  const [clarificationQuestion, setClarificationQuestion] = useState('');
+  const [clarificationOptions, setClarificationOptions] = useState<Array<{ label: string; value: string }>>([]);
+  const [pendingConstraintText, setPendingConstraintText] = useState('');
 
   // 📥 LOAD SAVED CONSTRAINTS FROM SUPABASE on component mount
   useEffect(() => {
@@ -123,17 +129,31 @@ export function AIConstraintInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount - onConstraintsChange intentionally excluded
 
-  const handleParse = async () => {
-    if (!inputText.trim()) return;
+  const handleParse = async (selectedEmployeeId?: string) => {
+    const textToParse = selectedEmployeeId ? pendingConstraintText : inputText;
+    
+    if (!textToParse.trim()) return;
 
     setIsProcessing(true);
     setError(null);
     
     try {
-      const result = await schedulerApi.parseAIConstraint(inputText);
+      const result = await schedulerApi.parseAIConstraint(textToParse, 'Akutmottagning', selectedEmployeeId);
       
       console.log('🔍 DEBUG: Edge Function response:', result);
       
+      // Handle clarification mode
+      if (result.success && result.mode === 'clarify') {
+        console.log('❓ Clarification needed:', result.question);
+        setClarificationMode(true);
+        setClarificationQuestion(result.question || 'Vem menar du?');
+        setClarificationOptions(result.options || []);
+        setPendingConstraintText(textToParse);
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Handle successful parsing
       if (result.success && result.constraint) {
         console.log('🔍 DEBUG: Parsed constraint:', result.constraint);
         
@@ -185,7 +205,7 @@ export function AIConstraintInput({
           end_date: result.constraint.end_date,
           is_hard: result.constraint.is_hard,
           confidence: result.constraint.confidence || 'medium',
-          original_text: inputText,
+          original_text: textToParse, // Use textToParse instead of inputText
           department: 'Akutmottagning'
         });
 
@@ -207,13 +227,19 @@ export function AIConstraintInput({
           is_hard: result.constraint.is_hard,
           confidence: result.constraint.confidence || 'medium',
           constraint_type: result.constraint.constraint_type,
-          original_text: inputText,
+          original_text: textToParse, // Use textToParse instead of inputText
           reason: result.constraint.reason
         };
 
         const newConstraints = [...parsedConstraints, mappedConstraint];
         setParsedConstraints(newConstraints);
         setInputText('');
+        
+        // Clear clarification state
+        setClarificationMode(false);
+        setClarificationQuestion('');
+        setClarificationOptions([]);
+        setPendingConstraintText('');
 
         if (onConstraintsChange) {
           onConstraintsChange(newConstraints);
@@ -333,7 +359,7 @@ export function AIConstraintInput({
           />
           <div className="flex gap-2">
             <Button
-              onClick={handleParse}
+              onClick={() => handleParse()}
               disabled={!inputText.trim() || isProcessing}
               className="flex items-center gap-2"
             >
@@ -348,6 +374,48 @@ export function AIConstraintInput({
             <XCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {/* Clarification Dialog */}
+        {clarificationMode && (
+          <Card className="border-2 border-purple-300 bg-purple-50">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-purple-600 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-purple-900 mb-3">{clarificationQuestion}</p>
+                  <div className="space-y-2">
+                    {clarificationOptions.map((option, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="w-full justify-start text-left hover:bg-purple-100 hover:border-purple-400"
+                        onClick={async () => {
+                          setClarificationMode(false);
+                          await handleParse(option.value);
+                        }}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      setClarificationMode(false);
+                      setClarificationQuestion('');
+                      setClarificationOptions([]);
+                      setPendingConstraintText('');
+                    }}
+                  >
+                    Avbryt
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <div className="text-sm text-muted-foreground space-y-1">
