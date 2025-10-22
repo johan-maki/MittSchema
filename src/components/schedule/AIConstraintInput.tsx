@@ -132,7 +132,11 @@ export function AIConstraintInput({
     try {
       const result = await schedulerApi.parseAIConstraint(inputText);
       
+      console.log('🔍 DEBUG: Edge Function response:', result);
+      
       if (result.success && result.constraint) {
+        console.log('🔍 DEBUG: Parsed constraint:', result.constraint);
+        
         // Generate all dates in the range
         const dates: string[] = [];
         if (result.constraint.start_date && result.constraint.end_date) {
@@ -150,6 +154,14 @@ export function AIConstraintInput({
         
         // 🔧 CRITICAL FIX: Resolve employee name to ID before saving
         const employeeName = result.constraint.employee_name || '';
+        
+        if (!employeeName) {
+          console.error('❌ Edge Function returned empty employee_name');
+          console.error('Full constraint data:', result.constraint);
+          setError('AI kunde inte identifiera en anställd i texten. Försök med: "Charlotte kan inte jobba lördag 1a november"');
+          return;
+        }
+        
         const matchedEmployee = employees.find(emp => 
           emp.first_name?.toLowerCase() === employeeName.toLowerCase() ||
           `${emp.first_name} ${emp.last_name}`.toLowerCase() === employeeName.toLowerCase()
@@ -157,7 +169,8 @@ export function AIConstraintInput({
         
         if (!matchedEmployee) {
           console.error(`❌ Could not find employee: "${employeeName}"`);
-          setError(`Kunde inte hitta anställd: "${employeeName}". Kontrollera stavningen.`);
+          console.error('Available employees:', employees.map(e => `${e.first_name} ${e.last_name}`));
+          setError(`Kunde inte hitta anställd: "${employeeName}". Tillgängliga anställda: ${employees.map(e => e.first_name).join(', ')}`);
           return;
         }
         
