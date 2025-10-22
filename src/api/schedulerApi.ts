@@ -273,16 +273,13 @@ export const schedulerApi = {
         headers['Authorization'] = `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`;
       }
       
-      // Get organization_id from localStorage
-      const orgId = localStorage.getItem('organization_id');
-      
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           text,
-          department: department || 'Akutmottagning',
-          organization_id: orgId  // ← Send org ID so Edge Function can load employees!
+          department: department || 'Akutmottagning'
+          // organization_id removed - Edge Function loads ALL employees now
         })
       });
 

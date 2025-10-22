@@ -61,22 +61,21 @@ serve(async (req) => {
     
     let employees = []
     try {
-      let employeeQuery = supabase
+      // Load ALL employees (organization_id column doesn't exist in employees table)
+      const { data, error: employeeError } = await supabase
         .from('employees')
-        .select('id, name, full_name, first_name, last_name')
-      
-      if (organization_id) {
-        employeeQuery = employeeQuery.eq('organization_id', organization_id)
-      }
-      
-      const { data, error: employeeError } = await employeeQuery
+        .select('id, first_name, last_name')
+        .order('first_name')
       
       if (employeeError) {
         console.error('❌ Error loading employees:', employeeError)
         console.warn('⚠️ Continuing without employee validation...')
       } else {
         employees = data || []
-        console.log(`✅ Loaded ${employees.length} employees`)
+        console.log(`✅ Loaded ${employees.length} employees from database`)
+        if (employees.length > 0) {
+          console.log(`   First 3: ${employees.slice(0, 3).map(e => `${e.first_name} ${e.last_name}`).join(', ')}`)
+        }
       }
     } catch (dbError) {
       console.error('❌ Failed to query employees:', dbError)
@@ -86,7 +85,7 @@ serve(async (req) => {
     // 🎯 STEP 2: Prepare employee list for ChatGPT
     const employeeList = employees.length > 0
       ? employees.map(e => {
-          const name = e.full_name || e.name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown'
+          const name = `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unknown'
           return `- ${name} (ID: ${e.id})`
         }).join('\n')
       : '- No employees loaded (will parse name as-is)'
@@ -372,14 +371,12 @@ Return ONLY valid JSON.`
         // Try fuzzy matching by name
         const inputName = text.toLowerCase()
         const matches = employees.filter(e => {
-          const fullName = (e.full_name || '').toLowerCase()
-          const name = (e.name || '').toLowerCase()
           const firstName = (e.first_name || '').toLowerCase()
           const lastName = (e.last_name || '').toLowerCase()
+          const fullName = `${firstName} ${lastName}`.trim()
           
           // Check if any name field is mentioned in the input
           return inputName.includes(fullName) || 
-                 inputName.includes(name) ||
                  inputName.includes(firstName) ||
                  inputName.includes(lastName) ||
                  fullName.includes(inputName.split(' ')[0]) ||
@@ -387,15 +384,16 @@ Return ONLY valid JSON.`
         })
         
         if (matches.length === 1) {
-          console.log('✅ Fuzzy matched to:', matches[0].id)
+          console.log('✅ Fuzzy matched to:', matches[0].first_name, matches[0].last_name, matches[0].id)
           parsed.employee_id = matches[0].id
         } else if (matches.length > 1) {
+          console.log('⚠️ Multiple matches found:', matches.length)
           return new Response(JSON.stringify({
             success: true,
             mode: 'clarify',
             question: '❓ Flera medarbetare hittades. Vem menar du?',
             options: matches.map(e => ({
-              label: e.full_name || e.name || `${e.first_name} ${e.last_name}`.trim(),
+              label: `${e.first_name} ${e.last_name}`.trim(),
               value: e.id
             }))
           }), {
@@ -403,12 +401,14 @@ Return ONLY valid JSON.`
           })
         } else {
           // No matches found
+          console.log('❌ No employee match found for:', inputName)
+          console.log('   Available employees:', employees.slice(0, 5).map(e => `${e.first_name} ${e.last_name}`).join(', '))
           return new Response(JSON.stringify({
             success: true,
             mode: 'clarify',
-            question: `❓ Kunde inte hitta medarbetare "${parsed.employee_id}". Vem menar du?`,
+            question: `❓ Kunde inte hitta medarbetare "${inputName}". Vem menar du?`,
             options: employees.slice(0, 10).map(e => ({
-              label: e.full_name || e.name || `${e.first_name} ${e.last_name}`.trim(),
+              label: `${e.first_name} ${e.last_name}`.trim(),
               value: e.id
             }))
           }), {
