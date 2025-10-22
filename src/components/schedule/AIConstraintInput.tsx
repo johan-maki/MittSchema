@@ -458,13 +458,30 @@ export function AIConstraintInput({
                 size="sm"
                 onClick={async () => {
                   if (window.confirm(`Är du säker på att du vill ta bort ALLA ${parsedConstraints.length} begränsningar?`)) {
-                    // Delete all from database
-                    for (const constraint of parsedConstraints) {
-                      if (constraint.id) {
-                        await schedulerApi.deleteAIConstraint(constraint.id);
-                      }
+                    setError(null);
+                    let failedDeletions = 0;
+                    
+                    // Delete all from database - wait for ALL deletions to complete
+                    const deletePromises = parsedConstraints
+                      .filter(c => c.id)
+                      .map(async (constraint) => {
+                        const result = await schedulerApi.deleteAIConstraint(constraint.id!);
+                        if (!result.success) {
+                          failedDeletions++;
+                          console.error(`❌ Failed to delete constraint ${constraint.id}:`, result.error);
+                        }
+                        return result;
+                      });
+                    
+                    await Promise.all(deletePromises);
+                    
+                    if (failedDeletions > 0) {
+                      setError(`Kunde inte ta bort ${failedDeletions} av ${parsedConstraints.length} begränsningar. Försök igen.`);
+                      return; // Don't clear UI if deletions failed
                     }
-                    // Clear UI
+                    
+                    // Only clear UI if ALL deletions succeeded
+                    console.log(`✅ Successfully deleted all ${parsedConstraints.length} constraints from database`);
                     setParsedConstraints([]);
                     if (onConstraintsChange) {
                       onConstraintsChange([]);
