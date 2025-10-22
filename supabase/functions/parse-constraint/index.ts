@@ -166,15 +166,37 @@ GUROBI-READY CONSTRAINT FORMAT:
 The constraint object must be ready for Gurobi optimizer (no conversion needed):
 
 - **employee_id**: UUID from the employee list above (fuzzy match "Erik" to "Erik Larsson")
-- **start_date**: Date in YYYY-MM-DD format (relative to ${todayString})
-- **end_date**: Date in YYYY-MM-DD format (same as start for single day)
+- **start_date**: Date in YYYY-MM-DD format (relative to ${todayString}) - CRITICAL: MUST BE FILLED IN!
+- **end_date**: Date in YYYY-MM-DD format (same as start for single day) - CRITICAL: MUST BE FILLED IN!
 - **shifts**: Empty array [] = all shifts affected, or ["dag"], ["kväll"], ["natt"], or combinations
 - **constraint_type**: 
-  - "hard_unavailable" = cannot work (ledig, inte, kan inte)
-  - "soft_preference" = prefers not to (vill inte, föredrar inte)
-  - "hard_required" = must work (måste, ska)
-- **priority**: 1000 = must respect, 500 = strong preference, 100 = nice to have
+  - "hard_unavailable" = CANNOT work - Use for: "ska inte", "kan inte", "inte", "ledig", "får inte"
+  - "soft_preference" = PREFERS not to - Use ONLY for: "vill helst inte", "föredrar inte", "önskar"
+  - "hard_required" = MUST work - Use for: "måste", "ska jobba"
+- **priority**: 1000 = must respect (hard constraints), 500 = strong preference, 100 = nice to have (soft)
 - **original_text**: Exact user input
+
+CRITICAL DATE PARSING RULES:
+- "15 november" → ${today.getFullYear()}-11-15
+- "1a november" → ${today.getFullYear()}-11-01  
+- "första november" → ${today.getFullYear()}-11-01
+- "imorgon" → ${todayString} + 1 day
+- "nästa vecka måndag" → calculate next Monday
+- ALWAYS fill in start_date and end_date - NEVER leave them empty!
+- For single day: start_date = end_date
+
+SWEDISH CONSTRAINT KEYWORDS:
+- HARD (constraint_type="hard_unavailable", priority=1000):
+  * "ska inte" ← MANDATORY HARD!
+  * "kan inte"
+  * "får inte"  
+  * "ledig"
+  * "inte tillgänglig"
+  
+- SOFT (constraint_type="soft_preference", priority=100):
+  * "vill helst inte"
+  * "föredrar inte"
+  * "önskar inte"
 
 ---
 
@@ -255,11 +277,11 @@ Output:
   "ui_hint": "show_approve_button"
 }
 
-Input: "Anna vill inte jobba natt 15 november"
+Input: "Anna ska inte jobba natt 15 november"
 Output:
 {
   "mode": "parse",
-  "natural_language": "✅ Noterat! <employee>Anna Svensson</employee> <constraint>kan inte jobba nattskift</constraint> den <date>15 november</date>. Detta är en <priority>hård begränsning</priority> som måste respekteras.",
+  "natural_language": "✅ Noterat! <employee>Anna Svensson</employee> <constraint>ska inte jobba nattskift</constraint> den <date>15 november</date>. Detta är en <priority>hård begränsning</priority> som måste respekteras.",
   "action": "create",
   "constraint": {
     "employee_id": "find-anna-id-from-list-above",
@@ -268,17 +290,17 @@ Output:
     "shifts": ["natt"],
     "constraint_type": "hard_unavailable",
     "priority": 1000,
-    "original_text": "Anna vill inte jobba natt 15 november"
+    "original_text": "Anna ska inte jobba natt 15 november"
   },
   "confidence": "high",
   "ui_hint": "show_approve_button"
 }
 
-Input: "Charlotte föredrar dag nästa måndag"
+Input: "Charlotte vill helst inte jobba dag nästa måndag"
 Output:
 {
   "mode": "parse",
-  "natural_language": "✅ Okej! <employee>Charlotte Andersson</employee> <constraint>föredrar dagskift</constraint> nästa <date>måndag</date>. Detta är en <priority>önskan</priority> som vi försöker uppfylla om möjligt.",
+  "natural_language": "✅ Okej! <employee>Charlotte Andersson</employee> <constraint>vill helst inte jobba dagskift</constraint> nästa <date>måndag</date>. Detta är en <priority>önskan</priority> som vi försöker uppfylla om möjligt.",
   "action": "create",
   "constraint": {
     "employee_id": "find-charlotte-id-from-list-above",
@@ -286,8 +308,8 @@ Output:
     "end_date": "calculate-next-monday-from-${todayString}",
     "shifts": ["dag"],
     "constraint_type": "soft_preference",
-    "priority": 500,
-    "original_text": "Charlotte föredrar dag nästa måndag"
+    "priority": 100,
+    "original_text": "Charlotte vill helst inte jobba dag nästa måndag"
   },
   "confidence": "high",
   "ui_hint": "show_approve_button"
