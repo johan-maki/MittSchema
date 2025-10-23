@@ -84,7 +84,7 @@ async def handle_optimization_request(request: ScheduleRequest):
                 logger.info(f"🤖 Passing {len(processed_ai_constraints)} AI constraints directly to Gurobi (Gurobi-ready format)")
         
         # Call the scheduler service to optimize the schedule
-        # Always allow partial coverage to get best possible schedule even with insufficient staff
+        # Use allow_partial_coverage from request, or False by default (enforce all constraints)
         result = optimize_schedule(
             employees=employees, 
             start_date=start_date, 
@@ -96,7 +96,7 @@ async def handle_optimization_request(request: ScheduleRequest):
             max_staff_per_shift=request.max_staff_per_shift,  # Pass through - None is valid (means exact staffing)
             min_experience_per_shift=request.min_experience_per_shift or 1,
             include_weekends=request.include_weekends if request.include_weekends is not None else True,
-            allow_partial_coverage=True,  # Always True: generate best possible schedule regardless of coverage %
+            allow_partial_coverage=request.allow_partial_coverage if request.allow_partial_coverage is not None else False,  # Default to False: enforce coverage
             optimize_for_cost=request.optimize_for_cost or False,
             employee_preferences=processed_employee_preferences,
             manual_constraints=request.manual_constraints,

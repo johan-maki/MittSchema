@@ -532,6 +532,31 @@ class GurobiScheduleOptimizer:
                         )
                         logger.debug(f"Added experience constraint: {date} {shift} requires {min_experience_per_shift} experience points")
         
+        # NEW: Add constraint to ensure balanced coverage across shift types
+        # This prevents all shifts being assigned to just one type (e.g., all morning shifts)
+        if not allow_partial_coverage:
+            logger.info("Adding balanced shift type coverage constraints...")
+            
+            # Calculate how many shifts of each type should be filled
+            # For perfect balance: each shift type should have approximately the same coverage
+            for shift_type in self.shift_types:
+                # Count total filled shifts for this shift type across all days
+                shift_type_coverage = gp.quicksum(
+                    self.shifts[(emp['id'], d, shift_type)]
+                    for emp in self.employees
+                    for d in range(len(self.dates))
+                )
+                
+                # Require at least (days * min_staff / 3) for each shift type
+                # This ensures each shift type gets roughly equal coverage
+                min_shifts_per_type = (len(self.dates) * min_staff_per_shift) // len(self.shift_types)
+                
+                self.model.addConstr(
+                    shift_type_coverage >= min_shifts_per_type,
+                    name=f"balanced_coverage_{shift_type}"
+                )
+                logger.info(f"  {shift_type} shifts must have at least {min_shifts_per_type} person-shifts assigned")
+        
         logger.info(f"Scheduling {len(self.scheduled_days)} days out of {len(self.dates)} total days")
         logger.info("All constraints added successfully")
     
@@ -1291,6 +1316,9 @@ class GurobiScheduleOptimizer:
         # Store min_staff_per_shift for coverage calculation
         min_staff = getattr(self, 'min_staff_per_shift', 1)
         
+        # Track unique shift slots that have been filled (for accurate coverage)
+        filled_shift_slots = set()  # Will store (date_index, shift_type) tuples
+        
         # Initialize employee stats
         for emp in self.employees:
             employee_stats[emp['id']] = {
@@ -1347,17 +1375,23 @@ class GurobiScheduleOptimizer:
                         
                         schedule.append(shift_assignment)
                         
+                        # Track that this shift slot is filled (for coverage calculation)
+                        filled_shift_slots.add((d, shift))
+                        
                         # Update statistics
-                        coverage_stats["filled_shifts"] += 1
                         employee_stats[emp['id']]["total_shifts"] += 1
                         employee_stats[emp['id']][f"{shift}_shifts"] += 1
                         
                         if date.weekday() >= 5:  # Weekend
                             employee_stats[emp['id']]["weekend_shifts"] += 1
         
-        # Calculate total required person-shifts (days × shift_types × people_needed_per_shift)
-        # This gives the TRUE number of individual assignments needed, not just pass types
-        coverage_stats["total_shifts"] = len(self.dates) * len(self.shift_types) * min_staff
+        # Calculate coverage statistics
+        # Total possible shift slots = days × shift_types (each slot can have min_staff people)
+        total_shift_slots = len(self.dates) * len(self.shift_types)
+        filled_shift_count = len(filled_shift_slots)  # Number of unique slots with at least 1 person
+        
+        coverage_stats["total_shifts"] = total_shift_slots
+        coverage_stats["filled_shifts"] = filled_shift_count
         
         if coverage_stats["total_shifts"] > 0:
             coverage_stats["coverage_percentage"] = round(
@@ -1366,8 +1400,9 @@ class GurobiScheduleOptimizer:
         
         # Log results
         logger.info(f"Schedule generated with {coverage_stats['coverage_percentage']}% coverage")
-        logger.info(f"Filled {coverage_stats['filled_shifts']} out of {coverage_stats['total_shifts']} shifts")
-        logger.info(f"(Calculation: {len(self.dates)} days × {len(self.shift_types)} shift types × {min_staff} staff per shift)")
+        logger.info(f"Filled {coverage_stats['filled_shifts']} out of {coverage_stats['total_shifts']} unique shift slots")
+        logger.info(f"(Calculation: {len(self.dates)} days × {len(self.shift_types)} shift types = {total_shift_slots} slots)")
+        logger.info(f"Total person-shifts assigned: {len(schedule)}")
 
         
         # Calculate shift type fairness statistics
