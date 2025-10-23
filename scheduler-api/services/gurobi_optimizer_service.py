@@ -60,9 +60,11 @@ class GurobiScheduleOptimizer:
         start_date: datetime, 
         end_date: datetime,
         min_staff_per_shift: int = 1,
+        max_staff_per_shift: Optional[int] = None,
         min_experience_per_shift: int = 1,
         include_weekends: bool = True,
         allow_partial_coverage: bool = False,
+        optimize_for_cost: bool = False,
         random_seed: Optional[int] = None,
         employee_preferences: Optional[List] = None,
         ai_constraints: Optional[List[Dict]] = None
@@ -75,8 +77,11 @@ class GurobiScheduleOptimizer:
             start_date: Schedule start date
             end_date: Schedule end date
             min_staff_per_shift: Minimum staff required per shift
+            max_staff_per_shift: Maximum staff allowed per shift (None = use min as exact, 0 = unlimited for work_percentage filling)
             min_experience_per_shift: Minimum experience points required per shift
             include_weekends: Whether to schedule weekend shifts
+            allow_partial_coverage: Allow partial coverage when insufficient staff
+            optimize_for_cost: When False, prioritize filling employees' work_percentage (allows overstaffing)
             random_seed: Random seed for reproducible results
             employee_preferences: Individual employee work preferences
             ai_constraints: AI-parsed constraints from Supabase (Gurobi-ready format)
@@ -92,9 +97,13 @@ class GurobiScheduleOptimizer:
             self.dates = create_date_list(start_date, end_date)
             self.employee_preferences = employee_preferences or []
             self.ai_constraints = ai_constraints or []
+            self.optimize_for_cost = optimize_for_cost
+            self.max_staff_per_shift = max_staff_per_shift
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
-            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}, include_weekends={include_weekends}")
+            logger.info(f"Parameters: min_staff_per_shift={min_staff_per_shift}, max_staff_per_shift={max_staff_per_shift}, min_experience_per_shift={min_experience_per_shift}")
+            logger.info(f"Optimization mode: {'COST MINIMIZATION' if optimize_for_cost else 'WORK_PERCENTAGE FILLING (allows overstaffing)'}")
+            logger.info(f"Include weekends: {include_weekends}")
             logger.info(f"Employee preferences provided: {len(self.employee_preferences)}")
             logger.info(f"AI constraints provided: {len(self.ai_constraints)}")
             
@@ -482,12 +491,24 @@ class GurobiScheduleOptimizer:
                     # The optimizer will try to maximize coverage without failing if impossible
                     logger.info(f"Allowing partial coverage for {date} {shift} shift")
                 
-                # Ensure exact staff per shift (no overstaffing) - always apply this
-                # Note: For now, we enforce exact staffing (min = max) but this could be configurable
-                self.model.addConstr(
-                    total_staff <= min_staff_per_shift,
-                    name=f"max_staff_{d}_{shift}"
-                )
+                # Maximum staff constraint (overstaffing control)
+                if self.optimize_for_cost:
+                    # COST MODE: Prevent overstaffing - use exact staffing (min = max)
+                    self.model.addConstr(
+                        total_staff <= min_staff_per_shift,
+                        name=f"max_staff_{d}_{shift}"
+                    )
+                elif self.max_staff_per_shift is not None and self.max_staff_per_shift > 0:
+                    # WORK% MODE with explicit max: Allow overstaffing up to max_staff_per_shift
+                    self.model.addConstr(
+                        total_staff <= self.max_staff_per_shift,
+                        name=f"max_staff_{d}_{shift}"
+                    )
+                    logger.debug(f"Allowing up to {self.max_staff_per_shift} staff per shift for work% filling")
+                else:
+                    # WORK% MODE without explicit max: No upper limit (unlimited overstaffing for work% filling)
+                    logger.debug(f"No maximum staff limit - allowing overstaffing to fill work_percentage")
+                
                 
                 # 4. Minimum experience level per shift
                 # Calculate total experience points for this shift
@@ -1045,23 +1066,77 @@ class GurobiScheduleOptimizer:
     
     def _set_objective(self):
         """
-        Set the objective function to maximize coverage and minimize unfairness.
+        Set the objective function based on optimization mode.
+        
+        COST MINIMIZATION MODE (optimize_for_cost=True):
+        - Minimize total shifts (reduce costs)
+        - Ensure minimum coverage
+        - Fair distribution among employees
+        
+        WORK_PERCENTAGE FILLING MODE (optimize_for_cost=False):
+        - Maximize shifts to fill employees' work_percentage
+        - Allow overstaffing to achieve this
+        - Prioritize reaching target work hours for each employee
         
         Objective components (in order of priority):
         1. Maximize total shift coverage (primary goal, weight: 100)
-        2. Minimize unfairness in total shift distribution (secondary goal, weight: 10)
+        2. Minimize/Maximize based on mode
         3. Minimize unfairness in shift type distribution (tertiary goal, weight: 5)
         4. Minimize unfairness in weekend shift distribution (quaternary goal, weight: 4)
         """
-        logger.info("Setting enhanced objective function with shift type fairness...")
         
-        # Primary objective: Maximize total assigned shifts (coverage)
+        if self.optimize_for_cost:
+            logger.info("Setting COST MINIMIZATION objective function...")
+            mode_description = "Cost minimization mode: Minimize shifts while meeting minimum requirements"
+        else:
+            logger.info("Setting WORK_PERCENTAGE FILLING objective function...")
+            mode_description = "Work% filling mode: Maximize shifts to match work_percentage targets"
+        
+        logger.info(mode_description)
+        
+        # Primary objective: Total assigned shifts
         total_coverage = gp.quicksum(
             self.shifts[(emp['id'], d, shift)]
             for emp in self.employees
             for d in range(len(self.dates))
             for shift in self.shift_types
         )
+        
+        # Calculate target shifts for each employee based on work_percentage
+        total_weeks = len(self.dates) / 7.0
+        work_percentage_deviation = 0
+        
+        # Create a mapping from employee_id to work_percentage from preferences
+        work_percentage_map = {}
+        for pref in self.employee_preferences:
+            if hasattr(pref, 'work_percentage') and pref.work_percentage is not None:
+                work_percentage_map[pref.employee_id] = pref.work_percentage
+        
+        for emp in self.employees:
+            # Get work_percentage from preferences first, fallback to employee object
+            work_percentage = work_percentage_map.get(emp.get('id'), emp.get('work_percentage', 100))
+            
+            # Calculate target shifts based on work_percentage
+            # Assume 5 shifts per week as full-time baseline
+            target_shifts = (work_percentage / 100.0) * total_weeks * 5
+            
+            # Get actual shifts for this employee
+            emp_actual_shifts = gp.quicksum(
+                self.shifts[(emp['id'], d, shift)]
+                for d in range(len(self.dates))
+                for shift in self.shift_types
+            )
+            
+            # Add deviation from target (absolute value approximation using helper variables)
+            deviation_pos = self.model.addVar(vtype=GRB.CONTINUOUS, name=f"dev_pos_{emp['id']}")
+            deviation_neg = self.model.addVar(vtype=GRB.CONTINUOUS, name=f"dev_neg_{emp['id']}")
+            
+            self.model.addConstr(deviation_pos >= emp_actual_shifts - target_shifts)
+            self.model.addConstr(deviation_pos >= 0)
+            self.model.addConstr(deviation_neg >= target_shifts - emp_actual_shifts)
+            self.model.addConstr(deviation_neg >= 0)
+            
+            work_percentage_deviation += (deviation_pos + deviation_neg)
         
         # Secondary objective: Minimize unfairness in total shift distribution
         emp_total_shifts = []
@@ -1160,26 +1235,42 @@ class GurobiScheduleOptimizer:
         if hasattr(self, 'medium_penalty_vars') and self.medium_penalty_vars:
             medium_blocked_penalty = gp.quicksum(self.medium_penalty_vars.values())
         
-        # Combined objective with balanced weights:
-        # - Coverage is most important (weight: 100)
-        # - Total fairness is very high priority (weight: 50) - HIGH weight to spread shifts evenly across all experience levels
-        # - Medium blocked slots are high priority (weight: 30) - strong preference to avoid
-        # - Preferred shifts are very important (weight: 25) - significantly increased to respect shift preferences
-        # - Weekend fairness is high priority (weight: 20) - increased for better fairness
-        # - Preferred days matter (weight: 12) - high weight for day preferences
-        # - Shift type fairness is important (weight: 8)
-        self.model.setObjective(
-            100 * total_coverage 
-            - 50 * total_unfairness 
-            - 30 * medium_blocked_penalty
-            - 25 * non_preferred_shift_penalty
-            - 20 * weekend_unfairness 
-            - 8 * shift_type_unfairness 
-            - 12 * non_preferred_day_penalty,
-            GRB.MAXIMIZE
-        )
-        
-        logger.info("Enhanced objective function set: Coverage (100x), Total fairness (50x), Medium blocks (30x), Preferred shifts (25x), Weekend fairness (20x), Shift type fairness (8x), Preferred days (12x)")
+        # Set objective based on optimization mode
+        if self.optimize_for_cost:
+            # COST MINIMIZATION MODE:
+            # - Maximize coverage (ensure all shifts filled)
+            # - Minimize total shifts (reduce cost)
+            # - Fair distribution
+            self.model.setObjective(
+                100 * total_coverage           # Ensure shifts are filled
+                - 10 * total_coverage           # But minimize total count (NEGATIVE = reduce shifts)
+                - 50 * total_unfairness         # Fair distribution
+                - 30 * medium_blocked_penalty   # Respect strong preferences
+                - 25 * non_preferred_shift_penalty
+                - 20 * weekend_unfairness
+                - 8 * shift_type_unfairness
+                - 12 * non_preferred_day_penalty,
+                GRB.MAXIMIZE
+            )
+            logger.info("COST MODE objective: Minimize shifts while maintaining coverage and fairness")
+        else:
+            # WORK_PERCENTAGE FILLING MODE:
+            # - Maximize shifts to fill work_percentage targets
+            # - Minimize deviation from target hours
+            # - Allow overstaffing
+            self.model.setObjective(
+                100 * total_coverage            # Maximize total shifts
+                - 80 * work_percentage_deviation # CRITICAL: Minimize deviation from work% targets
+                - 30 * medium_blocked_penalty   # Respect strong preferences
+                - 25 * non_preferred_shift_penalty
+                - 20 * weekend_unfairness
+                - 10 * total_unfairness         # Lower weight - we WANT different amounts based on work%
+                - 8 * shift_type_unfairness
+                - 12 * non_preferred_day_penalty,
+                GRB.MAXIMIZE
+            )
+            logger.info("WORK% FILLING MODE objective: Maximize shifts to match work_percentage targets (allows overstaffing)")
+            logger.info("Target deviations will be minimized - employees will get shifts matching their work%")
     
     def _extract_solution(self) -> Dict[str, Any]:
         """Extract and format the solution from the optimized model."""
@@ -1349,9 +1440,11 @@ def optimize_schedule_with_gurobi(
     start_date: datetime, 
     end_date: datetime,
     min_staff_per_shift: int = 1,
+    max_staff_per_shift: Optional[int] = None,
     min_experience_per_shift: int = 1,
     include_weekends: bool = True,
     allow_partial_coverage: bool = False,
+    optimize_for_cost: bool = False,
     random_seed: Optional[int] = None,
     employee_preferences: Optional[List] = None,
     ai_constraints: Optional[List[Dict]] = None
@@ -1368,9 +1461,11 @@ def optimize_schedule_with_gurobi(
         start_date=start_date,
         end_date=end_date,
         min_staff_per_shift=min_staff_per_shift,
+        max_staff_per_shift=max_staff_per_shift,
         min_experience_per_shift=min_experience_per_shift,
         include_weekends=include_weekends,
         allow_partial_coverage=allow_partial_coverage,
+        optimize_for_cost=optimize_for_cost,
         random_seed=random_seed,
         employee_preferences=employee_preferences,
         ai_constraints=ai_constraints
