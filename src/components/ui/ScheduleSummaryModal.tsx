@@ -155,38 +155,70 @@ export const ScheduleSummaryModal: React.FC<ScheduleSummaryModalProps> = ({
   }).sort((a, b) => b.totalShifts - a.totalShifts);
 
   // Calculate coverage statistics
-  // Filter shifts to only include those within the target month
+  // Use backend coverage stats if available (more accurate as it accounts for min_staff_per_shift)
+  // Otherwise fall back to frontend calculation
+  let coveragePercentage: number;
+  let totalCoveredShifts: number;
+  let totalRequiredShifts: number;
+  
+  if (coverageStats && coverageStats.coverage_percentage !== undefined) {
+    // Use backend statistics (accurate - accounts for people needed per shift)
+    coveragePercentage = Math.round(coverageStats.coverage_percentage);
+    totalCoveredShifts = coverageStats.filled_shifts;
+    totalRequiredShifts = coverageStats.total_shifts;
+    console.log('📊 Using backend coverage stats:', {
+      coveragePercentage,
+      filled: totalCoveredShifts,
+      total: totalRequiredShifts
+    });
+  } else {
+    // Fallback to frontend calculation (less accurate - only counts unique shift slots)
+    // Filter shifts to only include those within the target month
+    const shiftsInTargetMonth = shifts.filter(shift => {
+      const shiftDate = parseISO(shift.start_time);
+      return shiftDate >= startDate && shiftDate <= endDate;
+    });
+    
+    totalRequiredShifts = daysInMonth * 3; // Assuming 3 shifts per day (morning, afternoon, night)
+    
+    // Count unique shift slots (not number of employees assigned)
+    // Group by date and shift type to get unique pass slots
+    const uniqueShiftSlots = new Set();
+    shiftsInTargetMonth.forEach(shift => {
+      const shiftDate = parseISO(shift.start_time);
+      const dateStr = format(shiftDate, 'yyyy-MM-dd');
+      const hour = shiftDate.getHours();
+      
+      // Determine shift type based on hour
+      let shiftType;
+      if (hour >= 6 && hour < 14) {
+        shiftType = 'morning';
+      } else if (hour >= 14 && hour < 22) {
+        shiftType = 'afternoon';
+      } else {
+        shiftType = 'night';
+      }
+      
+      uniqueShiftSlots.add(`${dateStr}-${shiftType}`);
+    });
+    
+    totalCoveredShifts = uniqueShiftSlots.size;
+    coveragePercentage = Math.round((totalCoveredShifts / totalRequiredShifts) * 100);
+    console.log('📊 Using frontend coverage calculation (fallback):', {
+      coveragePercentage,
+      covered: totalCoveredShifts,
+      total: totalRequiredShifts
+    });
+  }
+  
+  // Filter shifts to only include those within the target month for total counts
   const shiftsInTargetMonth = shifts.filter(shift => {
     const shiftDate = parseISO(shift.start_time);
     return shiftDate >= startDate && shiftDate <= endDate;
   });
   
-  const totalRequiredShifts = daysInMonth * 3; // Assuming 3 shifts per day (morning, afternoon, night)
   const totalAssignedShifts = shiftsInTargetMonth.length; // Total number of shift assignments
-  
-  // Count unique shift slots (not number of employees assigned)
-  // Group by date and shift type to get unique pass slots
-  const uniqueShiftSlots = new Set();
-  shiftsInTargetMonth.forEach(shift => {
-    const shiftDate = parseISO(shift.start_time);
-    const dateStr = format(shiftDate, 'yyyy-MM-dd');
-    const hour = shiftDate.getHours();
-    
-    // Determine shift type based on hour
-    let shiftType;
-    if (hour >= 6 && hour < 14) {
-      shiftType = 'morning';
-    } else if (hour >= 14 && hour < 22) {
-      shiftType = 'afternoon';
-    } else {
-      shiftType = 'night';
-    }
-    
-    uniqueShiftSlots.add(`${dateStr}-${shiftType}`);
-  });
-  
-  const totalCoveredShifts = uniqueShiftSlots.size;
-  const coveragePercentage = Math.round((totalCoveredShifts / totalRequiredShifts) * 100);
+
   
   // Calculate total cost (assuming average hourly rate from employees)
   const averageHourlyRate = employees.reduce((sum, emp) => sum + (emp.hourly_rate || 1000), 0) / employees.length;

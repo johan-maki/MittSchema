@@ -98,6 +98,7 @@ class GurobiScheduleOptimizer:
             self.employee_preferences = employee_preferences or []
             self.ai_constraints = ai_constraints or []
             self.optimize_for_cost = optimize_for_cost
+            self.min_staff_per_shift = min_staff_per_shift  # Store for coverage calculation
             self.max_staff_per_shift = max_staff_per_shift
             
             logger.info(f"Optimizing schedule for {len(employees)} employees over {len(self.dates)} days")
@@ -506,8 +507,13 @@ class GurobiScheduleOptimizer:
                     )
                     logger.debug(f"Allowing up to {self.max_staff_per_shift} staff per shift for work% filling")
                 else:
-                    # WORK% MODE without explicit max: No upper limit (unlimited overstaffing for work% filling)
-                    logger.debug(f"No maximum staff limit - allowing overstaffing to fill work_percentage")
+                    # WORK% MODE without explicit max: Use min_staff as the limit
+                    # This prevents overstaffing and forces fair distribution across different shifts
+                    self.model.addConstr(
+                        total_staff <= min_staff_per_shift,
+                        name=f"max_staff_{d}_{shift}"
+                    )
+                    logger.debug(f"Using min_staff_per_shift ({min_staff_per_shift}) as max to ensure fair distribution across shifts")
                 
                 
                 # 4. Minimum experience level per shift
@@ -1254,22 +1260,24 @@ class GurobiScheduleOptimizer:
             )
             logger.info("COST MODE objective: Minimize shifts while maintaining coverage and fairness")
         else:
-            # WORK_PERCENTAGE FILLING MODE:
-            # - Maximize shifts to fill work_percentage targets
-            # - Minimize deviation from target hours
-            # - Allow overstaffing
+            # WORK_PERCENTAGE FILLING MODE (when "Ta hänsyn till kostnad" is OFF):
+            # - Fill required shifts (coverage)
+            # - MAXIMIZE fairness in distribution (spread work evenly)
+            # - Respect work_percentage targets but prioritize fair distribution
+            # - Allow overstaffing to reach targets
             self.model.setObjective(
-                100 * total_coverage            # Maximize total shifts
-                - 80 * work_percentage_deviation # CRITICAL: Minimize deviation from work% targets
+                100 * total_coverage            # Ensure required shifts are filled
+                - 80 * work_percentage_deviation # Minimize deviation from work% targets
+                - 70 * total_unfairness         # INCREASED: Strong fairness - spread shifts evenly!
+                - 40 * shift_type_unfairness    # INCREASED: Fair distribution of shift types
+                - 35 * weekend_unfairness       # INCREASED: Fair distribution of weekends
                 - 30 * medium_blocked_penalty   # Respect strong preferences
                 - 25 * non_preferred_shift_penalty
-                - 20 * weekend_unfairness
-                - 10 * total_unfairness         # Lower weight - we WANT different amounts based on work%
-                - 8 * shift_type_unfairness
                 - 12 * non_preferred_day_penalty,
                 GRB.MAXIMIZE
             )
-            logger.info("WORK% FILLING MODE objective: Maximize shifts to match work_percentage targets (allows overstaffing)")
+            logger.info("WORK% FILLING MODE objective: Fill shifts fairly while respecting work_percentage targets")
+            logger.info("Fairness is heavily weighted - shifts will be distributed evenly among employees")
             logger.info("Target deviations will be minimized - employees will get shifts matching their work%")
     
     def _extract_solution(self) -> Dict[str, Any]:
@@ -1279,6 +1287,9 @@ class GurobiScheduleOptimizer:
         schedule = []
         coverage_stats = {"total_shifts": 0, "filled_shifts": 0, "coverage_percentage": 0}
         employee_stats = {}
+        
+        # Store min_staff_per_shift for coverage calculation
+        min_staff = getattr(self, 'min_staff_per_shift', 1)
         
         # Initialize employee stats
         for emp in self.employees:
@@ -1344,8 +1355,9 @@ class GurobiScheduleOptimizer:
                         if date.weekday() >= 5:  # Weekend
                             employee_stats[emp['id']]["weekend_shifts"] += 1
         
-        # Calculate total possible shifts (all days, all shifts)
-        coverage_stats["total_shifts"] = len(self.dates) * len(self.shift_types)
+        # Calculate total required person-shifts (days × shift_types × people_needed_per_shift)
+        # This gives the TRUE number of individual assignments needed, not just pass types
+        coverage_stats["total_shifts"] = len(self.dates) * len(self.shift_types) * min_staff
         
         if coverage_stats["total_shifts"] > 0:
             coverage_stats["coverage_percentage"] = round(
@@ -1355,6 +1367,8 @@ class GurobiScheduleOptimizer:
         # Log results
         logger.info(f"Schedule generated with {coverage_stats['coverage_percentage']}% coverage")
         logger.info(f"Filled {coverage_stats['filled_shifts']} out of {coverage_stats['total_shifts']} shifts")
+        logger.info(f"(Calculation: {len(self.dates)} days × {len(self.shift_types)} shift types × {min_staff} staff per shift)")
+
         
         # Calculate shift type fairness statistics
         shift_type_stats = {}
