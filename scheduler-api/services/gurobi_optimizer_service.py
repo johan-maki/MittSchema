@@ -532,14 +532,21 @@ class GurobiScheduleOptimizer:
                         )
                         logger.debug(f"Added experience constraint: {date} {shift} requires {min_experience_per_shift} experience points")
         
-        # NEW: Add constraint to ensure balanced coverage across shift types
+        # NEW: Add constraint to ensure MINIMUM coverage per shift type
         # This prevents all shifts being assigned to just one type (e.g., all morning shifts)
+        # BUT we make it flexible enough to respect employee preferences
         if not allow_partial_coverage:
-            logger.info("Adding balanced shift type coverage constraints...")
+            logger.info("Adding minimum shift type coverage constraints...")
             
-            # Calculate how many shifts of each type should be filled
-            # For perfect balance: each shift type should have approximately the same coverage
+            # Calculate minimum required coverage per shift type
+            # We require at least min_staff for each shift type on each day
+            # This is LESS strict than forcing perfect balance, allowing some flexibility for preferences
             for shift_type in self.shift_types:
+                # Each shift type needs at least min_staff * days coverage
+                # This ensures we don't skip entire shift types
+                total_days_to_cover = len(self.dates)
+                min_coverage_for_shift_type = total_days_to_cover * min_staff_per_shift
+                
                 # Count total filled shifts for this shift type across all days
                 shift_type_coverage = gp.quicksum(
                     self.shifts[(emp['id'], d, shift_type)]
@@ -547,15 +554,12 @@ class GurobiScheduleOptimizer:
                     for d in range(len(self.dates))
                 )
                 
-                # Require at least (days * min_staff / 3) for each shift type
-                # This ensures each shift type gets roughly equal coverage
-                min_shifts_per_type = (len(self.dates) * min_staff_per_shift) // len(self.shift_types)
-                
+                # Require minimum coverage (all days must be covered for each shift type)
                 self.model.addConstr(
-                    shift_type_coverage >= min_shifts_per_type,
-                    name=f"balanced_coverage_{shift_type}"
+                    shift_type_coverage >= min_coverage_for_shift_type,
+                    name=f"min_coverage_{shift_type}"
                 )
-                logger.info(f"  {shift_type} shifts must have at least {min_shifts_per_type} person-shifts assigned")
+                logger.info(f"  {shift_type} shifts: minimum {min_coverage_for_shift_type} person-shifts required ({total_days_to_cover} days × {min_staff_per_shift} staff)")
         
         logger.info(f"Scheduling {len(self.scheduled_days)} days out of {len(self.dates)} total days")
         logger.info("All constraints added successfully")
@@ -1276,11 +1280,11 @@ class GurobiScheduleOptimizer:
                 100 * total_coverage           # Ensure shifts are filled
                 - 10 * total_coverage           # But minimize total count (NEGATIVE = reduce shifts)
                 - 50 * total_unfairness         # Fair distribution
+                - 45 * non_preferred_shift_penalty  # INCREASED: Strongly respect shift preferences!
                 - 30 * medium_blocked_penalty   # Respect strong preferences
-                - 25 * non_preferred_shift_penalty
                 - 20 * weekend_unfairness
-                - 8 * shift_type_unfairness
-                - 12 * non_preferred_day_penalty,
+                - 12 * non_preferred_day_penalty
+                - 8 * shift_type_unfairness,
                 GRB.MAXIMIZE
             )
             logger.info("COST MODE objective: Minimize shifts while maintaining coverage and fairness")
@@ -1289,20 +1293,21 @@ class GurobiScheduleOptimizer:
             # - Fill required shifts (coverage)
             # - MAXIMIZE fairness in distribution (spread work evenly)
             # - Respect work_percentage targets but prioritize fair distribution
-            # - Allow overstaffing to reach targets
+            # - Respect employee shift preferences (soft constraints)
             self.model.setObjective(
                 100 * total_coverage            # Ensure required shifts are filled
                 - 80 * work_percentage_deviation # Minimize deviation from work% targets
-                - 70 * total_unfairness         # INCREASED: Strong fairness - spread shifts evenly!
-                - 40 * shift_type_unfairness    # INCREASED: Fair distribution of shift types
-                - 35 * weekend_unfairness       # INCREASED: Fair distribution of weekends
+                - 70 * total_unfairness         # Strong fairness - spread shifts evenly!
+                - 50 * non_preferred_shift_penalty  # INCREASED: Strongly respect shift preferences (dag/kväll/natt)!
+                - 40 * shift_type_unfairness    # Fair distribution of shift types
+                - 35 * weekend_unfairness       # Fair distribution of weekends
                 - 30 * medium_blocked_penalty   # Respect strong preferences
-                - 25 * non_preferred_shift_penalty
                 - 12 * non_preferred_day_penalty,
                 GRB.MAXIMIZE
             )
             logger.info("WORK% FILLING MODE objective: Fill shifts fairly while respecting work_percentage targets")
             logger.info("Fairness is heavily weighted - shifts will be distributed evenly among employees")
+            logger.info("Employee shift preferences (dag/kväll/natt) are strongly respected with weight 50")
             logger.info("Target deviations will be minimized - employees will get shifts matching their work%")
     
     def _extract_solution(self) -> Dict[str, Any]:
